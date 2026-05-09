@@ -1,0 +1,179 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model Professor {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  password  String   // bcrypt hashed
+  createdAt DateTime @default(now())
+
+  courses Course[]
+}
+
+model Course {
+  id           String   @id @default(cuid())
+  name         String
+  semester     String   // e.g. "2026-1"
+  category     String   @default("교양") // "컴퓨터과학" | "수학·통계" | "공학" | "경영·경제" | "인문·사회" | "자연과학" | "교양" | "예체능"
+  studentCount  Int?     // 수강생 수 (응답률 계산용)
+  eclassId      Int?     // e-class 과목 ID (크롬 확장 연동용)
+  hasAssignment Boolean  @default(false) // 과제가 있는 강의
+  hasPractice   Boolean  @default(false) // 실습/예시가 있는 강의
+  aiSummary     String?  // 종합 평가 AI 한줄평 캐시 (끝난 주차 기준 생성 후 재사용)
+  professorId  String
+  createdAt    DateTime @default(now())
+
+  professor         Professor          @relation(fields: [professorId], references: [id])
+  feedbacks         Feedback[]
+  feedbackTokens    FeedbackToken[]
+  lectureMaterials  LectureMaterial[]
+  feedbackRounds    FeedbackRound[]
+  courseStudents    CourseStudent[]
+  studentCourseTokens StudentCourseToken[]
+  submissionLogs    SubmissionLog[]
+  improvementNotes  ImprovementNote[]
+}
+
+model Feedback {
+  id                  String   @id @default(cuid())
+  courseId             String
+  roundId             String?  // 주차별 평가 라운드 (null이면 기존 1회용 토큰 방식)
+  speed               String   // "fast" | "moderate" | "slow"
+  comprehension       String   // "high" | "medium" | "low"
+  communication       Int      // 1~5
+  interest            Int?     // 1~5 강의 흥미도
+  assignment          Int?     // 1~5 과제 적절성 (과제 있는 강의만)
+  practice            Int?     // 1~5 실습/예시 충분도 (실습 있는 강의만)
+  comment             String?  // 원문
+  filteredComment     String?  // AI 순화 결과 (학습=원문, 감정=null, 혼합=순화 텍스트)
+  commentCategory     String?  // "학습" | "감정" | "혼합"
+  commentFilterReason String?  // AI 분류 근거
+  commentHasProfanity Boolean  @default(false) // 원문에 비속어/욕설 포함 여부 (true이면 원문 보기 숨김)
+  freeText            String?  // 학생 자유 서술 (AI 필터링 없이 원문 그대로 저장)
+  createdAt           DateTime @default(now())
+
+  course Course        @relation(fields: [courseId], references: [id])
+  round  FeedbackRound? @relation(fields: [roundId], references: [id])
+}
+
+model FeedbackToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  courseId  String
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  course Course @relation(fields: [courseId], references: [id])
+}
+
+// ─── 학생 시스템 (크롬 확장 연동) ───
+
+model Student {
+  id         String   @id @default(cuid())
+  studentNo  String   @unique // 학번
+  name       String
+  email      String?
+  department String?
+  createdAt  DateTime @default(now())
+
+  enrollments  CourseStudent[]
+  tokens       StudentCourseToken[]
+  submissions  SubmissionLog[]
+}
+
+model CourseStudent {
+  id        String   @id @default(cuid())
+  courseId   String
+  studentId  String
+  createdAt DateTime @default(now())
+
+  course  Course  @relation(fields: [courseId], references: [id])
+  student Student @relation(fields: [studentId], references: [id])
+
+  @@unique([courseId, studentId])
+}
+
+model FeedbackRound {
+  id        String   @id @default(cuid())
+  courseId   String
+  week      Int      // 주차 (1, 2, 3, ...)
+  label     String?  // 표시명 (e.g. "3주차", "중간 평가")
+  startDate DateTime // 평가 시작 (이 시각 이후 학생 제출 가능)
+  endDate   DateTime // 평가 종료 (이 시각 이후 자동 종료, 교수에게 결과 공개)
+  createdAt DateTime @default(now())
+
+  course            Course            @relation(fields: [courseId], references: [id])
+  feedbacks         Feedback[]
+  submissions       SubmissionLog[]
+  improvementNotes  ImprovementNote[]
+
+  @@unique([courseId, week])
+}
+
+model StudentCourseToken {
+  id        String   @id @default(cuid())
+  token     String   @unique // 학생별 고정 토큰 (다회용)
+  courseId   String
+  studentId  String
+  createdAt DateTime @default(now())
+
+  course  Course  @relation(fields: [courseId], references: [id])
+  student Student @relation(fields: [studentId], references: [id])
+
+  @@unique([courseId, studentId])
+}
+
+// 제출 기록 — Feedback과 분리하여 학생 익명성 보장
+// "이 학생이 이 라운드에 제출했는지"만 기록, 피드백 내용과 연결 없음
+model SubmissionLog {
+  id        String   @id @default(cuid())
+  studentId  String
+  courseId   String
+  roundId    String
+  createdAt DateTime @default(now())
+
+  student Student       @relation(fields: [studentId], references: [id])
+  course  Course        @relation(fields: [courseId], references: [id])
+  round   FeedbackRound @relation(fields: [roundId], references: [id])
+
+  @@unique([studentId, courseId, roundId])
+}
+
+// ─── 개선 노트 ───
+
+// 교수가 주차별 리포트에서 눈에 띄는 변화 후 작성하는 "바꾼 점" 노트
+// 익명으로 다른 교수의 개선 사례 카드에 표시됨
+model ImprovementNote {
+  id          String        @id @default(cuid())
+  courseId    String
+  roundId     String?       // 어느 라운드 리포트에서 작성했는지
+  category    String        // course.category (같은 분야 필터링용)
+  axis        String        // "comprehension" | "speed" | "communication" | "interest"
+  changeDelta Float         // 변화량 (양수 = 개선)
+  note        String        // 교수가 작성한 내용
+  createdAt   DateTime      @default(now())
+
+  course Course         @relation(fields: [courseId], references: [id])
+  round  FeedbackRound? @relation(fields: [roundId], references: [id])
+}
+
+// ─── 강의자료 ───
+
+model LectureMaterial {
+  id        String   @id @default(cuid())
+  courseId   String
+  fileName  String
+  filePath  String
+  analysis  String?  // AI 분석 결과 (JSON)
+  createdAt DateTime @default(now())
+
+  course Course @relation(fields: [courseId], references: [id])
+}
+

@@ -1,0 +1,72 @@
+"use client";
+
+import { useState } from "react";
+import { loginAction } from "@/app/actions/auth";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+
+export function LoginForm() {
+  const [error, setError] = useState<string | null>(null);
+  const [pending, setPending] = useState(false);
+
+  async function handleSubmit(formData: FormData) {
+    setPending(true);
+    setError(null);
+
+    const result = await loginAction(formData);
+    setPending(false);
+
+    if (result?.error) {
+      setError(result.error);
+    }
+    // If successful, loginAction redirects to /dashboard (no return value)
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-lg">로그인</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <form action={handleSubmit} className="space-y-4">
+          {error && (
+            <div className="bg-red-50 text-red-600 text-sm p-3 rounded-md">
+              {error}
+            </div>
+          )}
+
+          <div className="space-y-2">
+            <Label htmlFor="email">이메일</Label>
+            <Input
+              id="email"
+              name="email"
+              type="email"
+              placeholder="kim@hansung.ac.kr"
+              required
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="password">비밀번호</Label>
+            <Input
+              id="password"
+              name="password"
+              type="password"
+              required
+            />
+          </div>
+
+          <Button type="submit" className="w-full" disabled={pending}>
+            {pending ? "로그인 중..." : "로그인"}
+          </Button>
+
+          <p className="text-xs text-gray-400 text-center">
+            데모 계정: kim@hansung.ac.kr / demo1234
+          </p>
+        </form>
+      </CardContent>
+    </Card>
+  );
+}
