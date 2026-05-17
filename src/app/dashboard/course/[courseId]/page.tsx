@@ -4,7 +4,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import { notFound } from "next/navigation";
-import { FeedbackAnalysis } from "./feedback-analysis";
+import { FeedbackAnalysis, CommentsSection } from "./feedback-analysis";
 import { Button } from "@/components/ui/button";
 import { getBenchmark } from "@/app/actions/benchmark";
 import { Benchmark } from "./benchmark";
@@ -143,6 +143,7 @@ export default async function CourseDashboardPage(
     commentFilterReason: string | null;
     commentHasProfanity: boolean;
     freeText: string | null;
+    roundId: string | null;
   }[] = [];
 
   for (const fb of course.feedbacks) {
@@ -155,6 +156,7 @@ export default async function CourseDashboardPage(
         commentFilterReason: fb.commentFilterReason,
         commentHasProfanity: fb.commentHasProfanity,
         freeText: fb.freeText,
+        roundId: fb.roundId,
       });
     }
   }
@@ -280,6 +282,7 @@ export default async function CourseDashboardPage(
                 hideTitle
               />
               <TrendAnalysis courseId={courseId} rounds={roundReports.rounds} />
+              <CommentsSection commentFeedbacks={commentFeedbacks} rounds={rounds} />
             </>
           }
           deepTab={
