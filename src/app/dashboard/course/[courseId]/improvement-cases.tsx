@@ -67,9 +67,12 @@ function CaseCard({ c, myStats }: { c: ImprovementCase; myStats: MyCurrentStats 
 
   async function handleAnalyze() {
     setLoading(true);
-    const result = await getAIInsightForCase(c, myStats);
-    setInsight(result);
-    setLoading(false);
+    try {
+      const result = await getAIInsightForCase(c, myStats);
+      setInsight(result);
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (

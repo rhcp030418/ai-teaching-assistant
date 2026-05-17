@@ -34,15 +34,16 @@ export function TokenManager({ courseId, initialStats }: Props) {
     setPending(false);
 
     if (result.success && result.tokens) {
+      const { tokens } = result;
       const baseUrl = window.location.origin;
-      const links = result.tokens.map(
+      const links = tokens.map(
         (token) => `${baseUrl}/feedback/${courseId}?token=${token}`
       );
       setGeneratedLinks(links);
       setStats((prev) => ({
         ...prev,
-        total: prev.total + result.tokens!.length,
-        unused: prev.unused + result.tokens!.length,
+        total: prev.total + tokens.length,
+        unused: prev.unused + tokens.length,
       }));
     } else {
       setError(result.error ?? "생성 실패");
@@ -50,7 +51,9 @@ export function TokenManager({ courseId, initialStats }: Props) {
   }
 
   function handleCopyAll() {
-    navigator.clipboard.writeText(generatedLinks.join("\n"));
+    navigator.clipboard.writeText(generatedLinks.join("\n")).catch(() => {
+      setError("클립보드 복사에 실패했습니다. 직접 텍스트를 선택해 복사해주세요.");
+    });
   }
 
   return (

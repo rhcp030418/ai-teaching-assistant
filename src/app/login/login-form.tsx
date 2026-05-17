@@ -14,14 +14,17 @@ export function LoginForm() {
   async function handleSubmit(formData: FormData) {
     setPending(true);
     setError(null);
-
-    const result = await loginAction(formData);
-    setPending(false);
-
-    if (result?.error) {
-      setError(result.error);
+    try {
+      const result = await loginAction(formData);
+      if (result?.error) {
+        setError(result.error);
+      }
+      // If successful, loginAction redirects to /dashboard (no return value)
+    } catch {
+      setError("로그인 중 오류가 발생했습니다. 다시 시도해주세요.");
+    } finally {
+      setPending(false);
     }
-    // If successful, loginAction redirects to /dashboard (no return value)
   }
 
   return (

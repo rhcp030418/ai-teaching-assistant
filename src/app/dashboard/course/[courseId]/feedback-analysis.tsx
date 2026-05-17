@@ -9,18 +9,18 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
 import { RadarChart } from "./radar-chart";
 import { generateRadarSummary } from "@/app/actions/radar-summary";
 import { summarizeComments } from "@/app/actions/filter-comments";
 import { calcResponseRate } from "@/lib/utils";
 
 interface CommentFeedback {
-  comment: string;
+  comment: string | null;
   filteredComment: string | null;
   commentCategory: string | null;
   commentFilterReason: string | null;
   commentHasProfanity: boolean;
+  freeText: string | null;
 }
 
 interface RadarAxis {
@@ -185,12 +185,11 @@ export function FeedbackAnalysis({
       )}
 
       {/* 3-axis analysis */}
-      <div className="grid gap-6 lg:grid-cols-3">
+      <div className="grid gap-4 lg:grid-cols-3">
         {/* Axis 1: Speed */}
         <Card className={isLowData ? "opacity-50" : ""}>
           <CardHeader>
             <CardTitle className="text-base">수업 속도</CardTitle>
-            <CardDescription>수업 방식</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             <Bar
@@ -218,7 +217,6 @@ export function FeedbackAnalysis({
         <Card className={isLowData ? "opacity-50" : ""}>
           <CardHeader>
             <CardTitle className="text-base">자료 이해도</CardTitle>
-            <CardDescription>콘텐츠</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             <Bar
@@ -246,7 +244,6 @@ export function FeedbackAnalysis({
         <Card className={isLowData ? "opacity-50" : ""}>
           <CardHeader>
             <CardTitle className="text-base">소통 만족도</CardTitle>
-            <CardDescription>소통</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="text-center mb-4">
@@ -289,8 +286,6 @@ export function FeedbackAnalysis({
         </p>
       )}
 
-      <Separator />
-
       <CommentsSection commentFeedbacks={commentFeedbacks} />
     </div>
   );
@@ -301,11 +296,11 @@ function AiSummaryLine({ courseId, initialSummary }: { courseId: string; initial
   const [loading, setLoading] = useState(!initialSummary);
 
   useEffect(() => {
-    if (initialSummary) return; // 캐시 있으면 AI 호출 안 함
-    generateRadarSummary(courseId).then((res) => {
-      if (res.success && res.summary) setSummary(res.summary);
-      setLoading(false);
-    });
+    if (initialSummary) return;
+    generateRadarSummary(courseId)
+      .then((res) => { if (res.success && res.summary) setSummary(res.summary); })
+      .catch(() => {})
+      .finally(() => setLoading(false));
   }, [courseId, initialSummary]);
 
   if (loading) {
@@ -329,6 +324,7 @@ function AiSummaryLine({ courseId, initialSummary }: { courseId: string; initial
 
 function CommentItem({ item }: { item: CommentFeedback }) {
   const displayText = item.filteredComment ?? item.comment;
+  if (!displayText) return null;
   return (
     <li className="bg-gray-50 rounded-lg p-3 text-sm text-gray-700">
       <p>{displayText}</p>
@@ -349,20 +345,23 @@ function CommentsSection({
   const visibleComments = commentFeedbacks.filter(
     (cf) => cf.commentCategory !== null && cf.filteredComment !== null
   );
+  const freeTextItems = commentFeedbacks.filter((cf) => cf.freeText);
   const total = visibleComments.length;
 
   useEffect(() => {
     if (total === 0) return;
     setSummaryLoading(true);
     const commentTexts = visibleComments.map(
-      (cf) => cf.filteredComment ?? cf.comment
-    );
-    summarizeComments(commentTexts).then((res) => {
-      setSummary(res.summary);
-      setSummaryLoading(false);
-    });
+      (cf) => cf.filteredComment ?? cf.comment ?? ""
+    ).filter(Boolean);
+    summarizeComments(commentTexts)
+      .then((res) => { setSummary(res.summary); })
+      .catch(() => {})
+      .finally(() => setSummaryLoading(false));
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const hasAnyContent = total > 0 || freeTextItems.length > 0;
 
   return (
     <Card>
@@ -371,7 +370,7 @@ function CommentsSection({
           <div>
             <CardTitle className="text-base">추가 의견</CardTitle>
             <CardDescription>
-              학생들이 남긴 의견 ({total}건)
+              학생들이 남긴 의견 ({total}건){freeTextItems.length > 0 ? ` · 직접 전달 ${freeTextItems.length}건` : ""}
             </CardDescription>
           </div>
           {total > 0 && (
@@ -384,25 +383,46 @@ function CommentsSection({
           )}
         </div>
       </CardHeader>
-      <CardContent>
-        {total === 0 ? (
+      <CardContent className="space-y-4">
+        {!hasAnyContent ? (
           <p className="text-gray-400 text-sm">남겨진 의견이 없습니다.</p>
-        ) : open ? (
-          <ul className="space-y-3">
-            {visibleComments.map((item, i) => (
-              <CommentItem key={`c-${i}`} item={item} />
-            ))}
-          </ul>
         ) : (
-          <div className="text-sm text-gray-600 leading-relaxed">
-            {summaryLoading ? (
-              <p className="text-gray-400">AI 요약 생성 중...</p>
-            ) : summary ? (
-              <p>{summary}</p>
-            ) : (
-              <p className="text-gray-400">요약을 불러올 수 없습니다.</p>
+          <>
+            {total > 0 && (
+              open ? (
+                <ul className="space-y-3">
+                  {visibleComments.map((item, i) => (
+                    <CommentItem key={`c-${i}`} item={item} />
+                  ))}
+                </ul>
+              ) : (
+                <div className="text-sm text-gray-600 leading-relaxed">
+                  {summaryLoading ? (
+                    <p className="text-gray-400">AI 요약 생성 중...</p>
+                  ) : summary ? (
+                    <p>{summary}</p>
+                  ) : (
+                    <p className="text-gray-400">요약을 불러올 수 없습니다.</p>
+                  )}
+                </div>
+              )
             )}
-          </div>
+
+            {freeTextItems.length > 0 && (
+              <div className={total > 0 ? "pt-3 border-t border-teal-100" : ""}>
+                <p className="text-xs font-medium text-teal-700 mb-2">
+                  교수님께 직접 전달 ({freeTextItems.length}건)
+                </p>
+                <ul className="space-y-2">
+                  {freeTextItems.map((item, i) => (
+                    <li key={`ft-${i}`} className="bg-teal-50 rounded-lg p-3 text-sm text-teal-900">
+                      {item.freeText}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </>
         )}
       </CardContent>
     </Card>

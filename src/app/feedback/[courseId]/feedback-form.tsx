@@ -228,6 +228,24 @@ export function FeedbackForm({ courseId, token, mode = "legacy", hasAssignment =
         </CardContent>
       </Card>
 
+      {/* 교수님께 직접 전달 (freeText — AI 필터링 없음) */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">
+            교수님께 직접 전달 <span className="text-gray-400 font-normal">(선택)</span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Textarea
+            name="freeText"
+            placeholder="교수님께만 직접 전달하고 싶은 내용을 작성해주세요."
+            maxLength={500}
+            rows={3}
+          />
+          <p className="text-xs text-teal-600 mt-2">AI 필터링 없이 원문 그대로 교수님께 전달됩니다.</p>
+        </CardContent>
+      </Card>
+
       {/* 제출 안내 */}
       <div className="bg-blue-50 border border-blue-200 text-blue-800 text-sm p-3 rounded-md">
         한 번 제출하면 익명성 보장을 위해 <strong>수정할 수 없습니다</strong>. 신중하게 작성해주세요.

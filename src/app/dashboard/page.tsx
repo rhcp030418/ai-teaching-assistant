@@ -1,23 +1,28 @@
 export const dynamic = "force-dynamic";
 
 import Link from "next/link";
+import { redirect } from "next/navigation";
+import { Suspense } from "react";
 import { prisma } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { SemesterSelector } from "./semester-selector";
+
+function formatSemester(s: string) {
+  const [year, term] = s.split("-");
+  return `${year}년 ${term === "1" ? "1학기" : "2학기"}`;
+}
 
 export default async function DashboardPage(
   props: { searchParams?: Promise<{ semester?: string }> }
 ) {
   const session = await auth();
-  if (!session?.user?.id) return null;
+  if (!session?.user?.id) redirect("/login");
   const searchParams = await props.searchParams;
   const selectedSemester = searchParams?.semester;
 
@@ -54,10 +59,12 @@ export default async function DashboardPage(
       </div>
 
       <div className="mb-6">
-        <SemesterSelector
-          semesters={semesters}
-          current={selectedSemester ?? "all"}
-        />
+        <Suspense fallback={null}>
+          <SemesterSelector
+            semesters={semesters}
+            current={selectedSemester ?? "all"}
+          />
+        </Suspense>
       </div>
 
       {courses.length === 0 ? (
@@ -73,14 +80,21 @@ export default async function DashboardPage(
           {courses.map((course) => (
             <Link key={course.id} href={`/dashboard/course/${course.id}`}>
               <Card className="hover:border-blue-300 hover:shadow-md transition-all cursor-pointer h-full">
-                <CardHeader>
-                  <CardTitle className="text-lg">{course.name}</CardTitle>
-                  <CardDescription>{course.semester}</CardDescription>
+                <CardHeader className="pb-3">
+                  <p className="text-xs text-gray-400 font-medium">
+                    {formatSemester(course.semester)}
+                  </p>
+                  <CardTitle className="text-base leading-snug">
+                    {course.name}
+                  </CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <Badge variant="secondary">
-                    피드백 {course._count.feedbacks}건
-                  </Badge>
+                <CardContent className="pt-0">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-2xl font-bold text-gray-800">
+                      {course._count.feedbacks}
+                    </span>
+                    <span className="text-sm text-gray-400">건의 피드백</span>
+                  </div>
                 </CardContent>
               </Card>
             </Link>
