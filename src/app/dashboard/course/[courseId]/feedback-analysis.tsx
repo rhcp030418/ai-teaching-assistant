@@ -449,9 +449,9 @@ export function CommentsSection({
             {!summaryLoading && (
               <button
                 onClick={runSummarize}
-                className="text-xs text-gray-400 hover:text-gray-600 underline underline-offset-2"
+                className="text-xs text-blue-500 hover:text-blue-700 font-medium"
               >
-                AI 재분석
+                ↻ AI 재분석
               </button>
             )}
           </div>
