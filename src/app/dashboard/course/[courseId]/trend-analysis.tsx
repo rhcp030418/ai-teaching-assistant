@@ -263,12 +263,17 @@ export function TrendAnalysis({ courseId, rounds }: Props) {
   async function handleAnalyze() {
     setLoading(true);
     setError(null);
-    const res = await generateTrendNarrative(courseId, validRounds);
-    setLoading(false);
-    if (res.success && res.result) {
-      setNarrative(res.result);
-    } else {
-      setError(res.error ?? "분석 실패");
+    try {
+      const res = await generateTrendNarrative(courseId, validRounds);
+      if (res.success && res.result) {
+        setNarrative(res.result);
+      } else {
+        setError(res.error ?? "분석 실패");
+      }
+    } catch {
+      setError("분석 중 오류가 발생했습니다.");
+    } finally {
+      setLoading(false);
     }
   }
 

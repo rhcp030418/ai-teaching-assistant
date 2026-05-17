@@ -37,14 +37,17 @@ export function CauseAnalysis({
     setPending(true);
     setError(null);
     setResult(null);
-
-    const res = await analyzeCauses(courseId);
-    setPending(false);
-
-    if (res.success && res.result) {
-      setResult(res.result);
-    } else {
-      setError(res.error ?? "분석에 실패했습니다.");
+    try {
+      const res = await analyzeCauses(courseId);
+      if (res.success && res.result) {
+        setResult(res.result);
+      } else {
+        setError(res.error ?? "분석에 실패했습니다.");
+      }
+    } catch {
+      setError("분석 중 오류가 발생했습니다.");
+    } finally {
+      setPending(false);
     }
   }
 

@@ -113,6 +113,7 @@ model FeedbackRound {
   feedbacks         Feedback[]
   submissions       SubmissionLog[]
   improvementNotes  ImprovementNote[]
+  lectureMaterials  LectureMaterial[]
 
   @@unique([courseId, week])
 }
@@ -167,13 +168,16 @@ model ImprovementNote {
 // ─── 강의자료 ───
 
 model LectureMaterial {
-  id        String   @id @default(cuid())
-  courseId   String
-  fileName  String
-  filePath  String
-  analysis  String?  // AI 분석 결과 (JSON)
-  createdAt DateTime @default(now())
+  id                String    @id @default(cuid())
+  courseId          String
+  roundId           String?   // 연결된 주차 (null = 주차 미지정)
+  fileName          String
+  filePath          String
+  analysis          String?   // AI 분석 결과 (JSON)
+  analysisUpdatedAt DateTime? // 마지막 AI 분석 시각 (자동 재분석 staleness 체크용)
+  createdAt         DateTime  @default(now())
 
-  course Course @relation(fields: [courseId], references: [id])
+  course Course          @relation(fields: [courseId], references: [id])
+  round  FeedbackRound?  @relation(fields: [roundId], references: [id])
 }
 

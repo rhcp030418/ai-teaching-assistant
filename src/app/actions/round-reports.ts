@@ -30,6 +30,20 @@ export interface SignificantChange {
   delta: number; // 변화량 (양수 = 개선)
 }
 
+export interface RoundMaterialSummary {
+  id: string;
+  fileName: string;
+  difficulty: string | null;
+  difficultyReason: string | null;
+  termDensity: string | null;
+  exampleSufficiency: string | null;
+  improvements: {
+    structure: string | null;
+    examples: string | null;
+    pedagogy: string | null;
+  } | null;
+}
+
 export interface RoundReport {
   id: string;
   week: number;
@@ -40,11 +54,12 @@ export interface RoundReport {
   speedModerate: number;
   comprehensionHigh: number;
   communicationAvg: number;
-  interestAvg: number;
+  interestAvg: number | null;
   assignmentAvg: number | null;
   practiceAvg: number | null;
   significantChanges: SignificantChange[];
   submittedNoteAxes: string[];
+  materials: RoundMaterialSummary[];
 }
 
 export type SemesterComparisonType =
@@ -102,13 +117,44 @@ export async function getRoundReports(courseId: string): Promise<RoundReportsRes
       feedbacks: true,
       _count: { select: { submissions: true } },
       improvementNotes: { select: { id: true, axis: true } },
+      lectureMaterials: { select: { id: true, fileName: true, analysis: true } },
     },
     orderBy: { week: "asc" },
   });
 
+  function parseMaterials(
+    mats: { id: string; fileName: string; analysis: string | null }[]
+  ): RoundMaterialSummary[] {
+    return mats.map((mat) => {
+      if (!mat.analysis) {
+        return { id: mat.id, fileName: mat.fileName, difficulty: null, difficultyReason: null, termDensity: null, exampleSufficiency: null, improvements: null };
+      }
+      try {
+        const a = JSON.parse(mat.analysis) as Record<string, unknown>;
+        const imp = a.improvements as Record<string, unknown> | null | undefined;
+        return {
+          id: mat.id,
+          fileName: mat.fileName,
+          difficulty: (a.difficulty as string) ?? null,
+          difficultyReason: (a.difficultyReason as string) ?? null,
+          termDensity: (a.termDensity as string) ?? null,
+          exampleSufficiency: (a.exampleSufficiency as string) ?? null,
+          improvements: imp ? {
+            structure: (imp.structure as string | null) ?? null,
+            examples: (imp.examples as string | null) ?? null,
+            pedagogy: (imp.pedagogy as string | null) ?? null,
+          } : null,
+        };
+      } catch {
+        return { id: mat.id, fileName: mat.fileName, difficulty: null, difficultyReason: null, termDensity: null, exampleSufficiency: null, improvements: null };
+      }
+    });
+  }
+
   const statsArr: RoundReport[] = rounds.map((round) => {
     const fbs = round.feedbacks;
     const total = fbs.length;
+    const materials = parseMaterials(round.lectureMaterials);
 
     if (total === 0) {
       return {
@@ -121,11 +167,12 @@ export async function getRoundReports(courseId: string): Promise<RoundReportsRes
         speedModerate: 0,
         comprehensionHigh: 0,
         communicationAvg: 0,
-        interestAvg: 0,
+        interestAvg: null,
         assignmentAvg: null,
         practiceAvg: null,
         significantChanges: [],
         submittedNoteAxes: round.improvementNotes.map((n) => n.axis),
+        materials,
       };
     }
 
@@ -148,11 +195,12 @@ export async function getRoundReports(courseId: string): Promise<RoundReportsRes
       speedModerate: Math.round((speedModerate / total) * 100),
       comprehensionHigh: Math.round((comprehensionHigh / total) * 100),
       communicationAvg: Math.round((communicationSum / total) * 10) / 10,
-      interestAvg: interestVals.length > 0 ? Math.round(avg(interestVals) * 10) / 10 : 0,
+      interestAvg: interestVals.length > 0 ? Math.round(avg(interestVals) * 10) / 10 : null,
       assignmentAvg: assignmentVals.length > 0 ? Math.round(avg(assignmentVals) * 10) / 10 : null,
       practiceAvg: practiceVals.length > 0 ? Math.round(avg(practiceVals) * 10) / 10 : null,
       significantChanges: [],
       submittedNoteAxes: round.improvementNotes.map((n) => n.axis),
+      materials,
     };
   });
 
@@ -171,14 +219,14 @@ export async function getRoundReports(courseId: string): Promise<RoundReportsRes
     where: { courseId, endDate: { gt: now } },
   });
   if (hasOpenRound > 0) {
-    return { rounds: statsArr.reverse(), currentSemester: course.semester, semesterComparison: null };
+    return { rounds: [...statsArr].reverse(), currentSemester: course.semester, semesterComparison: null };
   }
 
   const prevSemester = getPrevSemester(course.semester);
 
   // 비교 대상 탐색 (우선순위 순)
   const prevYearSameTerm = getPrevYearSameTerm(course.semester);
-  type PrevCandidate = { ids: string[]; type: SemesterComparisonType; label: string };
+  type PrevCandidate = { ids: string[]; type: SemesterComparisonType; label: string; semester: string };
   let prevCandidate: PrevCandidate | null = null;
 
   // 1순위: 같은 교수 + 같은 강좌명 (전 학기)
@@ -187,7 +235,7 @@ export async function getRoundReports(courseId: string): Promise<RoundReportsRes
     select: { id: true },
   });
   if (selfSameCourse.length > 0) {
-    prevCandidate = { ids: selfSameCourse.map((c) => c.id), type: "self_same_course", label: "전 학기 내 강의 대비" };
+    prevCandidate = { ids: selfSameCourse.map((c) => c.id), type: "self_same_course", label: "전 학기 내 강의 대비", semester: prevSemester };
   }
 
   // 2순위: 같은 교수 + 같은 분야 (전 학기)
@@ -197,7 +245,7 @@ export async function getRoundReports(courseId: string): Promise<RoundReportsRes
       select: { id: true },
     });
     if (selfSameCategory.length > 0) {
-      prevCandidate = { ids: selfSameCategory.map((c) => c.id), type: "self_same_category", label: "전 학기 동일 분야 내 강의 대비" };
+      prevCandidate = { ids: selfSameCategory.map((c) => c.id), type: "self_same_category", label: "전 학기 동일 분야 내 강의 대비", semester: prevSemester };
     }
   }
 
@@ -208,7 +256,7 @@ export async function getRoundReports(courseId: string): Promise<RoundReportsRes
       select: { id: true },
     });
     if (prevYearSameCourse.length > 0) {
-      prevCandidate = { ids: prevYearSameCourse.map((c) => c.id), type: "other_same_course", label: "전년 동일 강좌 대비" };
+      prevCandidate = { ids: prevYearSameCourse.map((c) => c.id), type: "other_same_course", label: "전년 동일 강좌 대비", semester: prevYearSameTerm };
     }
   }
 
@@ -235,7 +283,7 @@ export async function getRoundReports(courseId: string): Promise<RoundReportsRes
       semesterComparison = {
         courseId,
         currentSemester: course.semester,
-        prevSemester,
+        prevSemester: prevCandidate.semester,
         comparisonType: prevCandidate.type,
         comparisonLabel: prevCandidate.label,
         curr: {
@@ -257,7 +305,7 @@ export async function getRoundReports(courseId: string): Promise<RoundReportsRes
   }
 
   return {
-    rounds: statsArr.reverse(),
+    rounds: [...statsArr].reverse(),
     currentSemester: course.semester,
     semesterComparison,
   };

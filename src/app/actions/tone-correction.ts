@@ -1,5 +1,6 @@
 "use server";
 
+import { auth } from "@/lib/auth";
 import { chatWithAI } from "@/lib/ai";
 import { parseAIJson } from "@/lib/parse-ai-json";
 
@@ -9,9 +10,17 @@ export interface ToneResult {
   overallTone: string;
 }
 
+const MAX_TEXT_LENGTH = 50_000;
+
 export async function correctTone(text: string) {
+  const session = await auth();
+  if (!session?.user?.id) return { success: false, error: "인증 필요" };
+
   if (!text || text.trim().length < 5) {
     return { success: false, error: "텍스트를 입력해주세요." };
+  }
+  if (text.length > MAX_TEXT_LENGTH) {
+    return { success: false, error: "텍스트가 너무 깁니다 (최대 50,000자)." };
   }
 
   try {

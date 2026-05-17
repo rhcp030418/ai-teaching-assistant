@@ -15,9 +15,64 @@ import { RoundManager } from "./round-manager";
 import { getRounds } from "@/app/actions/rounds";
 import { RoundReports } from "./round-reports";
 import { getRoundReports } from "@/app/actions/round-reports";
+import { TokenManager } from "./token-manager";
+import { getTokenStats } from "@/app/actions/tokens";
 import { TrendAnalysis } from "./trend-analysis";
 import { triggerSummaryIfNeeded } from "@/app/actions/radar-summary";
+import { triggerMaterialReanalysisIfNeeded } from "@/app/actions/analyze-material";
 import { calcResponseRate } from "@/lib/utils";
+import { ImprovementRoadmapPanel } from "./improvement-roadmap";
+import { ChatSidePanel } from "./chat-side-panel";
+import { AnalysisTabs } from "./analysis-tabs";
+import { computeFeedbackCounts } from "@/lib/feedback-stats";
+import {
+  COMM_AVG_THRESHOLD,
+  SPEED_MODERATE_THRESHOLD,
+  CHAT_COMP_SUGGESTION_THRESHOLD,
+} from "@/lib/constants";
+
+// ─── 동적 추천 질문 ────────────────────────────────────────────────────────────
+
+function buildChatSuggestions(
+  communicationAvg: number,
+  speedModerateRatio: number,
+  comprehensionHighRatio: number,
+  totalFeedbacks: number,
+): string[] {
+  if (totalFeedbacks === 0) {
+    return [
+      "좋은 강의 피드백을 받으려면 어떻게 해야 할까?",
+      "수업 속도를 어떻게 설정하는 게 좋을까?",
+      "소통 만족도를 높이는 방법이 뭐야?",
+      "학생 이해도를 높이는 전략을 알려줘.",
+    ];
+  }
+
+  const suggestions: string[] = [];
+
+  // 가장 낮은 지표부터 먼저
+  if (communicationAvg < COMM_AVG_THRESHOLD) {
+    suggestions.push(`소통 만족도가 ${communicationAvg}점으로 낮아. 어떻게 개선할 수 있을까?`);
+  }
+  if (comprehensionHighRatio < CHAT_COMP_SUGGESTION_THRESHOLD) {
+    suggestions.push(`이해도 "높음"이 ${comprehensionHighRatio}%밖에 안 돼. 원인이 뭘까?`);
+  }
+  if (speedModerateRatio < SPEED_MODERATE_THRESHOLD) {
+    suggestions.push(`수업 속도 "적당" 응답이 ${speedModerateRatio}%야. 어떻게 조정하면 좋을까?`);
+  }
+
+  const general = [
+    "이번 학기에 가장 잘 된 부분은 뭐야?",
+    "학생 의견 중 주목할 만한 게 있어?",
+    "다음 회차에서 집중해야 할 게 뭐야?",
+    "전체적인 강의 평가를 요약해줘.",
+  ];
+  for (const q of general) {
+    if (suggestions.length >= 4) break;
+    suggestions.push(q);
+  }
+  return suggestions.slice(0, 4);
+}
 
 // ─── KPI 카드 ─────────────────────────────────────────────────────────────────
 
@@ -69,42 +124,37 @@ export default async function CourseDashboardPage(
   if (!course) notFound();
 
   // ─── 통계 계산 ───────────────────────────────────────────────────────────────
-  const totalFeedbacks = course.feedbacks.length;
+  const {
+    total: totalFeedbacks,
+    speedCounts,
+    compCounts: comprehensionCounts,
+    commSum: communicationSum,
+    interestSum, interestCount,
+    assignmentSum, assignmentCount,
+    practiceSum, practiceCount,
+  } = computeFeedbackCounts(course.feedbacks);
 
-  const speedCounts = { fast: 0, moderate: 0, slow: 0 };
-  const comprehensionCounts = { high: 0, medium: 0, low: 0 };
-  let communicationSum = 0;
+  // communicationDist와 commentFeedbacks는 page 고유 — 별도 패스
   const communicationDist = [0, 0, 0, 0, 0];
-  let interestSum = 0;
-  let interestCount = 0;
-  let assignmentSum = 0;
-  let assignmentCount = 0;
-  let practiceSum = 0;
-  let practiceCount = 0;
-
   const commentFeedbacks: {
-    comment: string;
+    comment: string | null;
     filteredComment: string | null;
     commentCategory: string | null;
     commentFilterReason: string | null;
     commentHasProfanity: boolean;
+    freeText: string | null;
   }[] = [];
 
   for (const fb of course.feedbacks) {
-    speedCounts[fb.speed as keyof typeof speedCounts]++;
-    comprehensionCounts[fb.comprehension as keyof typeof comprehensionCounts]++;
-    communicationSum += fb.communication;
     communicationDist[fb.communication - 1]++;
-    if (fb.interest != null) { interestSum += fb.interest; interestCount++; }
-    if (fb.assignment != null) { assignmentSum += fb.assignment; assignmentCount++; }
-    if (fb.practice != null) { practiceSum += fb.practice; practiceCount++; }
-    if (fb.comment) {
+    if (fb.comment || fb.freeText) {
       commentFeedbacks.push({
         comment: fb.comment,
         filteredComment: fb.filteredComment,
         commentCategory: fb.commentCategory,
         commentFilterReason: fb.commentFilterReason,
         commentHasProfanity: fb.commentHasProfanity,
+        freeText: fb.freeText,
       });
     }
   }
@@ -140,13 +190,14 @@ export default async function CourseDashboardPage(
   // 응답률은 수강생 수보다 응답이 적을 때만 유효 (주차별 누적이면 100% 초과 → 표시 안 함)
   const responseRate = calcResponseRate(totalFeedbacks, course.studentCount ?? null);
 
-  // ─── 종료된 라운드 있으면 AI 한줄평 백그라운드 생성 ──────────────────────────
+  // ─── 종료된 라운드 있으면 AI 한줄평 + 자료 재분석 백그라운드 생성 ────────────
   const now = new Date();
   const hasClosedRounds = course.feedbackRounds.some((r) => r.endDate <= now);
   triggerSummaryIfNeeded(courseId, hasClosedRounds, course.aiSummary ?? null);
+  if (hasClosedRounds) triggerMaterialReanalysisIfNeeded(courseId);
 
   // ─── 데이터 패치 ─────────────────────────────────────────────────────────────
-  const [benchmarkData, improvementCases, materialCount, rounds, roundReports] =
+  const [benchmarkData, improvementCases, materialCount, rounds, roundReports, tokenStats] =
     await Promise.all([
       getBenchmark(courseId),
       getImprovementCases(courseId),
@@ -155,6 +206,7 @@ export default async function CourseDashboardPage(
       }),
       getRounds(courseId),
       getRoundReports(courseId),
+      getTokenStats(courseId),
     ]);
 
   return (
@@ -205,47 +257,69 @@ export default async function CourseDashboardPage(
 
       {/* ─── 2컬럼 레이아웃 ───────────────────────────────────────────────── */}
       <div className="grid grid-cols-1 xl:grid-cols-[1fr_380px] gap-6 items-start">
-        {/* LEFT: 분석 */}
-        <div className="space-y-6">
-          <FeedbackAnalysis
-            courseId={courseId}
-            aiSummaryCache={course.aiSummary ?? null}
-            courseName={course.name}
-            semester={course.semester}
-            professorName={course.professor.name}
-            totalFeedbacks={totalFeedbacks}
-            studentCount={course.studentCount}
-            speedCounts={speedCounts}
-            comprehensionCounts={comprehensionCounts}
-            communicationAvg={communicationAvg}
-            communicationDist={communicationDist}
-            commentFeedbacks={commentFeedbacks}
-            radarAxes={radarAxes}
-            categoryRadarAxes={benchmarkData?.categoryRadarAxes ?? undefined}
-            categoryName={benchmarkData?.categoryName}
-            hideTitle
-          />
-          <TrendAnalysis courseId={courseId} rounds={roundReports.rounds} />
-          {totalFeedbacks >= 3 && (
-            <CauseAnalysis courseId={courseId} hasMaterials={materialCount > 0} />
-          )}
-          <Benchmark data={benchmarkData} />
-          <ImprovementCases
-            cases={improvementCases}
-            myStats={{
-              communicationAvg,
-              speedModerateRatio,
-              comprehensionHighRatio,
-            }}
-          />
-        </div>
+        {/* LEFT: 탭 분석 */}
+        <AnalysisTabs
+          feedbackTab={
+            <>
+              <FeedbackAnalysis
+                courseId={courseId}
+                aiSummaryCache={course.aiSummary ?? null}
+                courseName={course.name}
+                semester={course.semester}
+                professorName={course.professor.name}
+                totalFeedbacks={totalFeedbacks}
+                studentCount={course.studentCount}
+                speedCounts={speedCounts}
+                comprehensionCounts={comprehensionCounts}
+                communicationAvg={communicationAvg}
+                communicationDist={communicationDist}
+                commentFeedbacks={commentFeedbacks}
+                radarAxes={radarAxes}
+                categoryRadarAxes={benchmarkData?.categoryRadarAxes ?? undefined}
+                categoryName={benchmarkData?.categoryName}
+                hideTitle
+              />
+              <TrendAnalysis courseId={courseId} rounds={roundReports.rounds} />
+            </>
+          }
+          deepTab={
+            totalFeedbacks >= 3 ? (
+              <>
+                <CauseAnalysis courseId={courseId} hasMaterials={materialCount > 0} />
+                <ImprovementRoadmapPanel courseId={courseId} />
+              </>
+            ) : (
+              <p className="text-sm text-gray-400 py-8 text-center">
+                피드백이 3건 이상 쌓이면 원인 분석과 개선 로드맵을 확인할 수 있습니다.
+              </p>
+            )
+          }
+          compareTab={
+            <>
+              <Benchmark data={benchmarkData} />
+              <ImprovementCases
+                cases={improvementCases}
+                myStats={{
+                  communicationAvg,
+                  speedModerateRatio,
+                  comprehensionHighRatio,
+                }}
+              />
+            </>
+          }
+        />
 
         {/* RIGHT: 관리 사이드바 */}
         <div className="space-y-6">
           <RoundManager courseId={courseId} initialRounds={rounds} />
+          <TokenManager courseId={courseId} initialStats={tokenStats} />
           <RoundReports courseId={courseId} data={roundReports} />
         </div>
       </div>
+      <ChatSidePanel
+        courseId={courseId}
+        suggestions={buildChatSuggestions(communicationAvg, speedModerateRatio, comprehensionHighRatio, totalFeedbacks)}
+      />
     </div>
   );
 }

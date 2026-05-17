@@ -10,3 +10,14 @@ export async function verifyPassword(
 ): Promise<boolean> {
   return bcrypt.compare(password, hashedPassword);
 }
+
+const DEMO_EMAILS = ["kim@hansung.ac.kr"];
+
+export function isDemoUser(email: string | null | undefined): boolean {
+  return DEMO_EMAILS.includes(email ?? "");
+}
+
+export const DEMO_READ_ONLY = {
+  success: false as const,
+  error: "데모 계정은 읽기 전용입니다.",
+};

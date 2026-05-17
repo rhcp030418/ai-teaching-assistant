@@ -76,7 +76,7 @@ export async function filterComments(
         role: "user",
         content: comments.map((c, i) => `${i + 1}. "${c}"`).join("\n"),
       },
-    ]);
+    ], { temperature: 0.1 });
 
     let parsed: { category: string; filtered: string | null; reason: string }[];
     try {
@@ -123,6 +123,9 @@ export async function filterComments(
 export async function summarizeComments(
   comments: string[]
 ): Promise<{ summary: string | null; error?: string }> {
+  const session = await auth();
+  if (!session?.user?.id) return { summary: null, error: "인증 필요" };
+
   const all = comments.filter((t) => t.trim().length > 0);
   if (all.length === 0) return { summary: null };
 
@@ -130,13 +133,13 @@ export async function summarizeComments(
     const response = await chatWithAI([
       {
         role: "system",
-        content: `당신은 대학 강의 피드백 분석 전문가입니다. 학생 의견들을 읽고 핵심 내용을 2~3문장으로 요약하세요. 마크다운 문법은 사용하지 마세요. 긍정적 의견과 개선 요청을 균형 있게 반영하세요.`,
+        content: `당신은 대학 강의 피드백 분석 전문가입니다. 학생 의견들을 읽고 두 문장으로 요약하세요. 첫 문장은 학생들이 가장 많이 언급한 긍정적인 점, 두 번째 문장은 가장 자주 요청된 개선 사항입니다. 마크다운 문법은 사용하지 마세요. 추상적인 표현 대신 학생들이 실제로 말한 내용을 반영하세요.`,
       },
       {
         role: "user",
         content: all.map((t, i) => `${i + 1}. ${t}`).join("\n"),
       },
-    ]);
+    ], { temperature: 0.4 });
     return { summary: response.content.trim() };
   } catch (err) {
     const message = err instanceof Error ? err.message : "요약 실패";

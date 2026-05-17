@@ -3,6 +3,7 @@
 import { prisma } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import { getRoundStatus } from "@/lib/round-utils";
+import { isDemoUser, DEMO_READ_ONLY } from "@/lib/auth-utils";
 
 export async function getRounds(courseId: string) {
   const session = await auth();
@@ -42,11 +43,16 @@ export async function createRound(
 ) {
   const session = await auth();
   if (!session?.user?.id) return { success: false, error: "인증 필요" };
+  if (isDemoUser(session.user.email)) return DEMO_READ_ONLY;
 
   const course = await prisma.course.findFirst({
     where: { id: courseId, professorId: session.user.id },
   });
   if (!course) return { success: false, error: "권한 없음" };
+
+  if (!Number.isInteger(week) || week < 1 || week > 52) {
+    return { success: false, error: "주차는 1~52 사이의 정수여야 합니다." };
+  }
 
   const start = new Date(startDate);
   const end = new Date(endDate);
@@ -72,6 +78,7 @@ export async function createRound(
 export async function deleteRound(roundId: string) {
   const session = await auth();
   if (!session?.user?.id) return { success: false, error: "인증 필요" };
+  if (isDemoUser(session.user.email)) return DEMO_READ_ONLY;
 
   const round = await prisma.feedbackRound.findUnique({
     where: { id: roundId },

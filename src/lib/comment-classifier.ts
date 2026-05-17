@@ -1,4 +1,5 @@
 import { chatWithAI } from "@/lib/ai";
+import { parseAIJson } from "@/lib/parse-ai-json";
 
 export interface CommentClassification {
   category: "학습" | "감정" | "혼합";
@@ -32,17 +33,11 @@ export async function classifyComment(comment: string): Promise<CommentClassific
       role: "user",
       content: comment,
     },
-  ]);
-
-  let jsonStr = response.content;
-  const jsonMatch = jsonStr.match(/```(?:json)?\s*([\s\S]*?)```/);
-  if (jsonMatch) {
-    jsonStr = jsonMatch[1];
-  }
+  ], { temperature: 0.1 });
 
   let parsed: { category?: string; filtered?: string | null; reason?: string; hasProfanity?: boolean };
   try {
-    parsed = JSON.parse(jsonStr.trim());
+    parsed = parseAIJson<typeof parsed>(response.content);
   } catch {
     return { category: "학습", filtered: comment, reason: "", hasProfanity: false };
   }

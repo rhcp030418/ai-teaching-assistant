@@ -1,6 +1,7 @@
 "use server";
 
 import { prisma } from "@/lib/db";
+import { auth } from "@/lib/auth";
 import {
   getPrevSemester,
   getStatsForCourses,
@@ -28,12 +29,22 @@ export interface BenchmarkData {
 export async function getBenchmark(
   courseId: string
 ): Promise<BenchmarkData | null> {
+  const session = await auth();
+  if (!session?.user?.id) return null;
+
   const course = await prisma.course.findUnique({
-    where: { id: courseId },
-    include: { feedbacks: true },
+    where: { id: courseId, professorId: session.user.id },
+    select: {
+      id: true,
+      category: true,
+      semester: true,
+      hasAssignment: true,
+      hasPractice: true,
+      _count: { select: { feedbacks: true } },
+    },
   });
 
-  if (!course || course.feedbacks.length === 0) return null;
+  if (!course || course._count.feedbacks === 0) return null;
 
   const myStats = await getStatsForCourses([courseId]);
   if (!myStats) return null;
@@ -107,7 +118,7 @@ export async function getBenchmark(
       .sort((a, b) => b.avg - a.avg);
 
     const myRank = courseAvgs.findIndex((c) => c.id === courseId) + 1;
-    if (myRank > 0) {
+    if (myRank > 0 && courseAvgs.length > 1) {
       percentileRank = Math.round((myRank / courseAvgs.length) * 100);
     }
   }

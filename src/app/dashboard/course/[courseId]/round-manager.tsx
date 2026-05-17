@@ -67,6 +67,7 @@ export function RoundManager({ courseId, initialRounds }: Props) {
   const [startDate, setStartDate] = useState(defaults.start);
   const [endDate, setEndDate] = useState(defaults.end);
   const [pending, setPending] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   async function refresh() {
@@ -77,27 +78,41 @@ export function RoundManager({ courseId, initialRounds }: Props) {
   async function handleCreate() {
     setPending(true);
     setError(null);
-    const result = await createRound(
-      courseId,
-      newWeek,
-      new Date(startDate).toISOString(),
-      new Date(endDate).toISOString()
-    );
-    if (result.success) {
-      setNewWeek(newWeek + 1);
-      await refresh();
-    } else {
-      setError(result.error ?? "생성 실패");
+    try {
+      const result = await createRound(
+        courseId,
+        newWeek,
+        new Date(startDate).toISOString(),
+        new Date(endDate).toISOString()
+      );
+      if (result.success) {
+        setNewWeek(newWeek + 1);
+        await refresh();
+      } else {
+        setError(result.error ?? "생성 실패");
+      }
+    } catch {
+      setError("생성 중 오류가 발생했습니다.");
+    } finally {
+      setPending(false);
     }
-    setPending(false);
   }
 
   async function handleDelete(roundId: string) {
-    const result = await deleteRound(roundId);
-    if (!result.success) {
-      setError(result.error ?? "삭제 실패");
+    if (deletingId) return;
+    setDeletingId(roundId);
+    setError(null);
+    try {
+      const result = await deleteRound(roundId);
+      if (!result.success) {
+        setError(result.error ?? "삭제 실패");
+      }
+      await refresh();
+    } catch {
+      setError("삭제 중 오류가 발생했습니다.");
+    } finally {
+      setDeletingId(null);
     }
-    await refresh();
   }
 
   return (
@@ -141,8 +156,9 @@ export function RoundManager({ courseId, initialRounds }: Props) {
                     size="sm"
                     variant="outline"
                     onClick={() => handleDelete(round.id)}
+                    disabled={deletingId === round.id}
                   >
-                    삭제
+                    {deletingId === round.id ? "삭제 중..." : "삭제"}
                   </Button>
                 )}
               </div>

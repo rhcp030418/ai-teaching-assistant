@@ -1,8 +1,9 @@
 "use server";
 
 import { prisma } from "@/lib/db";
+import { auth } from "@/lib/auth";
 import { chatWithAI } from "@/lib/ai";
-import { getPrevSemester, getStatsPerCourse } from "@/lib/feedback-stats";
+import { getPrevSemester, getStatsPerCourse, type FeedbackStats } from "@/lib/feedback-stats";
 
 export interface ImprovementNoteItem {
   note: string;
@@ -30,8 +31,11 @@ export interface ImprovementCase {
 export async function getImprovementCases(
   courseId: string
 ): Promise<ImprovementCase[]> {
+  const session = await auth();
+  if (!session?.user?.id) return [];
+
   const course = await prisma.course.findUnique({
-    where: { id: courseId },
+    where: { id: courseId, professorId: session.user.id },
     select: { semester: true, category: true, professorId: true },
   });
   if (!course) return [];
@@ -95,7 +99,7 @@ export async function getImprovementCases(
     // Find the best prev course stats (use average if multiple)
     const prevStats = pair.prevCourseIds
       .map((id) => statsMap.get(id))
-      .filter((s) => s !== undefined);
+      .filter((s): s is FeedbackStats => s !== undefined);
     if (prevStats.length === 0) continue;
 
     const beforeAvg =
@@ -162,31 +166,63 @@ export async function getAIInsightForCase(
   improvementCase: ImprovementCase,
   myStats: MyCurrentStats
 ): Promise<string> {
+  const session = await auth();
+  if (!session?.user?.id) return "로그인이 필요합니다.";
+
   try {
+    const commGap = Math.round((improvementCase.afterAvg - myStats.communicationAvg) * 10) / 10;
+    const compGap = improvementCase.changes.comprehensionHigh.after - myStats.comprehensionHighRatio;
+    const speedGap = improvementCase.changes.speedModerate.after - myStats.speedModerateRatio;
+
+    const axisLabel = {
+      communication: "소통 만족도",
+      comprehension: "자료 이해도",
+      speed: "수업 속도",
+    }[improvementCase.primaryAxis];
+
+    const notesText = improvementCase.notes.length > 0
+      ? improvementCase.notes
+          .map((n, i) => `  ${i + 1}. ${n.note}${n.sameCategory ? " (동일 분야)" : ""}`)
+          .join("\n")
+      : "  (기록된 변화 없음)";
+
+    const gapLines = [
+      commGap > 0 ? `- 소통 만족도: 현재 ${myStats.communicationAvg}점 vs 성공 사례 ${improvementCase.afterAvg}점 (격차 +${commGap})` : null,
+      compGap > 5 ? `- 이해도 높음: 현재 ${myStats.comprehensionHighRatio}% vs 성공 사례 ${improvementCase.changes.comprehensionHigh.after}% (격차 +${compGap}%p)` : null,
+      speedGap > 5 ? `- 속도 적절: 현재 ${myStats.speedModerateRatio}% vs 성공 사례 ${improvementCase.changes.speedModerate.after}% (격차 +${speedGap}%p)` : null,
+    ].filter(Boolean).join("\n");
+
     const response = await chatWithAI([
       {
         role: "system",
-        content: `당신은 대학 강의 개선 컨설턴트입니다. 같은 카테고리에서 성과가 향상된 익명 교수의 사례와 현재 교수의 통계를 바탕으로 맞춤형 개선 제안을 해주세요.
-현재 교수의 구체적인 수치를 언급하며 어떤 점을 개선하면 좋을지 제안하세요.
-"~해보시면 어떨까요", "~가 도움이 될 수 있습니다" 형태로 2~3문장 이내로 작성하세요.
+        content: `당신은 대학 강의 개선 컨설턴트입니다. 실제로 개선에 성공한 익명 교수의 사례를 분석하여, 현재 교수가 다음 수업에서 즉시 실천할 수 있는 맞춤형 제안을 3문장으로 작성하세요.
+1문장: 이 사례에서 가장 주목할 변화 — 수치와 함께, 교수가 실제 바꾼 점 중 핵심 한 가지를 반드시 언급하세요.
+2문장: 현재 내 강의와 이 성공 사례 사이의 가장 좁힐 수 있는 격차 한 가지를 짚어주세요 (현재 내 강의 수치 포함).
+3문장: "~해보시면 어떨까요" 또는 "~을 시도해보시길 추천합니다" 형식으로, 다음 수업에서 바로 할 수 있는 구체적 행동 한 가지를 제안하세요.
 마크다운 문법(**, *, -, #, \`\`\` 등) 절대 사용 금지. 자연스러운 한국어 문장으로만 작성하세요.`,
       },
       {
         role: "user",
-        content: `[개선 사례: ${improvementCase.label}]
+        content: `[성공 사례: ${improvementCase.label} / 주요 개선 축: ${axisLabel}]
 학기 변화: ${improvementCase.beforeSemester} → ${improvementCase.afterSemester}
 - 소통 만족도: ${improvementCase.beforeAvg}점 → ${improvementCase.afterAvg}점 (+${improvementCase.change})
 - 수업 속도 '적당' 비율: ${improvementCase.changes.speedModerate.before}% → ${improvementCase.changes.speedModerate.after}%
 - 자료 이해도 '높음' 비율: ${improvementCase.changes.comprehensionHigh.before}% → ${improvementCase.changes.comprehensionHigh.after}%
+
+[이 교수가 학기 사이에 바꾼 점 (교수 직접 기록)]
+${notesText}
 
 [현재 내 강의 통계]
 - 소통 만족도: ${myStats.communicationAvg}점
 - 수업 속도 '적당' 비율: ${myStats.speedModerateRatio}%
 - 자료 이해도 '높음' 비율: ${myStats.comprehensionHighRatio}%
 
-이 개선 사례에서 내 강의에 적용할 수 있는 점을 구체적으로 제안해주세요.`,
+[성공 사례 대비 격차]
+${gapLines || "- 현재 모든 지표가 성공 사례 수준에 근접함"}
+
+위 데이터를 바탕으로 현재 교수에게 맞춤형 실천 제안을 3문장으로 작성하세요.`,
       },
-    ]);
+    ], { temperature: 0.3 });
     return response.content;
   } catch {
     return "AI 분석을 불러올 수 없습니다.";

@@ -25,14 +25,17 @@ export function ToneClient() {
     setPending(true);
     setError(null);
     setResult(null);
-
-    const res = await correctTone(text);
-    setPending(false);
-
-    if (res.success && res.result) {
-      setResult(res.result);
-    } else {
-      setError(res.error ?? "분석 실패");
+    try {
+      const res = await correctTone(text);
+      if (res.success && res.result) {
+        setResult(res.result);
+      } else {
+        setError(res.error ?? "분석 실패");
+      }
+    } catch {
+      setError("분석 중 오류가 발생했습니다.");
+    } finally {
+      setPending(false);
     }
   }
 
@@ -121,7 +124,7 @@ export function ToneClient() {
                 <Button
                   size="sm"
                   variant="outline"
-                  onClick={() => navigator.clipboard.writeText(result.corrected)}
+                  onClick={() => navigator.clipboard.writeText(result.corrected).catch(() => {})}
                 >
                   복사
                 </Button>

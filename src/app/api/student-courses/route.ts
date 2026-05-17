@@ -51,7 +51,7 @@ export async function GET(req: NextRequest) {
       courseName: t.course.name,
       semester: t.course.semester,
       professorName: t.course.professor.name,
-      token: t.token,
+      // 토큰은 eclass-sync 응답에서만 제공 — 학번만 알면 타인 토큰 조회 가능한 취약점 방지
       activeRound: activeRound
         ? { id: activeRound.id, week: activeRound.week, label: activeRound.label }
         : null,
