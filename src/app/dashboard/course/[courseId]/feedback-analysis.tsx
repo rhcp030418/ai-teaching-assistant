@@ -373,8 +373,8 @@ export function CommentsSection({
   ];
   const isGrouped = groups.length > 1;
 
-  useEffect(() => {
-    if (total === 0) return;
+  const runSummarize = () => {
+    if (total === 0 || summaryLoading) return;
     setSummaryLoading(true);
     const commentTexts = visibleComments.map(
       (cf) => cf.filteredComment ?? cf.comment ?? ""
@@ -383,6 +383,11 @@ export function CommentsSection({
       .then((res) => { setSummary(res.summary); })
       .catch(() => {})
       .finally(() => setSummaryLoading(false));
+  };
+
+  useEffect(() => {
+    if (total === 0) return;
+    runSummarize();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -431,13 +436,23 @@ export function CommentsSection({
             </ul>
           )
         ) : (
-          <div className="text-sm text-gray-600 leading-relaxed">
-            {summaryLoading ? (
-              <p className="text-gray-400">AI 요약 생성 중...</p>
-            ) : summary ? (
-              <p>{summary}</p>
-            ) : (
-              <p className="text-gray-400">요약을 불러올 수 없습니다.</p>
+          <div className="space-y-2">
+            <div className="text-sm text-gray-600 leading-relaxed">
+              {summaryLoading ? (
+                <p className="text-gray-400">AI 요약 생성 중...</p>
+              ) : summary ? (
+                <p>{summary}</p>
+              ) : (
+                <p className="text-gray-400">요약을 불러올 수 없습니다.</p>
+              )}
+            </div>
+            {!summaryLoading && (
+              <button
+                onClick={runSummarize}
+                className="text-xs text-gray-400 hover:text-gray-600 underline underline-offset-2"
+              >
+                AI 재분석
+              </button>
             )}
           </div>
         )}
