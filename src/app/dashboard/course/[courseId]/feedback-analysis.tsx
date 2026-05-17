@@ -21,6 +21,13 @@ interface CommentFeedback {
   commentFilterReason: string | null;
   commentHasProfanity: boolean;
   freeText: string | null;
+  roundId?: string | null;
+}
+
+interface RoundInfo {
+  id: string;
+  week: number;
+  label: string | null;
 }
 
 interface RadarAxis {
@@ -286,7 +293,6 @@ export function FeedbackAnalysis({
         </p>
       )}
 
-      <CommentsSection commentFeedbacks={commentFeedbacks} />
     </div>
   );
 }
@@ -332,21 +338,37 @@ function CommentItem({ item }: { item: CommentFeedback }) {
   );
 }
 
-function CommentsSection({
+export function CommentsSection({
   commentFeedbacks,
+  rounds = [],
 }: {
   commentFeedbacks: CommentFeedback[];
+  rounds?: RoundInfo[];
 }) {
   const [open, setOpen] = useState(false);
   const [summary, setSummary] = useState<string | null>(null);
   const [summaryLoading, setSummaryLoading] = useState(false);
 
-  // 미분류(null) 제외 + filteredComment가 있는 것만 표시 (감정 카테고리는 filteredComment=null이라 자연히 제외)
+  // 미분류(null) 제외 + filteredComment가 있는 것만 표시
   const visibleComments = commentFeedbacks.filter(
     (cf) => cf.commentCategory !== null && cf.filteredComment !== null
   );
-  const freeTextItems = commentFeedbacks.filter((cf) => cf.freeText);
   const total = visibleComments.length;
+
+  // 주차별 그룹핑
+  const byRound = new Map<string | null, CommentFeedback[]>();
+  for (const cf of visibleComments) {
+    const key = cf.roundId ?? null;
+    if (!byRound.has(key)) byRound.set(key, []);
+    byRound.get(key)!.push(cf);
+  }
+  const groups: { label: string; comments: CommentFeedback[] }[] = [
+    ...rounds
+      .filter((r) => byRound.has(r.id))
+      .map((r) => ({ label: r.label ?? `${r.week}주차`, comments: byRound.get(r.id)! })),
+    ...(byRound.has(null) ? [{ label: "기타", comments: byRound.get(null)! }] : []),
+  ];
+  const isGrouped = groups.length > 1;
 
   useEffect(() => {
     if (total === 0) return;
@@ -361,8 +383,6 @@ function CommentsSection({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const hasAnyContent = total > 0 || freeTextItems.length > 0;
-
   return (
     <Card>
       <CardHeader>
@@ -370,7 +390,7 @@ function CommentsSection({
           <div>
             <CardTitle className="text-base">추가 의견</CardTitle>
             <CardDescription>
-              학생들이 남긴 의견 ({total}건){freeTextItems.length > 0 ? ` · 직접 전달 ${freeTextItems.length}건` : ""}
+              학생들이 남긴 의견 ({total}건)
             </CardDescription>
           </div>
           {total > 0 && (
@@ -384,45 +404,39 @@ function CommentsSection({
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        {!hasAnyContent ? (
+        {total === 0 ? (
           <p className="text-gray-400 text-sm">남겨진 의견이 없습니다.</p>
-        ) : (
-          <>
-            {total > 0 && (
-              open ? (
-                <ul className="space-y-3">
-                  {visibleComments.map((item, i) => (
-                    <CommentItem key={`c-${i}`} item={item} />
-                  ))}
-                </ul>
-              ) : (
-                <div className="text-sm text-gray-600 leading-relaxed">
-                  {summaryLoading ? (
-                    <p className="text-gray-400">AI 요약 생성 중...</p>
-                  ) : summary ? (
-                    <p>{summary}</p>
-                  ) : (
-                    <p className="text-gray-400">요약을 불러올 수 없습니다.</p>
-                  )}
+        ) : open ? (
+          isGrouped ? (
+            <div className="space-y-5">
+              {groups.map((g) => (
+                <div key={g.label}>
+                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">{g.label}</p>
+                  <ul className="space-y-2">
+                    {g.comments.map((item, i) => (
+                      <CommentItem key={`${g.label}-${i}`} item={item} />
+                    ))}
+                  </ul>
                 </div>
-              )
+              ))}
+            </div>
+          ) : (
+            <ul className="space-y-3">
+              {visibleComments.map((item, i) => (
+                <CommentItem key={`c-${i}`} item={item} />
+              ))}
+            </ul>
+          )
+        ) : (
+          <div className="text-sm text-gray-600 leading-relaxed">
+            {summaryLoading ? (
+              <p className="text-gray-400">AI 요약 생성 중...</p>
+            ) : summary ? (
+              <p>{summary}</p>
+            ) : (
+              <p className="text-gray-400">요약을 불러올 수 없습니다.</p>
             )}
-
-            {freeTextItems.length > 0 && (
-              <div className={total > 0 ? "pt-3 border-t border-teal-100" : ""}>
-                <p className="text-xs font-medium text-teal-700 mb-2">
-                  교수님께 직접 전달 ({freeTextItems.length}건)
-                </p>
-                <ul className="space-y-2">
-                  {freeTextItems.map((item, i) => (
-                    <li key={`ft-${i}`} className="bg-teal-50 rounded-lg p-3 text-sm text-teal-900">
-                      {item.freeText}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-          </>
+          </div>
         )}
       </CardContent>
     </Card>
