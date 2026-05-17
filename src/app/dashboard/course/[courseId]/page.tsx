@@ -4,7 +4,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import { notFound } from "next/navigation";
-import { FeedbackAnalysis, CommentsSection } from "./feedback-analysis";
+import { FeedbackAnalysis } from "./feedback-analysis";
 import { Button } from "@/components/ui/button";
 import { getBenchmark } from "@/app/actions/benchmark";
 import { Benchmark } from "./benchmark";
@@ -276,13 +276,13 @@ export default async function CourseDashboardPage(
                 communicationAvg={communicationAvg}
                 communicationDist={communicationDist}
                 commentFeedbacks={commentFeedbacks}
+                rounds={rounds}
                 radarAxes={radarAxes}
                 categoryRadarAxes={benchmarkData?.categoryRadarAxes ?? undefined}
                 categoryName={benchmarkData?.categoryName}
                 hideTitle
               />
               <TrendAnalysis courseId={courseId} rounds={roundReports.rounds} />
-              <CommentsSection commentFeedbacks={commentFeedbacks} rounds={rounds} />
             </>
           }
           deepTab={
