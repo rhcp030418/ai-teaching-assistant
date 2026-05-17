@@ -48,6 +48,7 @@ interface Props {
   communicationAvg: number;
   communicationDist: number[];
   commentFeedbacks: CommentFeedback[];
+  rounds?: RoundInfo[];
   radarAxes: RadarAxis[];
   categoryRadarAxes?: RadarAxis[];
   categoryName?: string;
@@ -136,6 +137,7 @@ export function FeedbackAnalysis({
   communicationAvg,
   communicationDist,
   commentFeedbacks,
+  rounds,
   radarAxes,
   categoryRadarAxes,
   categoryName,
@@ -293,6 +295,7 @@ export function FeedbackAnalysis({
         </p>
       )}
 
+      <CommentsSection commentFeedbacks={commentFeedbacks} rounds={rounds} />
     </div>
   );
 }
