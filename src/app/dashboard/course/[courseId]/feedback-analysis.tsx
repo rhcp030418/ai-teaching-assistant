@@ -28,6 +28,7 @@ interface RoundInfo {
   id: string;
   week: number;
   label: string | null;
+  status: string;
 }
 
 interface RadarAxis {
@@ -349,14 +350,25 @@ export function CommentsSection({
   rounds?: RoundInfo[];
 }) {
   const [open, setOpen] = useState(false);
+
+  // 전체 요약 (펼친 상태 상단)
   const [summary, setSummary] = useState<string | null>(null);
   const [summaryLoading, setSummaryLoading] = useState(false);
+
+  // 전주차 요약 (접힌 상태)
+  const [prevSummary, setPrevSummary] = useState<string | null>(null);
+  const [prevSummaryLoading, setPrevSummaryLoading] = useState(false);
 
   // 미분류(null) 제외 + filteredComment가 있는 것만 표시
   const visibleComments = commentFeedbacks.filter(
     (cf) => cf.commentCategory !== null && cf.filteredComment !== null
   );
   const total = visibleComments.length;
+
+  // 현재 진행 중인 라운드의 바로 전 주차 계산
+  const sortedRounds = [...rounds].sort((a, b) => a.week - b.week);
+  const activeIdx = sortedRounds.findIndex((r) => r.status === "active");
+  const prevRound = activeIdx > 0 ? sortedRounds[activeIdx - 1] : null;
 
   // 주차별 그룹핑
   const byRound = new Map<string | null, CommentFeedback[]>();
@@ -366,30 +378,55 @@ export function CommentsSection({
     byRound.get(key)!.push(cf);
   }
   const groups: { label: string; comments: CommentFeedback[] }[] = [
-    ...rounds
+    ...sortedRounds
       .filter((r) => byRound.has(r.id))
       .map((r) => ({ label: r.label ?? `${r.week}주차`, comments: byRound.get(r.id)! })),
     ...(byRound.has(null) ? [{ label: "기타", comments: byRound.get(null)! }] : []),
   ];
   const isGrouped = groups.length > 1;
 
+  const prevRoundComments = prevRound ? (byRound.get(prevRound.id) ?? []) : [];
+  const hasPrevRound = prevRound !== null && prevRoundComments.length > 0;
+  const prevRoundLabel = prevRound ? (prevRound.label ?? `${prevRound.week}주차`) : null;
+
   const runSummarize = () => {
     if (total === 0 || summaryLoading) return;
     setSummaryLoading(true);
-    const commentTexts = visibleComments.map(
-      (cf) => cf.filteredComment ?? cf.comment ?? ""
-    ).filter(Boolean);
-    summarizeComments(commentTexts)
+    const texts = visibleComments.map((cf) => cf.filteredComment ?? cf.comment ?? "").filter(Boolean);
+    summarizeComments(texts)
       .then((res) => { setSummary(res.summary); })
       .catch(() => {})
       .finally(() => setSummaryLoading(false));
   };
 
+  const runPrevSummarize = () => {
+    if (prevRoundComments.length === 0 || prevSummaryLoading) return;
+    setPrevSummaryLoading(true);
+    const texts = prevRoundComments.map((cf) => cf.filteredComment ?? cf.comment ?? "").filter(Boolean);
+    summarizeComments(texts)
+      .then((res) => { setPrevSummary(res.summary); })
+      .catch(() => {})
+      .finally(() => setPrevSummaryLoading(false));
+  };
+
+  // 마운트 시: 전주차 요약 우선 로드, 없으면 전체 요약 로드
   useEffect(() => {
     if (total === 0) return;
-    runSummarize();
+    if (hasPrevRound) {
+      runPrevSummarize();
+    } else {
+      runSummarize();
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // 펼칠 때 전체 요약이 아직 없으면 로드
+  useEffect(() => {
+    if (open && !summary && !summaryLoading && total > 0) {
+      runSummarize();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
 
   return (
     <Card>
@@ -397,9 +434,7 @@ export function CommentsSection({
         <div className="flex items-start justify-between">
           <div>
             <CardTitle className="text-base">추가 의견</CardTitle>
-            <CardDescription>
-              학생들이 남긴 의견 ({total}건)
-            </CardDescription>
+            <CardDescription>학생들이 남긴 의견 ({total}건)</CardDescription>
           </div>
           {total > 0 && (
             <button
@@ -415,27 +450,60 @@ export function CommentsSection({
         {total === 0 ? (
           <p className="text-gray-400 text-sm">남겨진 의견이 없습니다.</p>
         ) : open ? (
-          isGrouped ? (
-            <div className="space-y-5">
-              {groups.map((g) => (
-                <div key={g.label}>
-                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">{g.label}</p>
-                  <ul className="space-y-2">
-                    {g.comments.map((item, i) => (
-                      <CommentItem key={`${g.label}-${i}`} item={item} />
-                    ))}
-                  </ul>
-                </div>
-              ))}
+          <div className="space-y-4">
+            {/* 전체 요약 */}
+            {(summaryLoading || summary) && (
+              <div className="bg-gray-50 rounded-lg px-4 py-3 text-sm text-gray-600 leading-relaxed">
+                {summaryLoading ? (
+                  <p className="text-gray-400">AI 요약 생성 중...</p>
+                ) : (
+                  <p>{summary}</p>
+                )}
+              </div>
+            )}
+            {/* 주차별 개별 의견 */}
+            {isGrouped ? (
+              <div className="space-y-5">
+                {groups.map((g) => (
+                  <div key={g.label}>
+                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">{g.label}</p>
+                    <ul className="space-y-2">
+                      {g.comments.map((item, i) => (
+                        <CommentItem key={`${g.label}-${i}`} item={item} />
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <ul className="space-y-3">
+                {visibleComments.map((item, i) => (
+                  <CommentItem key={`c-${i}`} item={item} />
+                ))}
+              </ul>
+            )}
+          </div>
+        ) : hasPrevRound ? (
+          /* 접힌 상태: 전주차 요약 */
+          <div className="space-y-2">
+            <p className="text-xs font-medium text-gray-400">{prevRoundLabel} 요약</p>
+            <div className="text-sm text-gray-600 leading-relaxed">
+              {prevSummaryLoading ? (
+                <p className="text-gray-400">AI 요약 생성 중...</p>
+              ) : prevSummary ? (
+                <p>{prevSummary}</p>
+              ) : (
+                <p className="text-gray-400">요약을 불러올 수 없습니다.</p>
+              )}
             </div>
-          ) : (
-            <ul className="space-y-3">
-              {visibleComments.map((item, i) => (
-                <CommentItem key={`c-${i}`} item={item} />
-              ))}
-            </ul>
-          )
+            {!prevSummaryLoading && (
+              <button onClick={runPrevSummarize} className="text-xs text-blue-500 hover:text-blue-700 font-medium">
+                ↻ AI 재분석
+              </button>
+            )}
+          </div>
         ) : (
+          /* 접힌 상태: 전주차 없을 때 전체 요약 */
           <div className="space-y-2">
             <div className="text-sm text-gray-600 leading-relaxed">
               {summaryLoading ? (
@@ -447,10 +515,7 @@ export function CommentsSection({
               )}
             </div>
             {!summaryLoading && (
-              <button
-                onClick={runSummarize}
-                className="text-xs text-blue-500 hover:text-blue-700 font-medium"
-              >
+              <button onClick={runSummarize} className="text-xs text-blue-500 hover:text-blue-700 font-medium">
                 ↻ AI 재분석
               </button>
             )}
