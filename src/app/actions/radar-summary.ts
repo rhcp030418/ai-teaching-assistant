@@ -4,7 +4,6 @@ import { after } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { chatWithAI } from "@/lib/ai";
-import { isDemoUser, DEMO_READ_ONLY } from "@/lib/auth-utils";
 
 // 실제 AI 호출 + DB 저장 (내부 전용)
 async function computeAndSave(courseId: string): Promise<string | null> {
@@ -78,8 +77,6 @@ export async function generateRadarSummary(
 ): Promise<{ success: boolean; summary?: string; error?: string }> {
   const session = await auth();
   if (!session?.user?.id) return { success: false, error: "인증 필요" };
-  if (isDemoUser(session.user.email)) return DEMO_READ_ONLY;
-
   const course = await prisma.course.findUnique({
     where: { id: courseId, professorId: session.user.id },
     select: { aiSummary: true, _count: { select: { feedbacks: true } } },
@@ -110,7 +107,6 @@ export async function triggerSummaryIfNeeded(
   // 소유권 검증: 본인 강의에 대해서만 백그라운드 생성 허용
   const session = await auth();
   if (!session?.user?.id) return;
-  if (isDemoUser(session.user.email)) return;
   const owned = await prisma.course.findUnique({
     where: { id: courseId, professorId: session.user.id },
     select: { id: true },

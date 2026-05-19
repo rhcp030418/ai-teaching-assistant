@@ -250,7 +250,8 @@ DB: Course.findMany({ professorId, semester? })
   ├── 토큰 통계 (총/사용/미사용)
   ├── 벤치마크 데이터 (유사교과목/학기/작년 평균)
   ├── 개선 사례 (학기 간 향상 교수)
-  └── 강의자료 수 (원인 분석용)
+  ├── 강의자료 수 (원인 분석용)
+  └── 동적 추천 질문 생성 (buildChatSuggestions — 지표 기반 4개 질문)
   │
   ▼
 ┌─────────────────────────────────────────────────────────────────┐
@@ -363,6 +364,13 @@ DB: Course.findMany({ professorId, semester? })
 │  └───────────────────────────────────────────────────────────┘  │
 │                                                                 │
 └─────────────────────────────────────────────────────────────────┘
+
+위 컴포넌트들은 3탭으로 구성됨 (analysis-tabs.tsx):
+  탭1 "피드백 현황": FeedbackAnalysis (레이더 차트, AI 한줄평, 3축 막대, 코멘트, freeText)
+  탭2 "심층 분석":   TrendAnalysis, CauseAnalysis, ImprovementRoadmap, ClassChecklist
+  탭3 "비교 분석":   Benchmark, ImprovementCases
+  사이드패널:        RoundManager, TokenManager, RoundReports (탭 외부 우측 고정)
+  AI 채팅:           ChatSidePanel — 우측 하단 플로팅 버튼으로 열고 닫음 (SSE 스트리밍)
 ```
 
 ### 4-3. 강의자료 분석
@@ -499,11 +507,14 @@ DB: Course.findMany({ professorId, semester? })
 
 | 기능 | 호출 시점 | 블로킹 여부 | 캐싱 |
 |------|-----------|-------------|------|
-| 코멘트 분류 | 학생 제출 직후 (백그라운드) | 비블로킹 | DB 저장 |
+| 코멘트 분류 | 학생 제출 직후 (백그라운드 큐) | 비블로킹 | DB 저장 |
 | AI 한줄평 (레이더 요약) | 종료된 라운드 있으면 페이지 로드 후 after() 백그라운드 사전 계산 | 비블로킹 | Course.aiSummary DB 저장 |
+| AI 채팅 | 교수가 메시지 전송 시 (SSE 스트리밍) | 비블로킹 (스트리밍) | 없음 (세션 메모리) |
 | 주차별 트렌드 내러티브 | 교수가 [AI 분석] 클릭 (종료 라운드 ≥2) | 블로킹 (온디맨드) | 없음 (state) |
 | 원인 연결 분석 | 교수가 [분석 실행] 클릭 | 블로킹 (온디맨드) | 없음 |
 | 개선 사례 인사이트 | 교수가 [인사이트 보기] 클릭 | 블로킹 (온디맨드) | 컴포넌트 state |
+| 개선 로드맵 | 교수가 [로드맵 생성] 클릭 | 블로킹 (온디맨드) | 없음 (state) |
+| 수업 체크리스트 | 라운드별 [체크리스트 생성] 클릭 | 블로킹 (온디맨드) | 없음 (state) |
 | 강의자료 분석 | 교수가 [AI 분석] 클릭 | 블로킹 (온디맨드) | DB 저장 |
 | 톤 보정 | 교수가 텍스트 입력 후 실행 | 블로킹 (온디맨드) | 없음 |
 
@@ -613,16 +624,21 @@ ai-teaching-assistant/
 │   │   │   ├── semester-selector.tsx # 학기 선택 버튼 (client)
 │   │   │   ├── tone/              # 톤 보정
 │   │   │   └── course/[courseId]/
-│   │   │       ├── page.tsx       # 메인 대시보드 (7개 섹션 + 레이더 차트)
-│   │   │       ├── feedback-analysis.tsx  # 3축 + 레이더 차트 + 코멘트
+│   │   │       ├── page.tsx               # 강의 대시보드 — KPI + 3탭 레이아웃 + AI 채팅 사이드패널
+│   │   │       ├── analysis-tabs.tsx      # 3탭 레이아웃 (피드백 현황/심층 분석/비교 분석)
+│   │   │       ├── feedback-analysis.tsx  # 3축 + 레이더 차트 + AI 한줄평 + 코멘트 + freeText
 │   │   │       ├── radar-chart.tsx        # 동적 다각형 레이더 차트 (SVG, 4~6각형)
 │   │   │       ├── cause-analysis.tsx     # 원인 분석
 │   │   │       ├── trend-analysis.tsx     # 주차별 트렌드 SVG 라인 차트 + AI 내러티브
+│   │   │       ├── improvement-roadmap.tsx # AI 개선 로드맵 (우선순위별 행동 계획)
 │   │   │       ├── benchmark.tsx          # 경향 비교
 │   │   │       ├── improvement-cases.tsx  # 개선 사례
 │   │   │       ├── token-manager.tsx      # 토큰 관리
 │   │   │       ├── round-manager.tsx      # 평가 라운드 관리 (startDate/endDate 입력, 상태 자동 판단)
 │   │   │       ├── round-reports.tsx      # 종료된 라운드별 요약 카드
+│   │   │       ├── ai-chat.tsx            # AI 채팅 UI (SSE 스트리밍, 메시지 목록)
+│   │   │       ├── chat-side-panel.tsx    # AI 채팅 사이드패널 오버레이
+│   │   │       ├── use-ai-chat.ts         # AI 채팅 훅 (SSE fetch, 히스토리, 재시도, 복사, 내보내기)
 │   │   │       └── materials/             # 강의자료 분석
 │   │   ├── actions/               # Server Actions
 │   │   │   ├── auth.ts            #   로그인/로그아웃
@@ -632,15 +648,20 @@ ai-teaching-assistant/
 │   │   │   ├── round-reports.ts   #   종료된 라운드별 요약 집계
 │   │   │   ├── benchmark.ts       #   벤치마크 데이터
 │   │   │   ├── improvement-cases.ts #  개선 사례 + AI 인사이트
+│   │   │   ├── improvement-notes.ts #  교수 노트 저장 (라운드/학기 레벨)
 │   │   │   ├── cause-analysis.ts  #   원인 분석 (AI)
 │   │   │   ├── trend-analysis.ts  #   트렌드 내러티브 + 예측 (AI)
-│   │   │   ├── analyze-material.ts #  강의자료 분석 (AI)
-│   │   │   └── tone-correction.ts #   톤 보정 (AI)
+│   │   │   ├── radar-summary.ts   #   AI 한줄평 — DB 캐시 우선
+│   │   │   ├── analyze-material.ts #  강의자료 분석 (AI) + 재분석 트리거
+│   │   │   ├── tone-correction.ts #   톤 보정 (AI)
+│   │   │   ├── filter-comments.ts #   배치 AI 코멘트 필터
+│   │   │   ├── class-checklist.ts #   라운드별 AI 수업 체크리스트
+│   │   │   └── improvement-roadmap.ts # AI 개선 로드맵 (우선순위별)
 │   │   └── api/
 │   │       ├── auth/[...nextauth]/ # NextAuth 핸들러
+│   │       ├── ai-chat/[courseId]/ # 스트리밍 AI 채팅 (SSE, 레이트 리밋 20/min)
 │   │       ├── eclass-sync/       # 크롬 확장 → 학생/수강 동기화
 │   │       ├── student-courses/   # 학번별 수강과목+라운드 상태 조회
-│   │       ├── courses/           # 과목 API
 │   │       └── upload/            # 파일 업로드 (인증+소유권)
 │   ├── lib/
 │   │   ├── db.ts                  # Prisma 싱글턴
@@ -648,8 +669,12 @@ ai-teaching-assistant/
 │   │   ├── auth-utils.ts          # bcrypt 해싱/검증
 │   │   ├── comment-filter.ts      # 규칙 기반 욕설 필터
 │   │   ├── comment-classifier.ts  # AI 코멘트 분류기
+│   │   ├── classify-queue.ts      # 백그라운드 분류 큐 (타임아웃 + 최대 크기 제한)
 │   │   ├── feedback-stats.ts      # 통계 유틸
 │   │   ├── round-utils.ts         # FeedbackRound 상태 유틸 (getRoundStatus/isRoundActive/isRoundClosed)
+│   │   ├── constants.ts           # 공유 임계값/제한 상수
+│   │   ├── file-extraction.ts     # PDF 텍스트 추출 + OCR 폴백
+│   │   ├── parse-ai-json.ts       # AI JSON 안전 파서
 │   │   └── ai/                    # AI 어댑터
 │   │       ├── index.ts           #   chatWithAI() 진입점
 │   │       ├── config.ts          #   .env 설정 읽기
