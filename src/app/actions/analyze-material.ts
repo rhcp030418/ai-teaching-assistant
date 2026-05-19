@@ -8,7 +8,6 @@ import { chatWithAI } from "@/lib/ai";
 import { parseAIJson } from "@/lib/parse-ai-json";
 import { computeFeedbackCounts } from "@/lib/feedback-stats";
 import { extractFileText, smartChunk } from "@/lib/file-extraction";
-import { isDemoUser, DEMO_READ_ONLY } from "@/lib/auth-utils";
 
 export interface ImprovementDetail {
   structure: string | null;
@@ -190,7 +189,6 @@ export async function analyzeMaterial(
 ): Promise<{ success: true; analysis: MaterialAnalysis } | { success: false; error: string }> {
   const session = await auth();
   if (!session?.user?.id) return { success: false, error: "인증 필요" };
-  if (isDemoUser(session.user.email)) return DEMO_READ_ONLY;
 
   const ownership = await prisma.lectureMaterial.findUnique({
     where: { id: materialId },
@@ -206,7 +204,7 @@ export async function analyzeMaterial(
 
 export async function triggerMaterialReanalysisIfNeeded(courseId: string): Promise<void> {
   const session = await auth();
-  if (!session?.user?.id || isDemoUser(session.user.email)) return;
+  if (!session?.user?.id) return;
 
   const now = new Date();
 

@@ -48,13 +48,17 @@ ai-teaching-assistant/
 │   │   │   ├── improvement-notes.ts # Server Action: saveImprovementNote (professor notes on round/semester improvements)
 │   │   │   ├── cause-analysis.ts    # Server Action: feedback + material cross-analysis
 │   │   │   ├── radar-summary.ts     # Server Action: AI 한줄평 — DB 캐시 우선, 없으면 AI 생성 후 저장 (Course.aiSummary)
-│   │   │   ├── analyze-material.ts  # Server Action: AI lecture material analysis
+│   │   │   ├── analyze-material.ts  # Server Action: AI lecture material analysis + triggerMaterialReanalysisIfNeeded
 │   │   │   ├── tone-correction.ts   # Server Action: AI tone correction
 │   │   │   ├── rounds.ts           # Server Action: FeedbackRound CRUD (getRounds with status, createRound with startDate/endDate, deleteRound)
 │   │   │   ├── round-reports.ts    # Server Action: getRoundReports — closed rounds + significant change detection + semester comparison
-│   │   │   └── trend-analysis.ts   # Server Action: generateTrendNarrative — AI trend narrative + next-round prediction
+│   │   │   ├── trend-analysis.ts   # Server Action: generateTrendNarrative — AI trend narrative + next-round prediction
+│   │   │   ├── filter-comments.ts  # Server Action: batch AI comment filter (학습/감정/혼합 분류 + 순화)
+│   │   │   ├── class-checklist.ts  # Server Action: AI per-round class checklist (urgent/important/optional, 4 categories)
+│   │   │   └── improvement-roadmap.ts # Server Action: AI improvement roadmap — prioritized actions (high/medium/low impact), weeklyGoal, summary
 │   │   ├── api/
 │   │   │   ├── upload/route.ts            # Route Handler: file upload (auth protected)
+│   │   │   ├── ai-chat/[courseId]/route.ts # Route Handler: streaming AI chat (SSE, rate limit 20/min/user, auth protected)
 │   │   │   ├── eclass-sync/route.ts       # Route Handler: Chrome ext → Student upsert + CourseStudent + token
 │   │   │   ├── student-courses/route.ts   # Route Handler: student courses + active rounds + submission status
 │   │   │   └── auth/[...nextauth]/route.ts # NextAuth route handler
@@ -68,7 +72,8 @@ ai-teaching-assistant/
 │   │       ├── semester-selector.tsx      # Semester filter buttons (client)
 │   │       ├── sign-out-button.tsx        # Logout button (client)
 │   │       ├── course/[courseId]/
-│   │       │   ├── page.tsx               # 3-axis feedback analysis + radar chart + token manager + round manager + round reports + benchmark + improvement cases
+│   │       │   ├── page.tsx               # Course dashboard — KPI cards + 3-tab layout + AI chat side panel
+│   │       │   ├── analysis-tabs.tsx      # 3-tab layout: 피드백 현황 / 심층 분석 / 비교 분석 (client)
 │   │       │   ├── feedback-analysis.tsx  # Analysis visualization + radar chart + AI 한줄평 (AiSummaryLine) + freeText section (client)
 │   │       │   ├── radar-chart.tsx        # Dynamic polygon radar chart (SVG, 4~6 axes based on course settings)
 │   │       │   ├── benchmark.tsx          # Trend comparison component (client)
@@ -78,6 +83,10 @@ ai-teaching-assistant/
 │   │       │   ├── round-manager.tsx     # FeedbackRound management UI (client, startDate/endDate inputs + status badge)
 │   │       │   ├── round-reports.tsx     # Per-round summary cards for closed rounds (client)
 │   │       │   ├── trend-analysis.tsx    # Weekly trend SVG line chart + AI narrative + next-round prediction (client)
+│   │       │   ├── improvement-roadmap.tsx # AI improvement roadmap UI — prioritized action cards (client)
+│   │       │   ├── ai-chat.tsx            # AI chat UI — message list + input + SSE streaming display (client)
+│   │       │   ├── chat-side-panel.tsx    # Collapsible AI chat side panel (client)
+│   │       │   ├── use-ai-chat.ts         # AI chat hook — SSE fetch, message history, retry, copy, export
 │   │       │   └── materials/
 │   │       │       ├── page.tsx              # Lecture materials list
 │   │       │       └── materials-client.tsx  # Upload + AI analysis (client)
@@ -92,9 +101,13 @@ ai-teaching-assistant/
 │       ├── auth-utils.ts      # bcrypt hash/verify
 │       ├── comment-filter.ts  # Rule-based profanity/blocked words filter (submit-time)
 │       ├── comment-classifier.ts # AI single-comment classifier (background, saves to DB)
+│       ├── classify-queue.ts  # Background classification queue (async, timeout + max-size guard)
 │       ├── feedback-stats.ts  # Shared feedback statistics (per-course stats, semester utils)
 │       ├── round-utils.ts     # FeedbackRound status helpers (getRoundStatus / isRoundActive / isRoundClosed, time-based)
-│       ├── utils.ts           # shadcn utility
+│       ├── constants.ts       # Shared thresholds + limits (FEEDBACK_MIN_COUNT, COMM_AVG_THRESHOLD, etc.)
+│       ├── file-extraction.ts # PDF text extraction + OCR fallback (extracted from analyze-material.ts)
+│       ├── parse-ai-json.ts   # Safe AI JSON parser (strips markdown fences, extracts first valid JSON block)
+│       ├── utils.ts           # shadcn utility + calcResponseRate
 │       └── ai/
 │           ├── index.ts       # AI entry point — reads .env config
 │           ├── config.ts      # AI config from environment variables
@@ -148,7 +161,10 @@ ai-teaching-assistant/
 | Token link management | Done | Generate N tokens, view stats (total/used/unused), copy all links |
 | Benchmark comparison | Done | Compare against same-category avg, semester avg, prev semester avg, percentile rank (anonymous) |
 | Weekly trend analysis | Done | SVG line chart (comprehension/speed/communication over rounds, ≥2 closed). "AI 분석" button → Claude narrative + next-round prediction (≥3 rounds). Historical lines + dashed prediction extension |
-| Redesigned course dashboard UI | Done | max-w-[1440px] wide layout. Top KPI cards (총응답/소통/이해도/속도). 2-column grid: left=analysis (FeedbackAnalysis, TrendAnalysis, CauseAnalysis, Benchmark, ImprovementCases) / right=management sidebar (RoundManager, TokenManager, RoundReports) |
+| Course dashboard tab layout | Done | 3-tab layout via analysis-tabs.tsx: "피드백 현황" (FeedbackAnalysis), "심층 분석" (TrendAnalysis, CauseAnalysis, ImprovementRoadmap), "비교 분석" (Benchmark, ImprovementCases). Right sidebar: RoundManager, TokenManager, RoundReports |
+| AI Chat | Done | Streaming AI chat for professors (SSE via /api/ai-chat/[courseId]). Rate limited 20/min per user. Dynamic suggested questions built from course metrics. Message history, copy, export, retry. Side panel overlay (chat-side-panel.tsx) |
+| Improvement Roadmap | Done | AI generates prioritized improvement plan: ranked actions with area/problem/action/evidence, impact level (high/medium/low), weekly goal, summary |
+| Class Checklist | Done | AI generates per-round action checklist: items with priority (urgent/important/optional), category (content/pace/communication/material), action, reason, plus encouragement message |
 | Lecture material analysis | Done | PDF/PPT/TXT upload (auth+ownership check), AI analysis (PDF: unpdf 텍스트 추출 → 짧으면 OCR 폴백) |
 | Scanned PDF OCR | Done | tesseract.js + unpdf for image-based PDFs (Korean + English) |
 | Cause-connection analysis | Done | Cross-analyze feedback + lecture materials to estimate possible causes |
