@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { prisma } from "@/lib/db";
 import { auth } from "@/lib/auth";
+import { demoCourseFilter } from "@/lib/auth-utils";
 import {
   Card,
   CardContent,
@@ -26,9 +27,12 @@ export default async function DashboardPage(
   const searchParams = await props.searchParams;
   const selectedSemester = searchParams?.semester;
 
+  // 데모 계정은 노출 과목만 (다른 과목은 데모 데이터 부실로 숨김)
+  const demoFilter = demoCourseFilter(session.user.email);
+
   // 해당 교수의 모든 학기 목록 조회 (내림차순)
   const allCourses = await prisma.course.findMany({
-    where: { professorId: session.user.id },
+    where: { professorId: session.user.id, ...demoFilter },
     select: { semester: true },
   });
   const semesters = [...new Set(allCourses.map((c) => c.semester))]
@@ -39,6 +43,7 @@ export default async function DashboardPage(
   const courses = await prisma.course.findMany({
     where: {
       professorId: session.user.id,
+      ...demoFilter,
       ...(selectedSemester ? { semester: selectedSemester } : {}),
     },
     include: {

@@ -25,6 +25,7 @@ import { ImprovementRoadmapPanel } from "./improvement-roadmap";
 import { ChatSidePanel } from "./chat-side-panel";
 import { AnalysisTabs } from "./analysis-tabs";
 import { computeFeedbackCounts } from "@/lib/feedback-stats";
+import { isDemoUser, isDemoVisibleCourse } from "@/lib/auth-utils";
 import {
   COMM_AVG_THRESHOLD,
   SPEED_MODERATE_THRESHOLD,
@@ -122,6 +123,11 @@ export default async function CourseDashboardPage(
   });
 
   if (!course) notFound();
+
+  // 데모 계정은 노출 과목 외 직접 링크 접근 차단
+  if (isDemoUser(session.user.email) && !isDemoVisibleCourse(course.name)) {
+    notFound();
+  }
 
   // ─── 통계 계산 ───────────────────────────────────────────────────────────────
   const {
