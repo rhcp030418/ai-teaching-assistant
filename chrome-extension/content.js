@@ -9,41 +9,109 @@ async function fetchParse(url) {
   return parser.parseFromString(html, "text/html");
 }
 
+function normalizeText(value) {
+  return (value ?? "").replace(/\s+/g, " ").trim();
+}
+
+function getValue(doc, selectors) {
+  for (const selector of selectors) {
+    const el = doc.querySelector(selector);
+    if (!el) continue;
+
+    const value = "value" in el ? el.value : el.getAttribute("value");
+    const text = normalizeText(value || el.textContent);
+    if (text) return text;
+  }
+  return "";
+}
+
+function getCourseFromLink(link) {
+  const href = link.getAttribute("href");
+  if (!href) return null;
+
+  let url;
+  try {
+    url = new URL(href, location.origin);
+  } catch {
+    return null;
+  }
+
+  const id = Number(url.searchParams.get("id"));
+  if (!id) return null;
+
+  const row = link.closest("tr") || link.closest("li") || link.closest(".coursebox") || link.closest("div");
+  const title = [
+    link.textContent,
+    link.getAttribute("title"),
+    row?.querySelector(".coursename")?.textContent,
+    row?.textContent,
+  ].map(normalizeText).find(Boolean) || "";
+
+  if (!title) return null;
+  return { id, title };
+}
+
+function collectCoursesFromLinks(doc, selectors) {
+  const courses = [];
+  const seen = new Set();
+
+  for (const selector of selectors) {
+    for (const link of doc.querySelectorAll(selector)) {
+      const course = getCourseFromLink(link);
+      if (!course || seen.has(course.id)) continue;
+      seen.add(course.id);
+      courses.push(course);
+    }
+  }
+
+  return courses;
+}
+
 // 학생 프로필 정보 추출
 async function fetchUserInfo() {
   const doc = await fetchParse("/user/edit.php");
   return {
-    name:
-      doc.querySelector("#id_firstname")?.getAttribute("value") ?? "",
-    studentId:
-      doc.querySelector("#fitem_id_idnumber .fstatic")?.textContent?.trim() ??
-      "",
-    email: doc.querySelector("#id_email")?.getAttribute("value") ?? "",
-    department:
-      doc.querySelector("#id_department")?.getAttribute("value") ?? "",
+    name: getValue(doc, [
+      "#id_firstname",
+      "input[name='firstname']",
+      "input[name='name']",
+    ]) || getValue(document, [
+      "li.user_department",
+      ".usermenu .usertext",
+      ".logininfo a",
+    ]),
+    studentId: getValue(doc, [
+      "#fitem_id_idnumber .fstatic",
+      "#fitem_id_idnumber .form-control-static",
+      "#id_idnumber",
+      "input[name='idnumber']",
+      "[name='idnumber']",
+    ]),
+    email: getValue(doc, [
+      "#id_email",
+      "input[name='email']",
+    ]),
+    department: getValue(doc, [
+      "#id_department",
+      "input[name='department']",
+      "[name='department']",
+    ]) || getValue(document, [
+      ".user-info-picture .department",
+      "li.user_department",
+    ]),
   };
 }
 
 // 수강 과목 목록 추출
 async function fetchCourseList() {
   const doc = await fetchParse("/local/ubion/user/");
-  const rows = doc.querySelectorAll(
-    "div.course_lists table > tbody > tr"
-  );
-
-  const courses = [];
-  for (const row of rows) {
-    const tds = row.children;
-    if (tds.length < 2) continue;
-
-    const a = tds[1].querySelector("a");
-    if (!a) continue;
-
-    const id = Number(new URL(a.href).searchParams.get("id"));
-    const title = a.textContent.trim();
-    courses.push({ id, title });
-  }
-  return courses;
+  return collectCoursesFromLinks(doc, [
+    "div.course_lists table > tbody > tr a[href*='course/view.php?id=']",
+    "table a[href*='course/view.php?id=']",
+    ".course_lists a[href*='course/view.php?id=']",
+    "a[href*='/course/view.php?id=']",
+    "a[href*='course/view.php?id=']",
+  ]);
 }
 
 // ─── [DEMO ONLY - REMOVE FOR PRODUCTION] ──────────────────────────
@@ -57,20 +125,16 @@ async function fetchCommunityList() {
   // 홈 페이지의 모든 course/view.php 링크 중 "커뮤니티" 뱃지가 있는 것만 추출
   const links = doc.querySelectorAll('a[href*="course/view.php?id="]');
   for (const link of links) {
-    const url = new URL(link.href, location.origin);
-    const id = Number(url.searchParams.get("id"));
-    if (!id || seen.has(id)) continue;
-
-    const title = link.textContent?.trim();
-    if (!title) continue;
+    const course = getCourseFromLink(link);
+    if (!course || seen.has(course.id)) continue;
 
     // 상위 컨테이너에서 "커뮤니티" 뱃지 텍스트 확인
     const row = link.closest("li") || link.closest("tr") || link.closest("div");
     const text = row?.textContent ?? "";
     if (!text.includes("커뮤니티")) continue;
 
-    seen.add(id);
-    items.push({ id, title });
+    seen.add(course.id);
+    items.push(course);
   }
   return items;
 }

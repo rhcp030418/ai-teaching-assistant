@@ -48,6 +48,8 @@ interface Props {
   rounds: Round[];
 }
 
+const MAX_UPLOAD_SIZE = 10 * 1024 * 1024; // 10MB
+
 function AnalysisResult({ analysis }: { analysis: MaterialAnalysis }) {
   const diffColor =
     analysis.difficulty === "상"
@@ -177,6 +179,12 @@ export function MaterialsClient({ courseId, initialMaterials, rounds }: Props) {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    if (file.size > MAX_UPLOAD_SIZE) {
+      setError("파일 크기는 10MB 이하만 가능합니다.");
+      e.target.value = "";
+      return;
+    }
+
     setUploading(true);
     setError(null);
 
@@ -281,7 +289,7 @@ export function MaterialsClient({ courseId, initialMaterials, rounds }: Props) {
             <p className="text-sm text-gray-500">
               {uploading
                 ? "업로드 중..."
-                : "PDF, PPT, TXT 파일을 클릭하여 업로드"}
+                : "PDF, PPT, TXT 파일을 클릭하여 업로드 (10MB 이하)"}
             </p>
             <input
               type="file"

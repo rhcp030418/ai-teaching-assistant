@@ -3,7 +3,7 @@
   "name": "AI Teaching Assistant",
   "version": "1.0.0",
   "description": "e-class 수강 과목에서 강의 피드백을 바로 작성할 수 있는 확장 프로그램",
-  "permissions": ["sidePanel", "activeTab", "storage"],
+  "permissions": ["sidePanel", "activeTab", "storage", "scripting"],
   "host_permissions": ["https://learn.hansung.ac.kr/*", "http://localhost/*"],
   "background": {
     "service_worker": "background.js"

@@ -6,6 +6,8 @@ import path from "node:path";
 import fs from "node:fs/promises";
 import { randomUUID } from "node:crypto";
 
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+
 export async function POST(request: NextRequest) {
   const session = await auth();
   if (!session?.user?.id) {
@@ -24,9 +26,8 @@ export async function POST(request: NextRequest) {
     return Response.json({ error: "파일과 강의 ID가 필요합니다." }, { status: 400 });
   }
 
-  const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
   if (file.size > MAX_FILE_SIZE) {
-    return Response.json({ error: "파일 크기는 50MB 이하여야 합니다." }, { status: 400 });
+    return Response.json({ error: "파일 크기는 10MB 이하만 가능합니다." }, { status: 400 });
   }
 
   // 강의 소유권 검증

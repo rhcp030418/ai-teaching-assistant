@@ -2,6 +2,58 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import crypto from "node:crypto";
 
+type ValidEclassCourse = { id: number; title: string };
+type MatchResult = {
+  course: { id: string; name: string; eclassId: number | null };
+  matchedBy: "eclassId" | "title";
+};
+
+function normalizeCourseTitle(title: string) {
+  return title
+    .replace(/\[[^\]]*\]/g, "")
+    .replace(/\([^)]*\)/g, "")
+    .replace(/\bNEW\b/gi, "")
+    .replace(/[^\p{L}\p{N}]+/gu, "")
+    .toLowerCase();
+}
+
+function isTitleMatch(eclassTitle: string, courseName: string) {
+  const incoming = normalizeCourseTitle(eclassTitle);
+  const registered = normalizeCourseTitle(courseName);
+  if (!incoming || registered.length < 4) return false;
+  return incoming === registered || incoming.startsWith(registered);
+}
+
+async function findCourseForEclass(eclassCourse: ValidEclassCourse): Promise<MatchResult | null> {
+  const byEclassId = await prisma.course.findFirst({
+    where: { eclassId: eclassCourse.id },
+    select: { id: true, name: true, eclassId: true },
+  });
+
+  if (byEclassId) {
+    return { course: byEclassId, matchedBy: "eclassId" };
+  }
+
+  const titleCandidates = await prisma.course.findMany({
+    where: { semester: "2026-1", eclassId: null },
+    select: { id: true, name: true, eclassId: true },
+  });
+
+  const titleMatched = titleCandidates.find((course) =>
+    isTitleMatch(eclassCourse.title, course.name)
+  );
+
+  if (!titleMatched) return null;
+
+  const course = await prisma.course.update({
+    where: { id: titleMatched.id },
+    data: { eclassId: eclassCourse.id },
+    select: { id: true, name: true, eclassId: true },
+  });
+
+  return { course, matchedBy: "title" };
+}
+
 // 크롬 확장에서 학생 정보 + 수강 과목 수신
 // → Student upsert + CourseStudent 등록 + StudentCourseToken 자동 발급
 export async function POST(req: NextRequest) {
@@ -23,71 +75,97 @@ export async function POST(req: NextRequest) {
   }
 
   const validCourses = (courses as unknown[]).filter(
-    (c): c is { id: number; title: string } =>
-      typeof c === "object" && c !== null && typeof (c as { id?: unknown }).id === "number"
+    (c): c is ValidEclassCourse =>
+      typeof c === "object" &&
+      c !== null &&
+      typeof (c as { id?: unknown }).id === "number" &&
+      typeof (c as { title?: unknown }).title === "string"
   );
 
-  // 1. Student upsert
-  const student = await prisma.student.upsert({
-    where: { studentNo: userInfo.studentId },
-    update: {
-      name: userInfo.name,
-      email: userInfo.email || undefined,
-      department: userInfo.department || undefined,
-    },
-    create: {
-      studentNo: userInfo.studentId,
-      name: userInfo.name,
-      email: userInfo.email || null,
-      department: userInfo.department || null,
-    },
-  });
-
-  // 2. e-class 과목 ID로 Course 매칭 + 수강 등록 + 토큰 발급
-  const enrolledCourses: { courseId: string; courseName: string; token: string }[] = [];
-
-  for (const eclassCourse of validCourses) {
-    // eclassId로 매칭되는 과목 찾기
-    const course = await prisma.course.findFirst({
-      where: { eclassId: eclassCourse.id },
-    });
-
-    if (!course) continue; // 매칭 안 되는 과목은 건너뜀
-
-    // CourseStudent upsert
-    await prisma.courseStudent.upsert({
-      where: {
-        courseId_studentId: { courseId: course.id, studentId: student.id },
+  try {
+    // 1. Student upsert
+    const student = await prisma.student.upsert({
+      where: { studentNo: userInfo.studentId },
+      update: {
+        name: userInfo.name,
+        email: userInfo.email || undefined,
+        department: userInfo.department || undefined,
       },
-      update: {},
-      create: { courseId: course.id, studentId: student.id },
-    });
-
-    // StudentCourseToken upsert
-    const tokenRecord = await prisma.studentCourseToken.upsert({
-      where: {
-        courseId_studentId: { courseId: course.id, studentId: student.id },
-      },
-      update: {},
       create: {
-        token: crypto.randomBytes(16).toString("hex"),
-        courseId: course.id,
-        studentId: student.id,
+        studentNo: userInfo.studentId,
+        name: userInfo.name,
+        email: userInfo.email || null,
+        department: userInfo.department || null,
       },
     });
 
-    const token = tokenRecord.token;
+    // 2. e-class 과목 ID로 Course 매칭 + 수강 등록 + 토큰 발급
+    const enrolledCourses: {
+      courseId: string;
+      courseName: string;
+      token: string;
+      sourceEclassId: number;
+      matchedBy: "eclassId" | "title";
+    }[] = [];
+    const unmatched: { eclassId: number; title: string }[] = [];
 
-    enrolledCourses.push({
-      courseId: course.id,
-      courseName: course.name,
-      token,
+    for (const eclassCourse of validCourses) {
+      const match = await findCourseForEclass(eclassCourse);
+
+      if (!match) {
+        unmatched.push({ eclassId: eclassCourse.id, title: eclassCourse.title });
+        continue;
+      }
+
+      const { course, matchedBy } = match;
+
+      // CourseStudent upsert
+      await prisma.courseStudent.upsert({
+        where: {
+          courseId_studentId: { courseId: course.id, studentId: student.id },
+        },
+        update: {},
+        create: { courseId: course.id, studentId: student.id },
+      });
+
+      // StudentCourseToken upsert
+      const tokenRecord = await prisma.studentCourseToken.upsert({
+        where: {
+          courseId_studentId: { courseId: course.id, studentId: student.id },
+        },
+        update: {},
+        create: {
+          token: crypto.randomBytes(16).toString("hex"),
+          courseId: course.id,
+          studentId: student.id,
+        },
+      });
+
+      const token = tokenRecord.token;
+
+      enrolledCourses.push({
+        courseId: course.id,
+        courseName: course.name,
+        token,
+        sourceEclassId: eclassCourse.id,
+        matchedBy,
+      });
+    }
+
+    return NextResponse.json({
+      success: true,
+      studentId: student.id,
+      enrolledCourses,
+      unmatched,
     });
+  } catch (err) {
+    console.error("[eclass-sync] failed", err);
+    return NextResponse.json(
+      {
+        error:
+          "서버 동기화 중 DB 오류가 발생했습니다. 로컬 개발 환경이면 npx prisma db push와 seed 실행 여부를 확인해주세요.",
+      },
+      { status: 500 }
+    );
   }
-
-  return NextResponse.json({
-    success: true,
-    studentId: student.id,
-    enrolledCourses,
-  });
 }
