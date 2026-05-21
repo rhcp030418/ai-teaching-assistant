@@ -14,10 +14,9 @@ function parseFormData(formData: FormData) {
   const assignment = formData.get("assignment") ? Number(formData.get("assignment")) : null;
   const practice = formData.get("practice") ? Number(formData.get("practice")) : null;
   const comment = (formData.get("comment") as string) || null;
-  const freeText = (formData.get("freeText") as string) || null;
   const forceSubmit = formData.get("forceSubmit") === "true";
 
-  return { courseId, token, speed, comprehension, communication, interest, assignment, practice, comment, freeText, forceSubmit };
+  return { courseId, token, speed, comprehension, communication, interest, assignment, practice, comment, forceSubmit };
 }
 
 const VALID_SPEED = ["fast", "moderate", "slow"] as const;
@@ -65,7 +64,6 @@ function feedbackData(data: ReturnType<typeof parseFormData>) {
     assignment: data.assignment,
     practice: data.practice,
     comment: data.comment,
-    freeText: data.freeText,
   };
 }
 

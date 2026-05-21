@@ -56,7 +56,6 @@ model Feedback {
   commentCategory     String?  // "학습" | "감정" | "혼합"
   commentFilterReason String?  // AI 분류 근거
   commentHasProfanity Boolean  @default(false) // 원문에 비속어/욕설 포함 여부 (true이면 원문 보기 숨김)
-  freeText            String?  // 학생 자유 서술 (AI 필터링 없이 원문 그대로 저장)
   createdAt           DateTime @default(now())
 
   course Course        @relation(fields: [courseId], references: [id])

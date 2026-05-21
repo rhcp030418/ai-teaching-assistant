@@ -78,7 +78,7 @@ ai-teaching-assistant/
 │   │       ├── course/[courseId]/
 │   │       │   ├── page.tsx               # Course dashboard — KPI cards + 3-tab layout + AI chat side panel
 │   │       │   ├── analysis-tabs.tsx      # 3-tab layout: 피드백 현황 / 심층 분석 / 비교 분석 (client)
-│   │       │   ├── feedback-analysis.tsx  # Analysis visualization + radar chart + AI 한줄평 (AiSummaryLine) + freeText section (client)
+│   │       │   ├── feedback-analysis.tsx  # Analysis visualization + radar chart + AI 한줄평 (AiSummaryLine) (client)
 │   │       │   ├── radar-chart.tsx        # Dynamic polygon radar chart (SVG, 4~6 axes based on course settings)
 │   │       │   ├── benchmark.tsx          # Trend comparison component (client)
 │   │       │   ├── improvement-cases.tsx  # Cross-semester improvement cases (client)
@@ -176,7 +176,6 @@ chrome-extension/               # Chrome Extension (ai-teaching-assistant 하위
 | Scanned PDF OCR | Done | tesseract.js + unpdf for image-based PDFs (Korean + English) |
 | Cause-connection analysis | Done | Cross-analyze feedback + lecture materials to estimate possible causes |
 | Tone correction | Done | Input text -> detect authoritative expressions -> suggest softer alternatives |
-| Student free-text input | Done | 피드백 폼에 자유 서술 섹션 추가 (AI 필터링 없이 원문 그대로 전달, Feedback.freeText 필드) |
 
 ### System Features
 
@@ -230,7 +229,7 @@ Default models per provider:
 ```prisma
 Professor          -> id, name, email, password(bcrypt), courses[]
 Course             -> id, name, semester, category(default:"교양"), studentCount?, eclassId?, hasAssignment(default:false), hasPractice(default:false), aiSummary?(AI 한줄평 캐시), professorId, feedbacks[], feedbackTokens[], lectureMaterials[], feedbackRounds[], courseStudents[], studentCourseTokens[], submissionLogs[], improvementNotes[]
-Feedback           -> id, courseId, roundId?, speed, comprehension, communication(1-5), interest?(1-5), assignment?(1-5), practice?(1-5), comment?, freeText?(자유 서술 원문), filteredComment?, commentCategory?, commentFilterReason?, commentHasProfanity(default:false)
+Feedback           -> id, courseId, roundId?, speed, comprehension, communication(1-5), interest?(1-5), assignment?(1-5), practice?(1-5), comment?, filteredComment?, commentCategory?, commentFilterReason?, commentHasProfanity(default:false)
 FeedbackToken      -> id, token(unique), courseId, used(default:false)
 LectureMaterial    -> id, courseId, roundId?(연결 주차, null=미지정), fileName, filePath, analysis?(JSON), analysisUpdatedAt?(마지막 AI 분석 시각, 자동 재분석 staleness 체크용)
 ImprovementNote    -> id, courseId, roundId?(null=학기레벨), category, axis(comprehension|speed|communication|interest), changeDelta, note (교수가 직접 작성한 개선 노트)

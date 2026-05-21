@@ -401,7 +401,6 @@ model Feedback {
   assignment            Int?           // 과제 적절성 1~5
   practice              Int?           // 실습/예시 충분도 1~5
   comment               String?
-  freeText              String?        // 학생 자유 서술 원문 (AI 필터링 없음)
   filteredComment       String?
   commentCategory       String?
   commentFilterReason   String?

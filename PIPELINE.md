@@ -119,8 +119,7 @@
 │     ├── 강의 흥미도  ★★★★★ (1~5)  ← 항상 표시                     │
 │     ├── 과제 적절성  ★★★★★ (1~5)  ← hasAssignment=true인 강의만   │
 │     ├── 실습/예시    ★★★★★ (1~5)  ← hasPractice=true인 강의만     │
-│     ├── 추가 의견    [선택, 500자 — 코멘트용 (AI 분류)]
-     ├── 자유 서술    [선택, 500자 — freeText 필드, AI 필터링 없이 원문 전달]                       │
+│     ├── 추가 의견    [선택, 500자 — 코멘트용 (AI 분류)]              │
 │     └── ⚠️ 안내 박스                                                │
 │         "한 번 제출하면 익명성 보장을 위해 수정할 수 없습니다.       │
 │          신중하게 작성해주세요."                                     │
@@ -367,7 +366,7 @@ DB: Course.findMany({ professorId, semester? })
 └─────────────────────────────────────────────────────────────────┘
 
 위 컴포넌트들은 3탭으로 구성됨 (analysis-tabs.tsx):
-  탭1 "피드백 현황": FeedbackAnalysis (레이더 차트, AI 한줄평, 3축 막대, 코멘트, freeText) + TrendAnalysis
+  탭1 "피드백 현황": FeedbackAnalysis (레이더 차트, AI 한줄평, 3축 막대, 코멘트) + TrendAnalysis
   탭2 "심층 분석":   CauseAnalysis, ImprovementRoadmap (피드백 3건 이상일 때만 표시, 미만이면 안내 문구)
   탭3 "비교 분석":   Benchmark, ImprovementCases
   사이드바:          RoundManager, TokenManager, RoundReports (탭 외부 우측 380px 고정)
@@ -542,7 +541,7 @@ Course             id · name · semester("2026-1") · category("컴퓨터과학
                    · eclassId?(e-class 연동) · hasAssignment(def:false) · hasPractice(def:false)
                    · aiSummary?(AI 한줄평 캐시) · professorId(FK) · createdAt
 Feedback           id · courseId(FK) · roundId?(FK) · speed · comprehension · communication(1~5)
-                   · interest? · assignment? · practice? · comment? · freeText?(자유 서술 원문)
+                   · interest? · assignment? · practice? · comment?
                    · filteredComment? · commentCategory? · commentFilterReason?
                    · commentHasProfanity(def:false) · createdAt
 FeedbackToken      id · token(unique) · courseId(FK) · used(bool) · createdAt
@@ -616,7 +615,7 @@ ai-teaching-assistant/
 │   │   │   └── course/[courseId]/
 │   │   │       ├── page.tsx               # 강의 대시보드 — KPI + 3탭 레이아웃 + AI 채팅 사이드패널
 │   │   │       ├── analysis-tabs.tsx      # 3탭 레이아웃 (피드백 현황/심층 분석/비교 분석)
-│   │   │       ├── feedback-analysis.tsx  # 3축 + 레이더 차트 + AI 한줄평 + 코멘트 + freeText
+│   │   │       ├── feedback-analysis.tsx  # 3축 + 레이더 차트 + AI 한줄평 + 코멘트
 │   │   │       ├── radar-chart.tsx        # 동적 다각형 레이더 차트 (SVG, 4~6각형)
 │   │   │       ├── cause-analysis.tsx     # 원인 분석
 │   │   │       ├── trend-analysis.tsx     # 주차별 트렌드 SVG 라인 차트 + AI 내러티브
