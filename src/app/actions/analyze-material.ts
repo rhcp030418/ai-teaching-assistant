@@ -123,7 +123,8 @@ async function analyzeMaterialCore(
   let text: string;
   try {
     text = await extractFileText(material.filePath);
-  } catch {
+  } catch (err) {
+    console.error("[analyzeMaterial] 텍스트 추출 실패:", material.filePath, err);
     return { success: false, error: "파일 텍스트 추출에 실패했습니다." };
   }
 
