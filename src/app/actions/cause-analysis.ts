@@ -5,6 +5,7 @@ import { auth } from "@/lib/auth";
 import { chatWithAI } from "@/lib/ai";
 import { parseAIJson } from "@/lib/parse-ai-json";
 import { computeFeedbackCounts } from "@/lib/feedback-stats";
+import { TEACHING_TOOLBOX } from "@/lib/teaching-methods";
 import {
   FEEDBACK_MIN_COUNT,
   COMM_AVG_THRESHOLD,
@@ -157,10 +158,15 @@ JSON 응답 전에 반드시 다음 분석 단계를 거치세요 (응답에는 
 - actionItems는 causes 순서대로 1:1 대응, "다음 수업에서 ~" 형식으로 언제·무엇을·얼마나 명시
 - 마크다운 문법(**, *, -, #, \`\`\` 등) 절대 사용 금지
 
+${TEACHING_TOOLBOX}
+
+각 actionItems는 위 도구상자에서 문제에 맞는 기법을 골라 구체적 실천 행동으로 작성하고, 기법 이름을 괄호로 표기하세요.
+
 자가 검증 (JSON 작성 전 내부 점검, 응답에는 포함하지 않음):
 - observation에 수치(%)가 포함되어 있는가?
 - possibleCause에 학생 의견 인용이나 반복 패턴이 언급되어 있는가?
 - actionItems가 "다음 수업에서 ~" 형식으로, 언제·무엇을·얼마나 명시되어 있는가?
+- actionItems가 [검증된 교수법 도구상자]의 기법에 기반하며 기법명이 괄호로 표기되어 있는가?
 
 --- 좋은 출력 예시 ---
 {
@@ -170,7 +176,7 @@ JSON 응답 전에 반드시 다음 분석 단계를 거치세요 (응답에는 
     "possibleCause": "5명의 학생이 '예시가 없어서 이해가 안 된다'고 언급하였으며, 강의자료 분석에서도 예시 충분도가 '낮음'으로 평가된 점을 볼 때, 이론 중심의 설명 방식이 이해도를 저하시키고 있을 가능성이 높습니다.",
     "materialEvidence": "업로드된 강의자료의 예시 충분도 분석 결과: '낮음' (슬라이드 20장 중 예시 포함 2장)"
   }],
-  "actionItems": ["다음 수업 도입부 5분 동안, 지난 시간의 핵심 개념 하나를 실생활 사례 2가지와 함께 짧게 복습합니다. 이후 본 강의에서도 개념 설명 후 반드시 예시 1개를 제시하는 루틴을 유지하세요."]
+  "actionItems": ["다음 수업 도입부 5분 동안, 지난 시간의 핵심 개념 하나를 학생이 먼저 떠올려 적게 한 뒤 실생활 사례 2가지로 복습합니다 (인출 연습/retrieval practice). 이후 본 강의에서도 추상적 정의보다 예시를 먼저 제시하고 거기서 개념을 끌어내는 루틴을 유지하세요 (구체적 예시 우선/concrete examples)."]
 }
 
 --- 나쁜 출력 예시 (금지) ---

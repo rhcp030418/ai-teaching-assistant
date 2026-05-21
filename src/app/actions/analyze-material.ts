@@ -11,6 +11,7 @@ import { parseAIJson } from "@/lib/parse-ai-json";
 import { computeFeedbackCounts } from "@/lib/feedback-stats";
 import { extractFileText, smartChunk } from "@/lib/file-extraction";
 import { UPLOADS_DIR } from "@/lib/uploads";
+import { TEACHING_TOOLBOX } from "@/lib/teaching-methods";
 
 export interface ImprovementDetail {
   structure: string | null;
@@ -95,7 +96,11 @@ const SYSTEM_PROMPT = `당신은 대학 강의자료 분석 전문가입니다. 
     "examples": "예시·실습·시각화 보강 제안 (해당 없으면 null)",
     "pedagogy": "설명 방식·강조점·개념 연결 개선 제안 (해당 없으면 null)"
   }
-}`;
+}
+
+${TEACHING_TOOLBOX}
+
+improvements의 structure·examples·pedagogy 제안은 위 도구상자에서 자료의 문제에 맞는 기법을 골라 구체적 실천 행동으로 작성하고, 기법 이름을 괄호로 표기하세요. 막연한 조언("예시를 늘리세요")은 금지합니다.`;
 
 // ─── 내부 분석 함수 (인증 없음 — 호출부에서 소유권 보장) ─────────────────────────
 

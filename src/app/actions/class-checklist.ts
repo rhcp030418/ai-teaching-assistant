@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import { chatWithAI } from "@/lib/ai";
 import { parseAIJson } from "@/lib/parse-ai-json";
+import { TEACHING_TOOLBOX } from "@/lib/teaching-methods";
 
 export interface ChecklistItem {
   priority: "urgent" | "important" | "optional";
@@ -197,6 +198,10 @@ JSON 응답 전 반드시 아래 3단계를 거치세요 (응답에는 포함하
 - encouragement: 잘 된 지표 수치를 언급하는 격려 1문장
 - 마크다운 문법(**, *, -, #) 절대 사용 금지
 
+${TEACHING_TOOLBOX}
+
+각 item의 action은 위 도구상자에서 문제에 맞는 기법을 골라 구체적 실천 행동으로 작성하고, 기법 이름을 괄호로 표기하세요.
+
 --- 좋은 예시 ---
 {
   "roundLabel": "4주차",
@@ -204,7 +209,7 @@ JSON 응답 전 반드시 아래 3단계를 거치세요 (응답에는 포함하
     {
       "priority": "urgent",
       "category": "content",
-      "action": "다음 수업 전에 핵심 개념 3개에 대해 실생활 예시를 각 2개씩 준비하세요.",
+      "action": "다음 수업 전에 핵심 개념 3개에 대해, 추상적 정의보다 먼저 제시할 실생활 예시를 각 2개씩 준비하세요 (구체적 예시 우선/concrete examples). 각 개념 설명 직후 객관식 개념 질문 1개로 거수 응답을 받아 이해도를 즉석 확인하세요 (개념점검질문/ConcepTest).",
       "reason": "이해도 높음 32%(기준 50% 미달)이며, 강의자료 예시 충분도가 '부족'으로 분석된 점이 일치합니다. 학생 3명이 '예시가 없어 이해가 안 된다'고 언급했습니다."
     }
   ],
