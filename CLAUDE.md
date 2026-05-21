@@ -69,6 +69,7 @@
   - Server Action: `src/app/actions/trend-analysis.ts`의 `generateTrendNarrative(courseId, rounds[])`
   - 컴포넌트: `trend-analysis.tsx` — SVG 차트(역사 데이터 실선, 예측 점선) + AI 내러티브 박스
 - AI 채팅: 교수가 강의 데이터를 기반으로 AI와 자유 대화. `/api/ai-chat/[courseId]` Route Handler (SSE 스트리밍, 유저당 20회/분 레이트 리밋). 컴포넌트: chat-side-panel.tsx(플로팅 오버레이) + ai-chat.tsx + use-ai-chat.ts 훅(SSE fetch, 히스토리, 재시도, 복사, 내보내기). 추천 질문은 지표 기반으로 page.tsx의 buildChatSuggestions()가 동적 생성
+- 검증된 교수법 도구상자: 개선 제안을 생성하는 4개 프롬프트(improvement-roadmap, class-checklist, cause-analysis, analyze-material)는 `src/lib/teaching-methods.ts`의 `TEACHING_TOOLBOX`를 system 프롬프트에 주입한다. 능동학습/동료 교수법/인출 연습/형성평가 등 교육학·인지과학 연구 기반 기법을 5개 지표 문제에 매핑한 것으로, AI가 막연한 조언 대신 "문제 → 검증된 기법의 구체적 행동(기법명 괄호 표기)"으로 작성하도록 유도. 새 개선 제안 프롬프트 추가 시 이 상수를 함께 주입할 것
 - AI 개선 로드맵: 피드백 기반 우선순위별 개선 계획 (high/medium/low impact, area/problem/action/evidence + weeklyGoal + summary). Server Action: `src/app/actions/improvement-roadmap.ts`, 컴포넌트: improvement-roadmap.tsx (탭2 "심층 분석")
 - AI 수업 체크리스트: 종료된 라운드별 행동 항목 (urgent/important/optional 우선순위, content/pace/communication/material 카테고리 + 격려 메시지). Server Action: `src/app/actions/class-checklist.ts`의 `generateClassChecklist(courseId, roundId)`, UI는 round-reports.tsx 안에서 라운드별 [체크리스트 생성] 버튼
 - 강의자료 자동 재분석: 종료된 라운드 있으면 페이지 로드 후 `triggerMaterialReanalysisIfNeeded(courseId)`로 백그라운드 재분석 (LectureMaterial.analysisUpdatedAt staleness 기준). 강의자료는 roundId로 주차 연결 가능
