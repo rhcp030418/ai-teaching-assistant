@@ -20,7 +20,6 @@ interface CommentFeedback {
   commentCategory: string | null;
   commentFilterReason: string | null;
   commentHasProfanity: boolean;
-  freeText: string | null;
   roundId?: string | null;
 }
 

@@ -45,7 +45,6 @@
 - 원인 연결 분석: 피드백 + 강의자료 교차 분석으로 원인 추정 (cause-analysis.ts/tsx)
 - Course 모델에 studentCount 필드 있음 (응답률 % 표시에 사용)
 - Course 모델에 aiSummary String? 있음 (AI 한줄평 DB 캐시 — 종료된 라운드 있으면 after()로 백그라운드 사전 계산, radar-summary.ts)
-- Feedback 모델에 freeText String? 있음 (학생 자유 서술 원문 — AI 필터링 없음, 대시보드에서 amber 배경으로 별도 표시)
 - 공통 통계 유틸: src/lib/feedback-stats.ts (벤치마크 + 개선 사례에서 공유)
 - 코멘트 AI 필터링: 학생 제출 시 백그라운드 처리 → DB 저장 (comment-classifier.ts)
 - Feedback 모델에 filteredComment, commentCategory, commentFilterReason 필드 있음
@@ -78,7 +77,7 @@
 - 대시보드 레이아웃: max-w-[1440px] + px-8 (기존 max-w-6xl + px-4에서 확장)
 - 코스 페이지 구조: 상단 KPI 4칸(총응답/소통만족도/이해도높음/속도적절) → 2컬럼 그리드(LEFT:3탭 분석 | RIGHT:관리 사이드바 380px) + 우측 하단 AI 채팅 플로팅(ChatSidePanel)
   - LEFT는 3탭 (analysis-tabs.tsx, `feedbackTab`/`deepTab`/`compareTab` 슬롯에 page.tsx에서 컴포넌트 주입):
-    - 탭1 "피드백 현황": FeedbackAnalysis(hideTitle=true, AI한줄평+레이더차트+3축막대+코멘트+freeText) + TrendAnalysis
+    - 탭1 "피드백 현황": FeedbackAnalysis(hideTitle=true, AI한줄평+레이더차트+3축막대+코멘트) + TrendAnalysis
     - 탭2 "심층 분석": CauseAnalysis + ImprovementRoadmapPanel (피드백 3건 이상일 때만, 미만이면 안내 문구)
     - 탭3 "비교 분석": Benchmark + ImprovementCases
   - RIGHT: RoundManager, TokenManager, RoundReports (RoundReports 안에서 종료된 라운드별 ClassChecklist 생성 제공)

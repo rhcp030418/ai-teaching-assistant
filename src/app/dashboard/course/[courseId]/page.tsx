@@ -148,20 +148,18 @@ export default async function CourseDashboardPage(
     commentCategory: string | null;
     commentFilterReason: string | null;
     commentHasProfanity: boolean;
-    freeText: string | null;
     roundId: string | null;
   }[] = [];
 
   for (const fb of course.feedbacks) {
     communicationDist[fb.communication - 1]++;
-    if (fb.comment || fb.freeText) {
+    if (fb.comment) {
       commentFeedbacks.push({
         comment: fb.comment,
         filteredComment: fb.filteredComment,
         commentCategory: fb.commentCategory,
         commentFilterReason: fb.commentFilterReason,
         commentHasProfanity: fb.commentHasProfanity,
-        freeText: fb.freeText,
         roundId: fb.roundId,
       });
     }
