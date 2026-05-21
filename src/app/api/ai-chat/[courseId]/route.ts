@@ -39,6 +39,12 @@ function emitDone() {
   return encoder.encode("data: [DONE]\n\n");
 }
 
+// 시스템 프롬프트에서 금지한 마크다운 기호 제거 — 경량 모델이 규칙을 어겨도 화면엔 깔끔하게 표시.
+// 문자 단위 치환이라 토큰이 청크 경계에서 쪼개져도 안전하다.
+function sanitizeMarkdown(text: string): string {
+  return text.replace(/[*`#]/g, "");
+}
+
 function errorStream(message: string): ReadableStream<Uint8Array> {
   return new ReadableStream({
     start(controller) {
@@ -105,7 +111,7 @@ async function streamOpenAICompatible(
             try {
               const json = JSON.parse(data);
               const token = json.choices?.[0]?.delta?.content;
-              if (token) controller.enqueue(emitToken(token));
+              if (token) controller.enqueue(emitToken(sanitizeMarkdown(token)));
             } catch { /* 불완전한 JSON 청크 무시 */ }
           }
         }
@@ -175,7 +181,7 @@ async function streamClaude(
             try {
               const json = JSON.parse(data);
               if (json.type === "content_block_delta" && json.delta?.type === "text_delta") {
-                controller.enqueue(emitToken(json.delta.text));
+                controller.enqueue(emitToken(sanitizeMarkdown(json.delta.text)));
               } else if (json.type === "message_stop") {
                 break outer;
               }
@@ -209,7 +215,13 @@ async function streamGemini(
 
   const body: Record<string, unknown> = {
     contents: chatMessages,
-    generationConfig: { maxOutputTokens: 2048 },
+    generationConfig: {
+      maxOutputTokens: 4096,
+      temperature: 0.4,
+      // 경량 모델이 사고 과정(thinking)을 답변 본문에 흘리지 않도록 비활성화.
+      // Flash 계열은 budget 0으로 사고를 끌 수 있다.
+      thinkingConfig: { thinkingBudget: 0 },
+    },
   };
   if (systemMsg) {
     body.systemInstruction = { parts: [{ text: systemMsg.content }] };
@@ -250,8 +262,14 @@ async function streamGemini(
             const data = line.slice(6).trim();
             try {
               const json = JSON.parse(data);
-              const text = json.candidates?.[0]?.content?.parts?.[0]?.text;
-              if (text) controller.enqueue(emitToken(text));
+              const parts = json.candidates?.[0]?.content?.parts;
+              if (!Array.isArray(parts)) continue;
+              for (const part of parts) {
+                if (part?.thought) continue; // 사고(thought) 요약 파트는 화면에 표시하지 않음
+                if (typeof part?.text === "string" && part.text) {
+                  controller.enqueue(emitToken(sanitizeMarkdown(part.text)));
+                }
+              }
             } catch { /* 불완전한 JSON 청크 무시 */ }
           }
         }
@@ -508,6 +526,12 @@ export async function POST(
   }
 
   const systemPrompt = `당신은 대학 강의 분석 AI 어시스턴트입니다. 교수님의 강의 피드백 데이터를 기반으로 구체적이고 실질적인 조언을 제공합니다.
+
+[가장 중요한 출력 규칙 — 반드시 지키세요]
+- 교수님께 보여드릴 "최종 답변"만 출력하세요.
+- 당신의 생각 과정, 초안, 자기 점검, 작업 메모를 절대 출력하지 마세요. 다음과 같은 표현은 금지입니다: "Wait", "잠깐", "the instruction says", "I will include this", "~를 포함해야겠다", "6. Review" 같은 골격/메타 코멘트.
+- 답변을 영어 단어로 시작하거나, 따옴표로 시스템 지시문을 인용하지 마세요.
+- *, **, #, >, \` 같은 마크다운 기호를 절대 사용하지 마세요. 숫자 목록(1. 2. 3.)과 줄바꿈만 허용됩니다.
 
 [강의 데이터]
 ${contextParts.join("\n")}
