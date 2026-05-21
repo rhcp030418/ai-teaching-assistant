@@ -1,13 +1,16 @@
 "use server";
 
 import path from "node:path";
+import fs from "node:fs/promises";
 import { after } from "next/server";
 import { prisma } from "@/lib/db";
 import { auth } from "@/lib/auth";
+import { isDemoUser, DEMO_READ_ONLY } from "@/lib/auth-utils";
 import { chatWithAI } from "@/lib/ai";
 import { parseAIJson } from "@/lib/parse-ai-json";
 import { computeFeedbackCounts } from "@/lib/feedback-stats";
 import { extractFileText, smartChunk } from "@/lib/file-extraction";
+import { UPLOADS_DIR } from "@/lib/uploads";
 
 export interface ImprovementDetail {
   structure: string | null;
@@ -199,6 +202,33 @@ export async function analyzeMaterial(
   if (ownership.course.professorId !== session.user.id) return { success: false, error: "권한이 없습니다." };
 
   return analyzeMaterialCore(materialId, force);
+}
+
+// ─── 강의자료 삭제: 인증 + 소유권 검증 후 DB 행 + 업로드 파일 제거 ──────────────────
+
+export async function deleteMaterial(
+  materialId: string,
+): Promise<{ success: true } | { success: false; error: string }> {
+  const session = await auth();
+  if (!session?.user?.id) return { success: false, error: "인증 필요" };
+  if (isDemoUser(session.user.email)) return DEMO_READ_ONLY;
+
+  const material = await prisma.lectureMaterial.findUnique({
+    where: { id: materialId },
+    include: { course: { select: { professorId: true } } },
+  });
+  if (!material) return { success: false, error: "자료를 찾을 수 없습니다." };
+  if (material.course.professorId !== session.user.id) {
+    return { success: false, error: "권한이 없습니다." };
+  }
+
+  // DB 행을 먼저 삭제(역순이면 행은 있는데 파일은 없는 상태가 됨).
+  await prisma.lectureMaterial.delete({ where: { id: materialId } });
+
+  // 파일 정리는 실패해도 무시 — 최악의 경우 고아 파일만 남는다.
+  await fs.unlink(path.join(UPLOADS_DIR, material.filePath)).catch(() => {});
+
+  return { success: true };
 }
 
 // ─── 자동 재분석 트리거: 라운드 종료 후 피드백이 쌓인 자료 백그라운드 재분석 ────────

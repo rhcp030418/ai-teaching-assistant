@@ -29,7 +29,11 @@ ai-teaching-assistant/
 ├── prisma/
 │   ├── schema.prisma          # DB schema definition
 │   ├── migrations/            # Migration files
-│   └── seed.ts                # Demo data seeder
+│   ├── seed.ts                # Demo data seeder (local)
+│   ├── seed-prod.ts           # Production data seeder (Railway 배포 시 사용)
+│   ├── add-user.ts            # 개별 교수/강의/학생 등록 예시 스크립트 (DB_GUIDE.md 참고)
+│   ├── clear-rounds.ts        # 라운드 초기화 스크립트
+│   └── add-demo-comparisons.ts / add-demo-community.ts # 데모 데이터 보강 스크립트
 ├── uploads/                   # Uploaded lecture material files
 ├── dev.db                     # SQLite database file (project root, NOT prisma/)
 ├── src/
@@ -57,9 +61,9 @@ ai-teaching-assistant/
 │   │   │   ├── class-checklist.ts  # Server Action: AI per-round class checklist (urgent/important/optional, 4 categories)
 │   │   │   └── improvement-roadmap.ts # Server Action: AI improvement roadmap — prioritized actions (high/medium/low impact), weeklyGoal, summary
 │   │   ├── api/
-│   │   │   ├── upload/route.ts            # Route Handler: file upload (auth protected)
+│   │   │   ├── upload/route.ts            # Route Handler: file upload (auth protected, 10MB limit, path-traversal guard)
 │   │   │   ├── ai-chat/[courseId]/route.ts # Route Handler: streaming AI chat (SSE, rate limit 20/min/user, auth protected)
-│   │   │   ├── eclass-sync/route.ts       # Route Handler: Chrome ext → Student upsert + CourseStudent + token
+│   │   │   ├── eclass-sync/route.ts       # Route Handler: Chrome ext → Student upsert + CourseStudent + token (eclassId 매칭 → 과목명 매칭 폴백 → unmatched 반환)
 │   │   │   ├── student-courses/route.ts   # Route Handler: student courses + active rounds + submission status
 │   │   │   └── auth/[...nextauth]/route.ts # NextAuth route handler
 │   │   ├── feedback/
@@ -107,6 +111,7 @@ ai-teaching-assistant/
 │       ├── constants.ts       # Shared thresholds + limits (FEEDBACK_MIN_COUNT, COMM_AVG_THRESHOLD, etc.)
 │       ├── file-extraction.ts # PDF text extraction + OCR fallback (extracted from analyze-material.ts)
 │       ├── parse-ai-json.ts   # Safe AI JSON parser (strips markdown fences, extracts first valid JSON block)
+│       ├── uploads.ts         # UPLOADS_DIR resolver (env-overridable for persistent volume) + path-traversal guard
 │       ├── utils.ts           # shadcn utility + calcResponseRate
 │       └── ai/
 │           ├── index.ts       # AI entry point — reads .env config
@@ -120,16 +125,18 @@ ai-teaching-assistant/
 │               ├── grok.ts    # xAI Grok adapter (via factory)
 │               └── ollama.ts  # Local AI adapter (via factory)
 ├── prisma.config.ts
+├── railway.toml               # Railway 배포 설정 (build/deploy 명령, seed-prod.ts 사용)
+├── scripts/                   # 보조 스크립트 (강의자료 PDF 생성 Python, AI 한줄평 캐시 리셋/시드 등)
 ├── .env                       # DB URL + AI provider config + AUTH_SECRET
 └── package.json
 
-../chrome-extension/            # Chrome Extension (별도 프로젝트, ai-teaching-assistant 형제 디렉토리)
+chrome-extension/               # Chrome Extension (ai-teaching-assistant 하위 디렉토리)
 ├── manifest.json               # Manifest V3
-├── content.js                  # e-class DOM scraping (Content Script)
+├── content.js                  # e-class DOM scraping (Content Script, 후보 셀렉터 다중 폴백)
 ├── sidepanel.html              # Side panel UI
-├── sidepanel.js                # Side panel logic
+├── sidepanel.js                # Side panel logic (unmatched 과목 경고 표시)
 ├── background.js               # Service worker
-└── icons/                      # Extension icons
+└── icons/                      # Extension icons (16/48/128)
 ```
 
 ## Features & Implementation Status
@@ -161,11 +168,11 @@ ai-teaching-assistant/
 | Token link management | Done | Generate N tokens, view stats (total/used/unused), copy all links |
 | Benchmark comparison | Done | Compare against same-category avg, semester avg, prev semester avg, percentile rank (anonymous) |
 | Weekly trend analysis | Done | SVG line chart (comprehension/speed/communication over rounds, ≥2 closed). "AI 분석" button → Claude narrative + next-round prediction (≥3 rounds). Historical lines + dashed prediction extension |
-| Course dashboard tab layout | Done | 3-tab layout via analysis-tabs.tsx: "피드백 현황" (FeedbackAnalysis), "심층 분석" (TrendAnalysis, CauseAnalysis, ImprovementRoadmap), "비교 분석" (Benchmark, ImprovementCases). Right sidebar: RoundManager, TokenManager, RoundReports |
+| Course dashboard tab layout | Done | 3-tab layout via analysis-tabs.tsx: "피드백 현황" (FeedbackAnalysis + TrendAnalysis), "심층 분석" (CauseAnalysis + ImprovementRoadmap, 피드백 3건 이상일 때만), "비교 분석" (Benchmark + ImprovementCases). Right sidebar: RoundManager, TokenManager, RoundReports (종료된 라운드별 ClassChecklist 포함). ChatSidePanel은 우측 하단 플로팅 |
 | AI Chat | Done | Streaming AI chat for professors (SSE via /api/ai-chat/[courseId]). Rate limited 20/min per user. Dynamic suggested questions built from course metrics. Message history, copy, export, retry. Side panel overlay (chat-side-panel.tsx) |
 | Improvement Roadmap | Done | AI generates prioritized improvement plan: ranked actions with area/problem/action/evidence, impact level (high/medium/low), weekly goal, summary |
-| Class Checklist | Done | AI generates per-round action checklist: items with priority (urgent/important/optional), category (content/pace/communication/material), action, reason, plus encouragement message |
-| Lecture material analysis | Done | PDF/PPT/TXT upload (auth+ownership check), AI analysis (PDF: unpdf 텍스트 추출 → 짧으면 OCR 폴백) |
+| Class Checklist | Done | AI generates per-round action checklist: items with priority (urgent/important/optional), category (content/pace/communication/material), action, reason, plus encouragement message. 종료된 라운드별로 round-reports.tsx 사이드바에서 [체크리스트 생성] 버튼으로 호출 |
+| Lecture material analysis | Done | PDF/PPT/TXT upload (auth+ownership check, 10MB 제한), AI analysis (PDF: unpdf 텍스트 추출 → 짧으면 OCR 폴백). 강의자료는 라운드(roundId)에 연결 가능, 종료된 라운드 있으면 staleness 기준 백그라운드 자동 재분석 (triggerMaterialReanalysisIfNeeded) |
 | Scanned PDF OCR | Done | tesseract.js + unpdf for image-based PDFs (Korean + English) |
 | Cause-connection analysis | Done | Cross-analyze feedback + lecture materials to estimate possible causes |
 | Tone correction | Done | Input text -> detect authoritative expressions -> suggest softer alternatives |
@@ -182,7 +189,7 @@ ai-teaching-assistant/
 | Comment AI filter (background) | Done | On submit: save immediately, classify in background (학습/감정/혼합), store result in DB. Dashboard shows only classified 학습/혼합 comments (감정 removed, unclassified hidden until AI completes). AI failure → commentCategory=null (hidden) |
 | Student system + e-class sync | Done | Student, CourseStudent, FeedbackRound, StudentCourseToken, SubmissionLog models. /api/eclass-sync, /api/student-courses API endpoints |
 | Chrome extension | Done | Manifest V3, Content Script (e-class DOM scraping), Side Panel UI, Background service worker. Separate project (chrome-extension/) |
-| Demo data seeding | Done | 12 professors, 30 courses (3 semesters, 4 categories), 623 feedbacks (incl. abusive samples), 4 improvement cases, 10 students, 20 course enrollments, 20 student tokens, 14 feedback rounds (인공지능 개론 8주차 + 데이터베이스 6주차, 3월 3일 기준), 8 improvement notes (교양/경영·경제/컴퓨터과학) |
+| Demo data seeding | Done | 12 professors, 30 courses (3 semesters, 4 categories), 646 feedbacks (인공지능 개론·데이터베이스 상세 피드백 + 나머지 랜덤, abusive/감정 samples 포함), 4 improvement cases, 10 students, 20 course enrollments, 20 student tokens, 14 feedback rounds (인공지능 개론 8주차 + 데이터베이스 6주차, 3월 3일 기준), 8 improvement notes (교양/경영·경제/컴퓨터과학), 6 lecture materials (데이터베이스 1~6주차 PDF) |
 | Auth protection | Done | Dashboard pages, upload API, token generation |
 
 ## AI Configuration
@@ -222,14 +229,14 @@ Default models per provider:
 
 ```prisma
 Professor          -> id, name, email, password(bcrypt), courses[]
-Course             -> id, name, semester, category(default:"교양"), studentCount?, eclassId?, hasAssignment(default:false), hasPractice(default:false), aiSummary?(AI 한줄평 캐시), professorId, feedbacks[], feedbackTokens[], lectureMaterials[], feedbackRounds[], courseStudents[], improvementNotes[]
+Course             -> id, name, semester, category(default:"교양"), studentCount?, eclassId?, hasAssignment(default:false), hasPractice(default:false), aiSummary?(AI 한줄평 캐시), professorId, feedbacks[], feedbackTokens[], lectureMaterials[], feedbackRounds[], courseStudents[], studentCourseTokens[], submissionLogs[], improvementNotes[]
 Feedback           -> id, courseId, roundId?, speed, comprehension, communication(1-5), interest?(1-5), assignment?(1-5), practice?(1-5), comment?, freeText?(자유 서술 원문), filteredComment?, commentCategory?, commentFilterReason?, commentHasProfanity(default:false)
 FeedbackToken      -> id, token(unique), courseId, used(default:false)
-LectureMaterial    -> id, courseId, fileName, filePath, analysis?(JSON)
+LectureMaterial    -> id, courseId, roundId?(연결 주차, null=미지정), fileName, filePath, analysis?(JSON), analysisUpdatedAt?(마지막 AI 분석 시각, 자동 재분석 staleness 체크용)
 ImprovementNote    -> id, courseId, roundId?(null=학기레벨), category, axis(comprehension|speed|communication|interest), changeDelta, note (교수가 직접 작성한 개선 노트)
 Student            -> id, studentNo(unique), name, email?, department?, courseStudents[], studentCourseTokens[], submissionLogs[]
 CourseStudent      -> id, studentId, courseId (수강등록)
-FeedbackRound      -> id, courseId, week, label?, startDate, endDate, feedbacks[], submissionLogs[], improvementNotes[] (status pending/active/closed derived from startDate/endDate)
+FeedbackRound      -> id, courseId, week, label?, startDate, endDate, feedbacks[], submissionLogs[], improvementNotes[], lectureMaterials[] (status pending/active/closed derived from startDate/endDate)
 StudentCourseToken -> id, studentId, courseId, token(unique) (다회용 토큰)
 SubmissionLog      -> id, studentId, courseId, roundId, createdAt (제출기록 — Feedback과 분리, 익명성 보장)
 ```
@@ -240,3 +247,5 @@ SubmissionLog      -> id, studentId, courseId, roundId, createdAt (제출기록 
 - No external service dependency except chosen AI API
 - SQLite DB file at project root (`dev.db`)
 - Run `npx tsx prisma/seed.ts` to populate demo data
+- Railway 배포 지원 (`railway.toml`): `npx prisma migrate deploy && npx tsx prisma/seed-prod.ts && npm start`
+  - 업로드 파일은 휘발성 FS 대신 영구 볼륨에 저장 — `UPLOADS_DIR` 환경변수로 경로 지정 (`src/lib/uploads.ts`)

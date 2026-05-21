@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { analyzeMaterial, type MaterialAnalysis } from "@/app/actions/analyze-material";
+import { analyzeMaterial, deleteMaterial, type MaterialAnalysis } from "@/app/actions/analyze-material";
 import {
   Card,
   CardContent,
@@ -172,6 +172,7 @@ export function MaterialsClient({ courseId, initialMaterials, rounds }: Props) {
   const [materials, setMaterials] = useState(initialMaterials);
   const [uploading, setUploading] = useState(false);
   const [analyzingId, setAnalyzingId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [selectedRoundId, setSelectedRoundId] = useState<string>("");
 
@@ -249,6 +250,30 @@ export function MaterialsClient({ courseId, initialMaterials, rounds }: Props) {
       setError("분석 중 오류가 발생했습니다.");
     } finally {
       setAnalyzingId(null);
+    }
+  }
+
+  async function handleDelete(materialId: string, fileName: string) {
+    if (
+      !window.confirm(
+        `"${fileName}" 자료를 삭제할까요?\n파일과 분석 결과가 함께 삭제되며 되돌릴 수 없습니다.`
+      )
+    ) {
+      return;
+    }
+    setDeletingId(materialId);
+    setError(null);
+    try {
+      const result = await deleteMaterial(materialId);
+      if (result.success) {
+        setMaterials((prev) => prev.filter((m) => m.id !== materialId));
+      } else {
+        setError(result.error ?? "삭제 실패");
+      }
+    } catch {
+      setError("삭제 중 오류가 발생했습니다.");
+    } finally {
+      setDeletingId(null);
     }
   }
 
@@ -359,6 +384,15 @@ export function MaterialsClient({ courseId, initialMaterials, rounds }: Props) {
                       </Button>
                     </>
                   )}
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => handleDelete(m.id, m.fileName)}
+                    disabled={deletingId === m.id || analyzingId === m.id}
+                    className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
+                  >
+                    {deletingId === m.id ? "삭제 중..." : "삭제"}
+                  </Button>
                 </div>
               </div>
             </CardHeader>
