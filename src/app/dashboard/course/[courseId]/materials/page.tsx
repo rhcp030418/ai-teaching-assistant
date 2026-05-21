@@ -5,6 +5,7 @@ import { auth } from "@/lib/auth";
 import { notFound } from "next/navigation";
 import { MaterialsClient } from "./materials-client";
 import type { MaterialAnalysis } from "@/app/actions/analyze-material";
+import { isDemoUser, isDemoVisibleCourse } from "@/lib/auth-utils";
 
 export default async function MaterialsPage(
   props: PageProps<"/dashboard/course/[courseId]/materials">
@@ -39,6 +40,11 @@ export default async function MaterialsPage(
   });
 
   if (!course) notFound();
+
+  // 데모 계정은 노출 과목 외 직접 링크 접근 차단
+  if (isDemoUser(session.user.email) && !isDemoVisibleCourse(course.name)) {
+    notFound();
+  }
 
   const materials = course.lectureMaterials.map((m) => {
     let roundStats = null;
