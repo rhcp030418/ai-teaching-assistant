@@ -1,6 +1,7 @@
 import path from "node:path";
 import fs from "node:fs/promises";
 import { OCR_MAX_PAGES, OCR_TIMEOUT_MS, CHUNK_MAX_CHARS } from "@/lib/constants";
+import { UPLOADS_DIR } from "@/lib/uploads";
 
 async function extractPdfText(fullPath: string): Promise<string> {
   const buffer = await fs.readFile(fullPath);
@@ -56,7 +57,7 @@ async function ocrFromPdfBuffer(buffer: Buffer): Promise<string> {
 }
 
 export async function extractFileText(filePath: string): Promise<string> {
-  const fullPath = path.join(process.cwd(), "uploads", filePath);
+  const fullPath = path.join(UPLOADS_DIR, filePath);
   const ext = path.extname(filePath).toLowerCase();
 
   if (ext === ".txt") return fs.readFile(fullPath, "utf-8");

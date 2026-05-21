@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { prisma } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import { isDemoUser } from "@/lib/auth-utils";
+import { UPLOADS_DIR } from "@/lib/uploads";
 import path from "node:path";
 import fs from "node:fs/promises";
 import { randomUUID } from "node:crypto";
@@ -52,7 +53,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const uploadsDir = path.join(process.cwd(), "uploads");
+  const uploadsDir = UPLOADS_DIR;
   await fs.mkdir(uploadsDir, { recursive: true });
 
   // UUID 기반 파일명: 원본 파일명 노출 방지 + 경로 탐색(path traversal) 방어
