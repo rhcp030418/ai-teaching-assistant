@@ -10,8 +10,11 @@
 npx tsx prisma/seed.ts
 ```
 
-교수 12명, 강의 30개, 피드백 623건, 평가 라운드 14개, 학생 10명 등이 한 번에 생성됩니다.
+교수 12명, 강의 30개, 피드백 646건, 평가 라운드 14개, 학생 10명, 강의자료 6건 등이 한 번에 생성됩니다.
 **주의:** 기존 데이터를 전부 삭제하고 다시 생성합니다.
+
+> 프로덕션(Railway) 배포 시에는 `prisma/seed-prod.ts`가 사용됩니다 (`railway.toml`의 `startCommand`).
+> 그 외 보조 스크립트: `prisma/clear-rounds.ts`(라운드 초기화), `prisma/add-demo-comparisons.ts`·`add-demo-community.ts`(데모 보강), `scripts/`(강의자료 생성용 Python 스크립트, AI 한줄평 캐시 리셋/시드 등).
 
 ---
 

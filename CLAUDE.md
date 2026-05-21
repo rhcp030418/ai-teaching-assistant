@@ -68,11 +68,21 @@
 - 주차별 트렌드 분석: 종료된 라운드 2개 이상 시 SVG 라인 차트 표시 (이해도/소통/속도적절 3개 시계열). "AI 분석" 버튼 클릭 시 generateTrendNarrative() 호출 → 트렌드 내러티브 + 다음 주차 예측 (3개 이상 시)
   - Server Action: `src/app/actions/trend-analysis.ts`의 `generateTrendNarrative(courseId, rounds[])`
   - 컴포넌트: `trend-analysis.tsx` — SVG 차트(역사 데이터 실선, 예측 점선) + AI 내러티브 박스
+- AI 채팅: 교수가 강의 데이터를 기반으로 AI와 자유 대화. `/api/ai-chat/[courseId]` Route Handler (SSE 스트리밍, 유저당 20회/분 레이트 리밋). 컴포넌트: chat-side-panel.tsx(플로팅 오버레이) + ai-chat.tsx + use-ai-chat.ts 훅(SSE fetch, 히스토리, 재시도, 복사, 내보내기). 추천 질문은 지표 기반으로 page.tsx의 buildChatSuggestions()가 동적 생성
+- AI 개선 로드맵: 피드백 기반 우선순위별 개선 계획 (high/medium/low impact, area/problem/action/evidence + weeklyGoal + summary). Server Action: `src/app/actions/improvement-roadmap.ts`, 컴포넌트: improvement-roadmap.tsx (탭2 "심층 분석")
+- AI 수업 체크리스트: 종료된 라운드별 행동 항목 (urgent/important/optional 우선순위, content/pace/communication/material 카테고리 + 격려 메시지). Server Action: `src/app/actions/class-checklist.ts`의 `generateClassChecklist(courseId, roundId)`, UI는 round-reports.tsx 안에서 라운드별 [체크리스트 생성] 버튼
+- 강의자료 자동 재분석: 종료된 라운드 있으면 페이지 로드 후 `triggerMaterialReanalysisIfNeeded(courseId)`로 백그라운드 재분석 (LectureMaterial.analysisUpdatedAt staleness 기준). 강의자료는 roundId로 주차 연결 가능
+- 파일 업로드: `/api/upload`에서 10MB 제한 + 강의 소유권 검증 + 경로 탈출 방어. 저장 경로는 `src/lib/uploads.ts`의 UPLOADS_DIR(환경변수로 영구 볼륨 지정 가능)
+- 배포: Railway 지원 (`railway.toml` — migrate deploy + seed-prod.ts + start). 보조 스크립트는 prisma/(add-user, clear-rounds, add-demo-*)와 scripts/(강의자료 PDF 생성, AI 한줄평 캐시 리셋/시드)
 - 대시보드 레이아웃: max-w-[1440px] + px-8 (기존 max-w-6xl + px-4에서 확장)
-- 코스 페이지 구조: 상단 KPI 4칸(총응답/소통만족도/이해도높음/속도적절) → 2컬럼 그리드(LEFT:분석 | RIGHT:관리 사이드바 380px)
-  - LEFT: FeedbackAnalysis(hideTitle=true, AI한줄평+레이더차트+코멘트+freeText), TrendAnalysis, CauseAnalysis, Benchmark, ImprovementCases
-  - RIGHT: RoundManager, TokenManager, RoundReports
+- 코스 페이지 구조: 상단 KPI 4칸(총응답/소통만족도/이해도높음/속도적절) → 2컬럼 그리드(LEFT:3탭 분석 | RIGHT:관리 사이드바 380px) + 우측 하단 AI 채팅 플로팅(ChatSidePanel)
+  - LEFT는 3탭 (analysis-tabs.tsx, `feedbackTab`/`deepTab`/`compareTab` 슬롯에 page.tsx에서 컴포넌트 주입):
+    - 탭1 "피드백 현황": FeedbackAnalysis(hideTitle=true, AI한줄평+레이더차트+3축막대+코멘트+freeText) + TrendAnalysis
+    - 탭2 "심층 분석": CauseAnalysis + ImprovementRoadmapPanel (피드백 3건 이상일 때만, 미만이면 안내 문구)
+    - 탭3 "비교 분석": Benchmark + ImprovementCases
+  - RIGHT: RoundManager, TokenManager, RoundReports (RoundReports 안에서 종료된 라운드별 ClassChecklist 생성 제공)
 - FeedbackAnalysis에 `hideTitle?: boolean` prop — true이면 강의명/교수/학기 헤더 숨김 (page.tsx에서 별도로 표시).
+- 레이더 차트는 벤치마크 분야 평균(categoryRadarAxes)을 함께 오버레이할 수 있음 (page.tsx에서 benchmarkData 전달)
 
 ## 학생 시스템 + 크롬 확장 연동
 
@@ -104,9 +114,12 @@ npm run dev
 
 ## 관련 문서
 
+- EASIEST_WAY_TO_START.md: 가장 쉽게 시작하는 법 (문서 인덱스)
 - IMPLEMENTATION.md: 전체 구현 상태
 - PIPELINE.md: 시스템 파이프라인, 데이터 흐름
 - 해야할것.md: 할일 목록
 - SERVER_RUN_GUIDE.md: 서버 실행 가이드
+- AI_SETUP_GUIDE.md: AI 프로바이더 선택 가이드 (API vs 로컬)
+- DB_GUIDE.md: 교수/강의/학생 데이터 등록 가이드
 - HOW_TO_PLUGIN.md: e-class 연동 플러그인 가이드
 - README.md: 프로젝트 소개

@@ -5,10 +5,16 @@
 > **참고 프로젝트:** [hsu-ecx](https://github.com/CcRr0/ecx) — Chrome 확장 프로그램으로 e-class DOM을 파싱하는 구조
 
 > **구현 완료 (2026-04):** 아래 설계를 기반으로 크롬 확장 프로그램이 실제 구현되었습니다.
-> - 크롬 확장: `chrome-extension/` 디렉토리 (manifest.json, content.js, sidepanel.html/js, background.js)
+> - 크롬 확장: `ai-teaching-assistant/chrome-extension/` 디렉토리 (manifest.json — Manifest V3, content.js, sidepanel.html/js, background.js, icons/)
 > - 서버 API: `/api/eclass-sync` (POST), `/api/student-courses` (GET)
 > - DB 모델: Student, CourseStudent, FeedbackRound, StudentCourseToken, SubmissionLog
 > - 익명성 보장: Feedback에 studentId 없음, SubmissionLog로 제출여부만 별도 기록
+>
+> **안정화 (2026-05, 실제 e-class 검증):**
+> - DOM 셀렉터 다중 폴백 — `content.js`의 `getValue()`가 후보 셀렉터를 순서대로 시도 (학교 페이지 구조 변경에 견딤)
+> - eclassId 매칭 실패 시 **과목명 기반 자동 매칭** 폴백 (`route.ts`의 `matchedBy: "eclassId" | "title"`), 그래도 실패하면 `unmatched` 배열로 반환 → 사이드패널이 경고 표시
+> - 강의자료 업로드 10MB 제한 (서버 `/api/upload` + 프론트 검증)
+> - 알려진 한계: e-class 커뮤니티/공지 항목이 과목으로 잘못 스크래핑돼 unmatched에 섞일 수 있음 (필터링 보완 필요)
 
 ---
 

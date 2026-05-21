@@ -55,6 +55,7 @@
                         │ FeedbackRound       │
                         │ StudentCourseToken  │
                         │ SubmissionLog       │
+                        │ ImprovementNote     │
                         └─────────────────────┘
 ```
 
@@ -366,10 +367,11 @@ DB: Course.findMany({ professorId, semester? })
 └─────────────────────────────────────────────────────────────────┘
 
 위 컴포넌트들은 3탭으로 구성됨 (analysis-tabs.tsx):
-  탭1 "피드백 현황": FeedbackAnalysis (레이더 차트, AI 한줄평, 3축 막대, 코멘트, freeText)
-  탭2 "심층 분석":   TrendAnalysis, CauseAnalysis, ImprovementRoadmap, ClassChecklist
+  탭1 "피드백 현황": FeedbackAnalysis (레이더 차트, AI 한줄평, 3축 막대, 코멘트, freeText) + TrendAnalysis
+  탭2 "심층 분석":   CauseAnalysis, ImprovementRoadmap (피드백 3건 이상일 때만 표시, 미만이면 안내 문구)
   탭3 "비교 분석":   Benchmark, ImprovementCases
-  사이드패널:        RoundManager, TokenManager, RoundReports (탭 외부 우측 고정)
+  사이드바:          RoundManager, TokenManager, RoundReports (탭 외부 우측 380px 고정)
+                     └ RoundReports 안에서 종료된 라운드별 ClassChecklist 생성 버튼 제공
   AI 채팅:           ChatSidePanel — 우측 하단 플로팅 버튼으로 열고 닫음 (SSE 스트리밍)
 ```
 
@@ -391,8 +393,9 @@ DB: Course.findMany({ professorId, semester? })
 │  POST /api/upload                                       │
 │    ├── auth() 세션 확인                                 │
 │    ├── 강의 소유권 검증 (professorId 일치?)             │
-│    ├── /uploads/{timestamp}-{파일명} 저장               │
-│    └── LectureMaterial DB 레코드 생성                   │
+│    ├── 파일 크기 10MB 제한 (초과 시 400 거부)            │
+│    ├── UPLOADS_DIR/{timestamp}-{파일명} 저장 (경로 탈출 방어) │
+│    └── LectureMaterial DB 레코드 생성 (roundId 연결 가능) │
 │                     │                                   │
 │                     ▼                                   │
 │  ┌──────────────────────────────────────────┐           │
@@ -509,6 +512,7 @@ DB: Course.findMany({ professorId, semester? })
 |------|-----------|-------------|------|
 | 코멘트 분류 | 학생 제출 직후 (백그라운드 큐) | 비블로킹 | DB 저장 |
 | AI 한줄평 (레이더 요약) | 종료된 라운드 있으면 페이지 로드 후 after() 백그라운드 사전 계산 | 비블로킹 | Course.aiSummary DB 저장 |
+| 강의자료 자동 재분석 | 종료된 라운드 있으면 페이지 로드 후 백그라운드 (analysisUpdatedAt staleness 체크) | 비블로킹 | LectureMaterial.analysis DB 저장 |
 | AI 채팅 | 교수가 메시지 전송 시 (SSE 스트리밍) | 비블로킹 (스트리밍) | 없음 (세션 메모리) |
 | 주차별 트렌드 내러티브 | 교수가 [AI 분석] 클릭 (종료 라운드 ≥2) | 블로킹 (온디맨드) | 없음 (state) |
 | 원인 연결 분석 | 교수가 [분석 실행] 클릭 | 블로킹 (온디맨드) | 없음 |
@@ -523,51 +527,36 @@ DB: Course.findMany({ professorId, semester? })
 ## 7. 데이터 모델
 
 ```
-Professor ─────────────────── 1:N ──── Course
-  ├── id                                 ├── id
-  ├── name                               ├── name
-  ├── email (unique)                     ├── semester ("2026-1")
-  ├── password (bcrypt)                  ├── category ("컴퓨터과학")
-  └── createdAt                          ├── studentCount (응답률 계산용)
-                                         ├── eclassId? (e-class 연동용)
-                                         ├── hasAssignment (default:false)
-                                         ├── hasPractice (default:false)
-                                         ├── aiSummary? (AI 한줄평 캐시)
-                                         ├── professorId (FK)
-                                         └── createdAt
-                                              │
-              ┌──────────────────┬────────────┼──────────────────┬──────────────┐
-              │                  │            │                  │              │
-         1:N  ▼             1:N  ▼       1:N  ▼             1:N  ▼         1:N  ▼
-    ┌──────────────┐  ┌───────────────┐ ┌──────────────┐ ┌──────────────┐ ┌──────────────┐
-    │  Feedback     │  │ FeedbackToken  │ │LectureMaterial│ │FeedbackRound │ │CourseStudent  │
-    ├──────────────┤  ├───────────────┤ ├──────────────┤ ├──────────────┤ ├──────────────┤
-    │ id            │  │ id             │ │ id            │ │ id            │ │ id            │
-    │ courseId (FK) │  │ token (unique) │ │ courseId (FK) │ │ courseId (FK) │ │ studentId(FK) │
-    │ roundId? (FK) │  │ courseId (FK)  │ │ fileName      │ │ week          │ │ courseId (FK) │
-    │ speed         │  │ used (bool)    │ │ filePath      │ │ label?        │ └──────────────┘
-    │ comprehension │  │ createdAt      │ │ analysis(JSON)│ │ startDate     │
-    │ communication │  └───────────────┘ │ createdAt     │ │ endDate       │
-    │ interest?     │                    └──────────────┘ └──────┬───────┘
-    │ assignment?   │                                            │
-    │ practice?     │                                            │
-    │ comment       │                                            │
-    │ filteredComment│                                      1:N  ▼
-    │ commentCategory│                                 ┌──────────────┐
-    │ commentFilter- │                                 │SubmissionLog │
-    │   Reason       │                                 ├──────────────┤
-    │ createdAt     │                                  │ id            │
-    └──────────────┘                                   │ studentId(FK) │
-                                                       │ roundId (FK)  │
-Student ──────────────────────────────────────────     │ courseId (FK) │
-                                                       │ createdAt     │
-  ├── id                                               └──────────────┘
-  ├── studentNo (unique)
-  ├── name                          StudentCourseToken
-  ├── email?                        ├── id
-  ├── department?                   ├── studentId (FK)
-  └── createdAt                     ├── courseId (FK)
-                                    └── token (unique, 다회용)
+관계 개요
+─────────
+Professor 1──N Course
+Course    1──N Feedback · FeedbackToken · LectureMaterial · FeedbackRound
+                · CourseStudent · StudentCourseToken · SubmissionLog · ImprovementNote
+Student   1──N CourseStudent · StudentCourseToken · SubmissionLog
+FeedbackRound 1──N Feedback · SubmissionLog · LectureMaterial · ImprovementNote
+
+엔터티 필드
+─────────
+Professor          id · name · email(unique) · password(bcrypt) · createdAt
+Course             id · name · semester("2026-1") · category("컴퓨터과학") · studentCount?
+                   · eclassId?(e-class 연동) · hasAssignment(def:false) · hasPractice(def:false)
+                   · aiSummary?(AI 한줄평 캐시) · professorId(FK) · createdAt
+Feedback           id · courseId(FK) · roundId?(FK) · speed · comprehension · communication(1~5)
+                   · interest? · assignment? · practice? · comment? · freeText?(자유 서술 원문)
+                   · filteredComment? · commentCategory? · commentFilterReason?
+                   · commentHasProfanity(def:false) · createdAt
+FeedbackToken      id · token(unique) · courseId(FK) · used(bool) · createdAt
+LectureMaterial    id · courseId(FK) · roundId?(FK) · fileName · filePath
+                   · analysis?(JSON) · analysisUpdatedAt?(자동 재분석 staleness) · createdAt
+FeedbackRound      id · courseId(FK) · week · label? · startDate · endDate · createdAt
+                   (상태 pending/active/closed는 startDate·endDate로 자동 판단)
+ImprovementNote    id · courseId(FK) · roundId?(null=학기레벨) · category
+                   · axis(comprehension|speed|communication|interest) · changeDelta · note · createdAt
+Student            id · studentNo(unique) · name · email? · department? · createdAt
+CourseStudent      id · courseId(FK) · studentId(FK) · createdAt   (수강등록, @@unique[course,student])
+StudentCourseToken id · token(unique, 다회용) · courseId(FK) · studentId(FK) · createdAt
+SubmissionLog      id · studentId(FK) · courseId(FK) · roundId(FK) · createdAt
+                   (제출 여부만 기록 — Feedback과 분리하여 익명성 보장)
 ```
 
 ---
@@ -609,7 +598,8 @@ ai-teaching-assistant/
 ├── prisma/
 │   ├── schema.prisma              # DB 스키마
 │   ├── migrations/                # 마이그레이션
-│   └── seed.ts                    # 데모 데이터 (12교수, 30강의, 623피드백, 10학생, 20수강등록, 20토큰, 14라운드)
+│   ├── seed.ts                    # 데모 데이터 (12교수, 30강의, 646피드백, 10학생, 20수강등록, 20토큰, 14라운드, 6강의자료)
+│   └── seed-prod.ts               # 프로덕션 데이터 (Railway 배포 시 사용)
 ├── uploads/                       # 업로드된 강의자료
 ├── dev.db                         # SQLite DB 파일
 ├── src/
@@ -660,9 +650,9 @@ ai-teaching-assistant/
 │   │   └── api/
 │   │       ├── auth/[...nextauth]/ # NextAuth 핸들러
 │   │       ├── ai-chat/[courseId]/ # 스트리밍 AI 채팅 (SSE, 레이트 리밋 20/min)
-│   │       ├── eclass-sync/       # 크롬 확장 → 학생/수강 동기화
+│   │       ├── eclass-sync/       # 크롬 확장 → 학생/수강 동기화 (eclassId→과목명 매칭 폴백, unmatched 반환)
 │   │       ├── student-courses/   # 학번별 수강과목+라운드 상태 조회
-│   │       └── upload/            # 파일 업로드 (인증+소유권)
+│   │       └── upload/            # 파일 업로드 (인증+소유권, 10MB 제한, 경로 탈출 방어)
 │   ├── lib/
 │   │   ├── db.ts                  # Prisma 싱글턴
 │   │   ├── auth.ts                # NextAuth 설정
@@ -675,6 +665,8 @@ ai-teaching-assistant/
 │   │   ├── constants.ts           # 공유 임계값/제한 상수
 │   │   ├── file-extraction.ts     # PDF 텍스트 추출 + OCR 폴백
 │   │   ├── parse-ai-json.ts       # AI JSON 안전 파서
+│   │   ├── uploads.ts             # UPLOADS_DIR 경로 결정 (영구 볼륨용) + 경로 탈출 방어
+│   │   ├── utils.ts               # shadcn 유틸 + calcResponseRate
 │   │   └── ai/                    # AI 어댑터
 │   │       ├── index.ts           #   chatWithAI() 진입점
 │   │       ├── config.ts          #   .env 설정 읽기
