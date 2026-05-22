@@ -114,12 +114,12 @@ npm run dev
 
 ## 관련 문서
 
-- EASIEST_WAY_TO_START.md: 가장 쉽게 시작하는 법 (문서 인덱스)
-- IMPLEMENTATION.md: 전체 구현 상태
-- PIPELINE.md: 시스템 파이프라인, 데이터 흐름
-- 해야할것.md: 할일 목록
-- SERVER_RUN_GUIDE.md: 서버 실행 가이드
-- AI_SETUP_GUIDE.md: AI 프로바이더 선택 가이드 (API vs 로컬)
-- DB_GUIDE.md: 교수/강의/학생 데이터 등록 가이드
-- HOW_TO_PLUGIN.md: e-class 연동 플러그인 가이드
+- docs/EASIEST_WAY_TO_START.md: 가장 쉽게 시작하는 법 (문서 인덱스)
+- docs/IMPLEMENTATION.md: 전체 구현 상태
+- docs/PIPELINE.md: 시스템 파이프라인, 데이터 흐름
+- docs/TODO.md: 할일 목록
+- docs/SERVER_RUN_GUIDE.md: 서버 실행 가이드
+- docs/AI_SETUP_GUIDE.md: AI 프로바이더 선택 가이드 (API vs 로컬)
+- docs/DB_GUIDE.md: 교수/강의/학생 데이터 등록 가이드
+- docs/HOW_TO_PLUGIN.md: e-class 연동 플러그인 가이드
 - README.md: 프로젝트 소개

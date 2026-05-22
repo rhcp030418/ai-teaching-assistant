@@ -1,8 +1,22 @@
 # AI Teaching Assistant
 
-제1회 한성대학교 AX 프런티어 챌린지 출품작
+> 제1회 한성대학교 AX 프런티어 챌린지 출품작 — **자체 강의평가 플랫폼 + 교수용 AI 분석 도구**
 
-**자체 강의평가 플랫폼 + 교수용 AI 분석 도구**
+[![Next.js](https://img.shields.io/badge/Next.js-16-black?logo=next.js)](https://nextjs.org/)
+[![Prisma](https://img.shields.io/badge/Prisma-7-2D3748?logo=prisma)](https://www.prisma.io/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript)](https://www.typescriptlang.org/)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-4-38B2AC?logo=tailwind-css)](https://tailwindcss.com/)
+
+## 목차
+
+- [소개](#소개)
+- [주요 기능](#주요-기능)
+- [기술 스택](#기술-스택)
+- [빠른 시작](#빠른-시작)
+- [프로젝트 구조](#프로젝트-구조)
+- [문서](#문서)
+- [데모 계정](#데모-계정)
+- [라이선스](#라이선스)
 
 ## 소개
 
@@ -73,9 +87,70 @@
 
 ## 빠른 시작
 
-서버 실행 방법은 [SERVER_RUN_GUIDE.md](./SERVER_RUN_GUIDE.md)를 참고하세요.
+### 사전 준비
+- Node.js 20.9 이상
+- npm
 
-### 데모 계정
+### 설치 및 실행
+
+```bash
+# 1. 의존성 설치
+npm install
+
+# 2. 환경 변수 설정 (.env 파일에 AI API 키와 AUTH_SECRET 설정)
+#    자세한 내용은 docs/SERVER_RUN_GUIDE.md 참고
+
+# 3. DB 초기화
+npx prisma generate
+npx prisma migrate dev
+
+# 4. 데모 데이터 시드 (선택)
+npx tsx prisma/seed.ts
+
+# 5. 개발 서버 실행
+npm run dev
+```
+
+브라우저에서 `http://localhost:3000` 으로 접속합니다.
+
+자세한 설정은 [docs/SERVER_RUN_GUIDE.md](./docs/SERVER_RUN_GUIDE.md)와 [docs/AI_SETUP_GUIDE.md](./docs/AI_SETUP_GUIDE.md)를 참고하세요.
+
+## 프로젝트 구조
+
+```
+ai-teaching-assistant/
+├── chrome-extension/        # 크롬 확장 (Manifest V3) — e-class 연동
+├── docs/                    # 문서 모음
+├── prisma/                  # DB 스키마, 마이그레이션, 시드 스크립트
+├── public/                  # 정적 자산
+├── scripts/                 # 보조 스크립트
+├── src/
+│   ├── app/                 # Next.js App Router (페이지, API, Server Actions)
+│   ├── components/          # UI 컴포넌트 (shadcn/ui)
+│   ├── lib/                 # AI 어댑터, 유틸리티, 공통 로직
+│   └── generated/           # Prisma 클라이언트 생성 결과
+├── CLAUDE.md                # AI 에이전트 프로젝트 가이드
+├── AGENTS.md                # AI 에이전트 주의사항
+└── README.md                # 본 문서
+```
+
+## 문서
+
+자세한 문서는 [`docs/`](./docs) 디렉토리를 참조하세요.
+
+| 문서 | 내용 |
+|------|------|
+| [docs/EASIEST_WAY_TO_START.md](./docs/EASIEST_WAY_TO_START.md) | 가장 쉽게 시작하는 법 (문서 인덱스) |
+| [docs/SERVER_RUN_GUIDE.md](./docs/SERVER_RUN_GUIDE.md) | 설치, 환경변수, DB 초기화, 서버 실행 |
+| [docs/AI_SETUP_GUIDE.md](./docs/AI_SETUP_GUIDE.md) | AI 프로바이더 선택 가이드 (API vs 로컬) |
+| [docs/DB_GUIDE.md](./docs/DB_GUIDE.md) | 교수/강의/학생 데이터 등록 가이드 |
+| [docs/PIPELINE.md](./docs/PIPELINE.md) | 전체 시스템 파이프라인, 데이터 흐름 |
+| [docs/IMPLEMENTATION.md](./docs/IMPLEMENTATION.md) | 전체 구현 상태, 기술 스택, 파일 트리 |
+| [docs/HOW_TO_PLUGIN.md](./docs/HOW_TO_PLUGIN.md) | e-class 연동 플러그인 가이드 |
+| [docs/TODO.md](./docs/TODO.md) | 완료/미완료 할일 목록 |
+
+## 데모 계정
+
 - 이메일: `kim@hansung.ac.kr`
 - 비밀번호: `demo1234`
 
