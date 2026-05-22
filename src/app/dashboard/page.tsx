@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { prisma } from "@/lib/db";
 import { auth } from "@/lib/auth";
-import { demoCourseFilter } from "@/lib/auth-utils";
+import { isDemoUser, isDemoVisibleCourse } from "@/lib/auth-utils";
 import {
   Card,
   CardContent,
@@ -27,12 +27,12 @@ export default async function DashboardPage(
   const searchParams = await props.searchParams;
   const selectedSemester = searchParams?.semester;
 
-  // 데모 계정은 노출 과목만 (다른 과목은 데모 데이터 부실로 숨김)
-  const demoFilter = demoCourseFilter(session.user.email);
+  // 데모 계정은 노출 과목 외에는 목록엔 보이되 클릭 불가(비활성화) 처리
+  const isDemo = isDemoUser(session.user.email);
 
   // 해당 교수의 모든 학기 목록 조회 (내림차순)
   const allCourses = await prisma.course.findMany({
-    where: { professorId: session.user.id, ...demoFilter },
+    where: { professorId: session.user.id },
     select: { semester: true },
   });
   const semesters = [...new Set(allCourses.map((c) => c.semester))]
@@ -43,7 +43,6 @@ export default async function DashboardPage(
   const courses = await prisma.course.findMany({
     where: {
       professorId: session.user.id,
-      ...demoFilter,
       ...(selectedSemester ? { semester: selectedSemester } : {}),
     },
     include: {
@@ -82,28 +81,65 @@ export default async function DashboardPage(
         </Card>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {courses.map((course) => (
-            <Link key={course.id} href={`/dashboard/course/${course.id}`}>
-              <Card className="hover:border-blue-300 hover:shadow-md transition-all cursor-pointer h-full">
-                <CardHeader className="pb-3">
-                  <p className="text-xs text-gray-400 font-medium">
-                    {formatSemester(course.semester)}
-                  </p>
-                  <CardTitle className="text-base leading-snug">
-                    {course.name}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="pt-0">
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-2xl font-bold text-gray-800">
-                      {course._count.feedbacks}
-                    </span>
-                    <span className="text-sm text-gray-400">건의 피드백</span>
-                  </div>
-                </CardContent>
-              </Card>
-            </Link>
-          ))}
+          {courses.map((course) => {
+            // 데모 계정: 노출 과목 외에는 비활성화(클릭 불가)
+            const locked = isDemo && !isDemoVisibleCourse(course.name);
+
+            if (locked) {
+              return (
+                <div
+                  key={course.id}
+                  aria-disabled="true"
+                  title="데모에서는 데이터베이스 과목만 확인할 수 있습니다."
+                  className="cursor-not-allowed opacity-60 select-none"
+                >
+                  <Card className="h-full bg-gray-50 border-dashed">
+                    <CardHeader className="pb-3">
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="text-xs text-gray-400 font-medium">
+                          {formatSemester(course.semester)}
+                        </p>
+                        <span className="text-[11px] font-medium text-gray-400 bg-gray-200 rounded px-1.5 py-0.5">
+                          준비 중
+                        </span>
+                      </div>
+                      <CardTitle className="text-base leading-snug text-gray-400">
+                        {course.name}
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="pt-0">
+                      <p className="text-sm text-gray-400">
+                        데모에서는 제공되지 않는 강의입니다.
+                      </p>
+                    </CardContent>
+                  </Card>
+                </div>
+              );
+            }
+
+            return (
+              <Link key={course.id} href={`/dashboard/course/${course.id}`}>
+                <Card className="hover:border-blue-300 hover:shadow-md transition-all cursor-pointer h-full">
+                  <CardHeader className="pb-3">
+                    <p className="text-xs text-gray-400 font-medium">
+                      {formatSemester(course.semester)}
+                    </p>
+                    <CardTitle className="text-base leading-snug">
+                      {course.name}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="pt-0">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-2xl font-bold text-gray-800">
+                        {course._count.feedbacks}
+                      </span>
+                      <span className="text-sm text-gray-400">건의 피드백</span>
+                    </div>
+                  </CardContent>
+                </Card>
+              </Link>
+            );
+          })}
         </div>
       )}
     </div>
