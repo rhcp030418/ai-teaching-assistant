@@ -1,5 +1,5 @@
-// 시연용: 박도윤 "임의로 만든 강의" 비교 데이터 추가
-// 1) 박도윤 강의에 직접 피드백 여러 개 (종료된 라운드 1~5주차에 분배)
+// 시연용: 데모 강의 "임의로 만든 강의" 비교 데이터 추가
+// 1) 데모 강의에 직접 피드백 여러 개 (종료된 라운드 1~5주차에 분배)
 // 2) 동일 카테고리(교양) 2026-1 비교 교수 강의 4개 (벤치마크용)
 // 3) 그 중 일부는 2025-2에도 강의를 운영했고 점수 향상 (개선 사례용)
 
@@ -60,12 +60,12 @@ function generateFeedback(bias: Bias) {
   };
 }
 
-// 박도윤 시연 강의가 1~5주차는 종료, 6주차는 진행 중인 상태이므로
+// 데모 강의가 1~5주차는 종료, 6주차는 진행 중인 상태이므로
 // 종료된 5개 라운드(1~5주차)에 피드백을 분배해서 넣는다.
 async function main() {
   const pw = await bcrypt.hash("demo1234", 12);
 
-  // ─── 1) 박도윤 시연 강의에 피드백 여러 개 ───
+  // ─── 1) 데모 강의에 피드백 여러 개 ───
   const demoCourse = await prisma.course.findFirst({
     where: { name: "임의로 만든 강의" },
     include: {
@@ -83,13 +83,13 @@ async function main() {
   // 진행 중 라운드 (6주차) - 여기에도 피드백 일부 추가
   const activeRound = demoCourse.feedbackRounds.find((r) => r.startDate <= new Date() && r.endDate > new Date());
 
-  // 박도윤 강의 시나리오: 초반 약함 → 후반 향상 (학기 진행하며 개선)
-  const doyunBiasByWeek: Bias[] = ["low", "mid", "mid", "high", "high"];
+  // 데모 강의 시나리오: 초반 약함 → 후반 향상 (학기 진행하며 개선)
+  const demoBiasByWeek: Bias[] = ["low", "mid", "mid", "high", "high"];
 
-  let doyunFeedbackCount = 0;
+  let demoFeedbackCount = 0;
   for (let i = 0; i < closedRounds.length; i++) {
     const round = closedRounds[i];
-    const bias = doyunBiasByWeek[i] ?? "mid";
+    const bias = demoBiasByWeek[i] ?? "mid";
     const count = rand(8, 14);
     await prisma.feedback.createMany({
       data: Array.from({ length: count }, () => ({
@@ -98,7 +98,7 @@ async function main() {
         ...generateFeedback(bias),
       })),
     });
-    doyunFeedbackCount += count;
+    demoFeedbackCount += count;
   }
 
   // 진행 중 라운드에도 일부
@@ -111,7 +111,7 @@ async function main() {
         ...generateFeedback("high"),
       })),
     });
-    doyunFeedbackCount += activeCount;
+    demoFeedbackCount += activeCount;
   }
 
   // ─── 2) 비교용 교수 4명 (2026-1 교양 강의, 벤치마크용) ───
@@ -185,7 +185,7 @@ async function main() {
   }
 
   console.log("시연용 비교 데이터 추가 완료!");
-  console.log(`\n[박도윤 강의 피드백] ${doyunFeedbackCount}건 (종료된 1~5주차 + 진행 중 6주차)`);
+  console.log(`\n[데모 강의 피드백] ${demoFeedbackCount}건 (종료된 1~5주차 + 진행 중 6주차)`);
   console.log(`  → 학기 초반 낮음 → 후반 향상 시나리오`);
   console.log(`\n[비교 교수 4명 (교양, 2026-1)]`);
   for (const p of profData) {

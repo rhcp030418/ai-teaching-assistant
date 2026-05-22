@@ -59,7 +59,7 @@ await prisma.course.create({
     semester: "2026-1",             // 형식: "연도-학기번호"
     category: "컴퓨터과학",          // 교양, 컴퓨터과학, 수학·통계, 공학, 경영·경제, 인문·사회, 자연과학, 예체능
     studentCount: 35,               // 수강생 수 (응답률 계산용)
-    eclassId: 44780,                // e-class 과목 ID (URL의 ?id= 값)
+    eclassId: 12345,                // e-class 과목 ID (URL의 ?id= 값)
     hasAssignment: true,            // 과제가 있는 강의 → 레이더 차트에 "과제 적절성" 축 추가
     hasPractice: true,              // 실습이 있는 강의 → 레이더 차트에 "실습/예시 충분도" 축 추가
     professorId: professor.id,      // 위에서 생성한 교수의 ID
@@ -67,7 +67,7 @@ await prisma.course.create({
 });
 ```
 
-**eclassId 확인 방법:** e-class에서 해당 강의에 들어가면 URL이 `learn.hansung.ac.kr/course/view.php?id=44780` 형태입니다. 여기서 `id=` 뒤의 숫자가 eclassId입니다.
+**eclassId 확인 방법:** e-class에서 해당 강의에 들어가면 URL이 `learn.hansung.ac.kr/course/view.php?id=12345` 형태입니다. 여기서 `id=` 뒤의 숫자가 eclassId입니다.
 
 **hasAssignment / hasPractice 설정:**
 - `hasAssignment: true` — 과제가 있는 강의. 피드백 폼에 "과제 적절성" 항목이 추가되고, 레이더 차트에 해당 축이 표시됩니다.
@@ -79,12 +79,12 @@ await prisma.course.create({
 
 ```typescript
 await prisma.student.upsert({
-  where: { studentNo: "2271018" },   // 학번 (unique)
-  update: { name: "박도윤" },
+  where: { studentNo: "0000001" },   // 학번 (unique)
+  update: { name: "학생A" },
   create: {
-    studentNo: "2271018",
-    name: "박도윤",
-    email: "doyun@hansung.ac.kr",    // 선택
+    studentNo: "0000001",
+    name: "학생A",
+    email: "studentA@example.ac.kr", // 선택
     department: "컴퓨터공학과",       // 선택
   },
 });
@@ -180,7 +180,7 @@ async function main() {
 
   // 1. 교수
   const prof = await prisma.professor.create({
-    data: { name: "홍길동", email: "hong@hansung.ac.kr", password: pw },
+    data: { name: "교수A", email: "profA@example.ac.kr", password: pw },
   });
 
   // 2. 강의
@@ -199,9 +199,9 @@ async function main() {
 
   // 3. 학생 (크롬 확장 사용 시 자동 등록되므로 생략 가능)
   const student = await prisma.student.upsert({
-    where: { studentNo: "2271018" },
+    where: { studentNo: "0000001" },
     update: {},
-    create: { studentNo: "2271018", name: "박도윤" },
+    create: { studentNo: "0000001", name: "학생A" },
   });
 
   // 4. 수강 등록 + 토큰 (크롬 확장 사용 시 자동)
