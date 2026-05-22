@@ -24,17 +24,9 @@ export function isDemoUser(email: string | null | undefined): boolean {
 // 데모 잠금일 때만 적용된다 — DEMO_WRITABLE=1 이면 isDemoUser가 false라 전체 노출(자료 주입용).
 const DEMO_VISIBLE_COURSE_NAMES = ["데이터베이스"];
 
-/** 데모 계정에서 해당 과목을 노출할지 여부. */
+/** 데모 계정에서 클릭(상세 진입) 가능한 과목인지 여부. */
 export function isDemoVisibleCourse(name: string): boolean {
   return DEMO_VISIBLE_COURSE_NAMES.includes(name);
-}
-
-/**
- * 데모 계정이면 노출 과목만 보이도록 하는 Prisma where 조각을 반환.
- * 데모가 아니면 빈 객체(필터 없음).
- */
-export function demoCourseFilter(email: string | null | undefined) {
-  return isDemoUser(email) ? { name: { in: DEMO_VISIBLE_COURSE_NAMES } } : {};
 }
 
 export const DEMO_READ_ONLY = {
