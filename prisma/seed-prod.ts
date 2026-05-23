@@ -22,6 +22,12 @@ async function main() {
     console.log(
       `[seed-prod] feedback redesign backfill checked ${result.checked}, updated ${result.updated}.`,
     );
+
+    console.log("[seed-prod] enriching demo database...");
+    execSync("npx tsx prisma/enrich-demo-database.ts", {
+      stdio: "inherit",
+      env: process.env,
+    });
   } finally {
     await prisma.$disconnect();
   }
