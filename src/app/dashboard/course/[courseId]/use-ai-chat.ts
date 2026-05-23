@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { DEMO_CHAT_MESSAGES } from "@/lib/demo-ai-fixtures";
 
 export interface ChatMessage {
   role: "user" | "assistant";
@@ -21,7 +22,7 @@ export function isStreamingMsg(msg: Message): msg is StreamingMessage {
 export const SUGGESTED_QUESTIONS = [
   "이번 학기에 학생들이 가장 불만인 게 뭐야?",
   "수업 속도를 어떻게 개선하면 좋을까?",
-  "소통 만족도가 낮은 이유가 뭐라고 생각해?",
+  "질문·소통 편의에서 참고할 점이 있을까?",
   "다음 회차에서 가장 집중해야 할 부분은?",
 ];
 
@@ -31,8 +32,10 @@ function storageKey(courseId: string) {
   return `ai-chat:${courseId}`;
 }
 
-export function useAIChat(courseId: string) {
-  const [messages, setMessages] = useState<Message[]>([]);
+export function useAIChat(courseId: string, demoMode = false) {
+  const [messages, setMessages] = useState<Message[]>(
+    demoMode ? DEMO_CHAT_MESSAGES : []
+  );
   const [input, setInput] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
@@ -51,10 +54,12 @@ export function useAIChat(courseId: string) {
       if (saved) {
         const parsed = JSON.parse(saved) as Message[];
         setMessages(parsed.filter((m) => !isStreamingMsg(m)));
+      } else if (demoMode) {
+        setMessages(DEMO_CHAT_MESSAGES);
       }
     } catch { /* ignore */ }
     textareaRef.current?.focus();
-  }, [courseId]);
+  }, [courseId, demoMode]);
 
   // 완료된 메시지만 저장 (최대 MAX_STORED_MESSAGES개)
   useEffect(() => {
@@ -142,6 +147,19 @@ export function useAIChat(courseId: string) {
       { role: "assistant", content: "", isStreaming: true } as StreamingMessage,
     ]);
     setIsSending(true);
+
+    if (demoMode) {
+      const reply: ChatMessage = {
+        role: "assistant",
+        content:
+          "데모 기준으로 보면, 이번 질문은 현재 강의의 6주차 피드백과 강의자료 분석 범위 안에서 답변할 수 있습니다. 학생들은 실습 예시와 질의응답에는 긍정적이지만, 새 용어가 연속적으로 등장하는 구간에서 부담을 느끼고 있어 다음 회차에는 용어별 예시와 짧은 확인 질문을 넣는 흐름이 적절합니다.",
+      };
+      window.setTimeout(() => {
+        setMessages([...historyForRequest, reply]);
+        setIsSending(false);
+      }, 250);
+      return;
+    }
 
     const controller = new AbortController();
     abortRef.current = controller;

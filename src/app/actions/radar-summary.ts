@@ -4,6 +4,15 @@ import { after } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { chatWithAI } from "@/lib/ai";
+import { computeFeedbackCounts, scoreToRatio } from "@/lib/feedback-stats";
+
+function isLegacySummary(summary: string) {
+  return (
+    summary.includes("자료 이해도") ||
+    summary.includes("강의 흥미도") ||
+    summary.includes("이해도 높음")
+  );
+}
 
 // 실제 AI 호출 + DB 저장 (내부 전용)
 async function computeAndSave(courseId: string): Promise<string | null> {
@@ -14,15 +23,26 @@ async function computeAndSave(courseId: string): Promise<string | null> {
   if (!course || course.feedbacks.length < 3) return null;
 
   const feedbacks = course.feedbacks;
-  const total = feedbacks.length;
-  const speedModerate = feedbacks.filter((f) => f.speed === "moderate").length;
-  const comprehensionHigh = feedbacks.filter((f) => f.comprehension === "high").length;
-  const communicationSum = feedbacks.reduce((s, f) => s + f.communication, 0);
-  const interestFbs = feedbacks.filter((f) => f.interest != null);
-  const interestAvg =
-    interestFbs.length > 0
-      ? interestFbs.reduce((s, f) => s + f.interest!, 0) / interestFbs.length
-      : null;
+  const {
+    total,
+    speedCounts,
+    comprehensionSum,
+    comprehensionCount,
+    materialHelpSum,
+    materialHelpCount,
+    commSum,
+    interestSum,
+    interestCount,
+  } = computeFeedbackCounts(feedbacks);
+
+  const contentRatio = Math.round(scoreToRatio(comprehensionSum, comprehensionCount));
+  const materialRatio = Math.round(scoreToRatio(materialHelpSum, materialHelpCount));
+  const communicationAvg = Math.round((commSum / total) * 10) / 10;
+  const engagementAvg =
+    interestCount > 0 ? Math.round((interestSum / interestCount) * 10) / 10 : null;
+  const speedModerateRatio = Math.round((speedCounts.moderate / total) * 100);
+  const speedFastRatio = Math.round(((speedCounts.fast + speedCounts.veryFast) / total) * 100);
+  const speedSlowRatio = Math.round(((speedCounts.slow + speedCounts.verySlow) / total) * 100);
 
   const topComments = feedbacks
     .map((f) => (f as { filteredComment?: string | null; comment?: string | null }).filteredComment ?? (f as { comment?: string | null }).comment)
@@ -32,11 +52,12 @@ async function computeAndSave(courseId: string): Promise<string | null> {
   const statsLines = [
     `강의명: ${course.name}`,
     `- 총 응답: ${total}건`,
-    `- 속도 적절 비율: ${Math.round((speedModerate / total) * 100)}%`,
-    `- 자료 이해도 높음: ${Math.round((comprehensionHigh / total) * 100)}%`,
-    `- 소통 만족도 평균: ${Math.round((communicationSum / total) * 10) / 10}/5`,
-    interestAvg !== null
-      ? `- 강의 흥미도 평균: ${Math.round(interestAvg * 10) / 10}/5`
+    `- 수업 속도 분포: 빠름 ${speedFastRatio}% / 적당 ${speedModerateRatio}% / 느림 ${speedSlowRatio}%`,
+    `- 내용 이해: ${contentRatio}%`,
+    materialHelpCount > 0 ? `- 자료·예시 도움: ${materialRatio}%` : null,
+    `- 질문·소통 편의: ${communicationAvg}/5`,
+    engagementAvg !== null
+      ? `- 학습 몰입: ${engagementAvg}/5`
       : null,
     topComments.length > 0
       ? `- 학생 의견 (일부): ${topComments.join(" / ")}`
@@ -50,7 +71,7 @@ async function computeAndSave(courseId: string): Promise<string | null> {
       {
         role: "system",
         content:
-          "당신은 대학 강의 평가 분석가입니다. 강의 피드백 통계와 학생 의견을 보고 두 문장으로 요약해주세요. 첫 문장은 수치를 포함한 이 강의의 가장 뚜렷한 강점 (예: '소통 만족도 4.2/5로 학생들과의 소통이 이 강의의 핵심 강점입니다'), 두 번째 문장은 가장 주목해야 할 개선 포인트와 방향 힌트 (예: '다만 이해도 높음이 38%로 낮아, 설명 방식에 보완이 필요해 보입니다'). 학생 의견에서 반복되는 패턴이 있으면 반영하세요. 마크다운 문법(**, *, -, # 등) 절대 사용 금지. JSON 없이 순수 텍스트만 반환하세요.",
+          "당신은 대학 강의 피드백을 정리하는 분석 도구입니다. 강의 피드백 통계와 학생 의견을 보고 두 문장으로 요약해주세요. 첫 문장은 수치를 포함한 이 강의의 가장 뚜렷한 학생 반응을 적습니다. 두 번째 문장은 교수님이 참고할 수 있는 대응 방향을 완곡하게 제시합니다. 지표명은 내용 이해, 자료·예시 도움, 질문·소통 편의, 학습 몰입, 수업 속도만 사용하세요. '평가', '문제', '지시'처럼 단정적인 표현은 피하고 학생 반응을 정리하는 톤을 유지하세요. 마크다운 문법(**, *, -, # 등) 절대 사용 금지. JSON 없이 순수 텍스트만 반환하세요.",
       },
       {
         role: "user",
@@ -84,7 +105,7 @@ export async function generateRadarSummary(
   if (!course) return { success: false, error: "강의를 찾을 수 없습니다." };
 
   // 캐시 히트
-  if (course.aiSummary) {
+  if (course.aiSummary && !isLegacySummary(course.aiSummary)) {
     return { success: true, summary: course.aiSummary };
   }
 
@@ -102,7 +123,7 @@ export async function triggerSummaryIfNeeded(
   hasClosedRounds: boolean,
   cachedSummary: string | null
 ) {
-  if (!hasClosedRounds || cachedSummary) return;
+  if (!hasClosedRounds || (cachedSummary && !isLegacySummary(cachedSummary))) return;
 
   // 소유권 검증: 본인 강의에 대해서만 백그라운드 생성 허용
   const session = await auth();

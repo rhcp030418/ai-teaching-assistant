@@ -9,6 +9,10 @@ import { Separator } from "@/components/ui/separator";
 import { saveImprovementNote } from "@/app/actions/improvement-notes";
 import { generateClassChecklist, type ClassChecklist } from "@/app/actions/class-checklist";
 import type { SignificantChange, SemesterComparison, RoundReportsResult, RoundMaterialSummary } from "@/app/actions/round-reports";
+import { DEMO_CLASS_CHECKLIST } from "@/lib/demo-ai-fixtures";
+
+const V3_CARD =
+  "ring-0 border-blue-100 bg-white/90 shadow-[0_10px_30px_-15px_rgba(23,87,168,0.25)]";
 
 function formatDate(iso: string) {
   const d = new Date(iso);
@@ -18,8 +22,8 @@ function formatDate(iso: string) {
 function Stat({ label, value, suffix = "" }: { label: string; value: string | number; suffix?: string }) {
   return (
     <div className="text-center">
-      <div className="text-xs text-gray-500">{label}</div>
-      <div className="text-base font-semibold text-gray-800 mt-0.5">
+      <div className="text-xs font-medium text-slate-500">{label}</div>
+      <div className="text-base font-semibold text-[#10233F] mt-0.5">
         {value}
         <span className="text-xs text-gray-400 ml-0.5">{suffix}</span>
       </div>
@@ -186,11 +190,21 @@ function saveChecked(courseId: string, roundId: string, checked: Set<number>) {
   } catch {}
 }
 
-function ClassChecklistPanel({ courseId, roundId }: { courseId: string; roundId: string }) {
+function ClassChecklistPanel({
+  courseId,
+  roundId,
+  demoMode = false,
+}: {
+  courseId: string;
+  roundId: string;
+  demoMode?: boolean;
+}) {
   const [loading, setLoading] = useState(false);
-  const [checklist, setChecklist] = useState<ClassChecklist | null>(null);
+  const [checklist, setChecklist] = useState<ClassChecklist | null>(
+    demoMode ? DEMO_CLASS_CHECKLIST : null
+  );
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [generated, setGenerated] = useState(false);
+  const [generated, setGenerated] = useState(demoMode);
   const [checked, setChecked] = useState<Set<number>>(new Set());
 
   useEffect(() => {
@@ -210,6 +224,12 @@ function ClassChecklistPanel({ courseId, roundId }: { courseId: string; roundId:
   async function handleGenerate() {
     setLoading(true);
     setErrorMsg(null);
+    if (demoMode) {
+      setChecklist(DEMO_CLASS_CHECKLIST);
+      setGenerated(true);
+      setLoading(false);
+      return;
+    }
     try {
       const res = await generateClassChecklist(courseId, roundId);
       if (res.success && res.result) {
@@ -518,9 +538,9 @@ function SemesterCard({ courseId, sem }: { courseId: string; sem: SemesterCompar
       </div>
 
       <div className="bg-white rounded-lg p-3 space-y-2">
-        <CompareRow label="소통 만족도" prev={sem.prev.communicationAvg} curr={sem.curr.communicationAvg} unit="점" />
-        <CompareRow label="이해도 높음" prev={sem.prev.comprehensionHigh} curr={sem.curr.comprehensionHigh} unit="%" />
-        <CompareRow label="속도 적절" prev={sem.prev.speedModerate} curr={sem.curr.speedModerate} unit="%" />
+        <CompareRow label="질문·소통 편의" prev={sem.prev.communicationAvg} curr={sem.curr.communicationAvg} unit="점" />
+        <CompareRow label="내용 이해 높음" prev={sem.prev.comprehensionHigh} curr={sem.curr.comprehensionHigh} unit="%" />
+        <CompareRow label="속도 적당" prev={sem.prev.speedModerate} curr={sem.curr.speedModerate} unit="%" />
       </div>
 
       <p className="text-xs text-gray-400 mt-2">
@@ -542,36 +562,37 @@ function SemesterCard({ courseId, sem }: { courseId: string; sem: SemesterCompar
 interface Props {
   courseId: string;
   data: RoundReportsResult;
+  demoMode?: boolean;
 }
 
-export function RoundReports({ courseId, data }: Props) {
+export function RoundReports({ courseId, data, demoMode = false }: Props) {
   const { rounds, currentSemester, semesterComparison } = data;
   const hasRounds = rounds.length > 0;
   const hasSemester = semesterComparison !== null;
 
   if (!hasRounds && !hasSemester) {
     return (
-      <Card>
+      <Card className={V3_CARD}>
         <CardHeader>
-          <CardTitle className="text-base">주차별 리포트</CardTitle>
-          <CardDescription>종료된 라운드가 없습니다. 라운드가 종료되면 여기에 요약이 표시됩니다.</CardDescription>
+          <CardTitle className="text-base text-[#10233F]">주차별 리포트</CardTitle>
+          <CardDescription className="text-slate-500">종료된 라운드가 없습니다. 라운드가 종료되면 여기에 요약이 표시됩니다.</CardDescription>
         </CardHeader>
       </Card>
     );
   }
 
   return (
-    <Card>
+    <Card className={V3_CARD}>
       <CardHeader>
-        <CardTitle className="text-base">주차별 리포트</CardTitle>
-        <CardDescription>각 라운드 종료 시점의 응답 요약입니다.</CardDescription>
+        <CardTitle className="text-base text-[#10233F]">주차별 리포트</CardTitle>
+        <CardDescription className="text-slate-500">각 라운드 종료 시점의 응답 요약입니다.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-3">
         {/* 학기 전체 결산 */}
         {hasSemester ? (
           <SemesterCard courseId={courseId} sem={semesterComparison} />
         ) : (
-          <div className="border border-gray-200 rounded-lg p-4 text-center text-sm text-gray-400">
+          <div className="border border-blue-100 rounded-[18px] bg-white/75 p-4 text-center text-sm text-slate-400">
             <p className="font-medium text-gray-500 mb-1">
               학기 전체 결산 <Badge className="bg-gray-100 text-gray-500 text-xs ml-1">{currentSemester}</Badge>
             </p>
@@ -583,7 +604,7 @@ export function RoundReports({ courseId, data }: Props) {
 
         {/* 주차별 리포트 */}
         {rounds.map((r, idx) => (
-          <div key={r.id} className="border border-gray-200 rounded-lg p-4">
+          <div key={r.id} className="border border-blue-100 rounded-[18px] bg-white/75 p-4">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
                 <span className="font-semibold text-sm">{r.label ?? `${r.week}주차`}</span>
@@ -600,9 +621,9 @@ export function RoundReports({ courseId, data }: Props) {
             ) : (
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <Stat label="속도 적절" value={r.speedModerate} suffix="%" />
-                <Stat label="이해도 높음" value={r.comprehensionHigh} suffix="%" />
-                <Stat label="소통 평균" value={r.communicationAvg} suffix="/5" />
-                {r.interestAvg !== null && <Stat label="흥미도 평균" value={r.interestAvg} suffix="/5" />}
+                <Stat label="내용 이해 높음" value={r.comprehensionHigh} suffix="%" />
+                <Stat label="질문·소통" value={r.communicationAvg} suffix="/5" />
+                {r.interestAvg !== null && <Stat label="학습 몰입" value={r.interestAvg} suffix="/5" />}
                 {r.assignmentAvg !== null && <Stat label="과제 평균" value={r.assignmentAvg} suffix="/5" />}
                 {r.practiceAvg !== null && <Stat label="실습 평균" value={r.practiceAvg} suffix="/5" />}
               </div>
@@ -619,7 +640,7 @@ export function RoundReports({ courseId, data }: Props) {
 
             {/* 가장 최신 라운드에만 체크리스트 표시 */}
             {idx === 0 && r.totalFeedbacks >= 3 && (
-              <ClassChecklistPanel courseId={courseId} roundId={r.id} />
+              <ClassChecklistPanel courseId={courseId} roundId={r.id} demoMode={demoMode} />
             )}
 
             {r.significantChanges.length > 0 && (

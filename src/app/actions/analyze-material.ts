@@ -36,9 +36,7 @@ async function buildFeedbackContext(courseId: string, roundId?: string | null): 
     select: {
       speed: true,
       comprehension: true,
-      communication: true,
-      interest: true,
-      assignment: true,
+      materialHelp: true,
       practice: true,
       filteredComment: true,
       comment: true,
@@ -48,9 +46,8 @@ async function buildFeedbackContext(courseId: string, roundId?: string | null): 
   if (feedbacks.length < 3) return "";
 
   const {
-    total, speedCounts, compCounts, commSum,
-    interestSum, interestCount,
-    assignmentSum, assignmentCount,
+    total, speedCounts, compCounts,
+    materialHelpSum, materialHelpCount,
     practiceSum, practiceCount,
   } = computeFeedbackCounts(feedbacks);
 
@@ -65,15 +62,13 @@ async function buildFeedbackContext(courseId: string, roundId?: string | null): 
   const header = roundId ? "[해당 주차 학생 피드백 현황" : "[학생 피드백 현황";
   const lines: string[] = [
     `${header} (${total}건)]`,
-    `- 수업 속도: 빠름 ${pct(speedCounts.fast)}% / 적당 ${pct(speedCounts.moderate)}% / 느림 ${pct(speedCounts.slow)}%`,
-    `- 자료 이해도: 높음 ${pct(compCounts.high)}% / 보통 ${pct(compCounts.medium)}% / 낮음 ${pct(compCounts.low)}%`,
-    `- 소통 만족도: ${avg(commSum, total)}/5`,
+    `- 수업 속도: 빠름 ${pct(speedCounts.fast + speedCounts.veryFast)}% / 적당 ${pct(speedCounts.moderate)}% / 느림 ${pct(speedCounts.slow + speedCounts.verySlow)}%`,
+    `- 내용 이해: 높음 ${pct(compCounts.high)}% / 보통 ${pct(compCounts.medium)}% / 낮음 ${pct(compCounts.low)}%`,
   ];
-  if (interestCount > 0) lines.push(`- 흥미도: ${avg(interestSum, interestCount)}/5`);
-  if (assignmentCount > 0) lines.push(`- 과제 적절성: ${avg(assignmentSum, assignmentCount)}/5`);
-  if (practiceCount > 0) lines.push(`- 실습/예시 충분도: ${avg(practiceSum, practiceCount)}/5`);
+  if (materialHelpCount > 0) lines.push(`- 자료·예시 도움: ${avg(materialHelpSum, materialHelpCount)}/5`);
+  else if (practiceCount > 0) lines.push(`- 실습·예시 도움: ${avg(practiceSum, practiceCount)}/5`);
   if (comments.length > 0) lines.push(`- 학생 의견: ${comments.slice(0, 5).join(" / ")}`);
-  lines.push("위 피드백을 참고하여 강의자료가 각 수치에 어떻게 연관되는지 분석에 반영하세요.");
+  lines.push("위 피드백 중 자료와 직접 관련된 신호만 참고하여 강의자료와 학생 반응의 연결 맥락을 분석하세요.");
 
   return `\n\n${lines.join("\n")}`;
 }
@@ -90,7 +85,7 @@ const SYSTEM_PROMPT = `당신은 대학 강의자료 분석 전문가입니다. 
   "termDensity": "높음/보통/낮음",
   "termExamples": ["전문 용어 예시 최대 5개"],
   "exampleSufficiency": "충분/보통/부족",
-  "exampleFeedback": "예시 관련 피드백 — 학생 실습/예시 충분도 점수가 있으면 연결해 설명",
+  "exampleFeedback": "예시 관련 피드백 — 학생 실습·예시 도움 점수가 있으면 연결해 설명",
   "improvements": {
     "structure": "자료 구조·흐름·순서 개선 제안 (해당 없으면 null)",
     "examples": "예시·실습·시각화 보강 제안 (해당 없으면 null)",
@@ -155,7 +150,7 @@ async function analyzeMaterialCore(
     `과목명: ${material.course.name}`,
     material.course.category ? `분야: ${material.course.category}` : null,
     `과제 포함: ${material.course.hasAssignment ? "예" : "아니오"}`,
-    `실습/예시 포함: ${material.course.hasPractice ? "예" : "아니오"}`,
+    `실습·예시 포함: ${material.course.hasPractice ? "예" : "아니오"}`,
   ]
     .filter((x): x is string => x !== null)
     .join("\n");

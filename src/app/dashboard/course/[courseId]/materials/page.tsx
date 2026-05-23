@@ -6,6 +6,10 @@ import { notFound } from "next/navigation";
 import { MaterialsClient } from "./materials-client";
 import type { MaterialAnalysis } from "@/app/actions/analyze-material";
 import { isDemoUser, isDemoVisibleCourse } from "@/lib/auth-utils";
+import { comprehensionScore } from "@/lib/feedback-stats";
+
+const PAGE_HERO =
+  "rounded-[24px] border border-blue-100/90 bg-[linear-gradient(135deg,rgba(255,255,255,0.96),rgba(237,247,255,0.82))] p-6 shadow-[0_18px_48px_-30px_rgba(23,87,168,0.42)]";
 
 export default async function MaterialsPage(
   props: PageProps<"/dashboard/course/[courseId]/materials">
@@ -13,6 +17,7 @@ export default async function MaterialsPage(
   const { courseId } = await props.params;
   const session = await auth();
   if (!session?.user?.id) notFound();
+  const demoMode = isDemoUser(session.user.email);
 
   const course = await prisma.course.findUnique({
     where: { id: courseId, professorId: session.user.id },
@@ -26,7 +31,7 @@ export default async function MaterialsPage(
               label: true,
               endDate: true,
               feedbacks: {
-                select: { speed: true, comprehension: true, communication: true, practice: true },
+                select: { speed: true, comprehension: true, materialHelp: true, communication: true, practice: true },
               },
             },
           },
@@ -52,17 +57,20 @@ export default async function MaterialsPage(
       const fbs = m.round.feedbacks;
       const total = fbs.length;
       const practiceVals = fbs.filter((f) => f.practice != null).map((f) => f.practice as number);
+      const materialVals = fbs.filter((f) => f.materialHelp != null).map((f) => f.materialHelp as number);
       roundStats = {
         total,
         comprehensionHigh: Math.round(
-          (fbs.filter((f) => f.comprehension === "high").length / total) * 100
+          (fbs.filter((f) => comprehensionScore(f.comprehension) >= 4).length / total) * 100
         ),
         communicationAvg:
           Math.round((fbs.reduce((s, f) => s + f.communication, 0) / total) * 10) / 10,
         speedModerate: Math.round(
           (fbs.filter((f) => f.speed === "moderate").length / total) * 100
         ),
-        practiceAvg: practiceVals.length > 0
+        practiceAvg: materialVals.length > 0
+          ? Math.round((materialVals.reduce((a, b) => a + b, 0) / materialVals.length) * 10) / 10
+          : practiceVals.length > 0
           ? Math.round((practiceVals.reduce((a, b) => a + b, 0) / practiceVals.length) * 10) / 10
           : null,
       };
@@ -100,15 +108,19 @@ export default async function MaterialsPage(
   });
 
   return (
-    <div>
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold">{course.name}</h1>
-        <p className="text-gray-500 text-sm">강의자료 분석</p>
+    <div className="space-y-8">
+      <div className={PAGE_HERO}>
+        <p className="text-xs font-bold text-[#0F5FD7]">Course Materials</p>
+        <h2 className="mt-2 text-2xl font-extrabold text-[#10233F]">강의자료 분석</h2>
+        <p className="mt-2 text-sm font-medium text-slate-500">
+          업로드한 강의자료와 학생 피드백의 연결 맥락을 확인합니다.
+        </p>
       </div>
       <MaterialsClient
         courseId={courseId}
         initialMaterials={materials}
         rounds={course.feedbackRounds}
+        demoMode={demoMode}
       />
     </div>
   );

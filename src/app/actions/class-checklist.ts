@@ -5,6 +5,7 @@ import { auth } from "@/lib/auth";
 import { chatWithAI } from "@/lib/ai";
 import { parseAIJson } from "@/lib/parse-ai-json";
 import { TEACHING_TOOLBOX } from "@/lib/teaching-methods";
+import { comprehensionScore } from "@/lib/feedback-stats";
 
 export interface ChecklistItem {
   priority: "urgent" | "important" | "optional";
@@ -59,6 +60,7 @@ export async function generateClassChecklist(
         select: {
           speed: true,
           comprehension: true,
+          materialHelp: true,
           communication: true,
           interest: true,
           assignment: true,
@@ -81,14 +83,15 @@ export async function generateClassChecklist(
   const total = fbs.length;
 
   const speedMod = Math.round((fbs.filter((f) => f.speed === "moderate").length / total) * 100);
-  const speedFast = Math.round((fbs.filter((f) => f.speed === "fast").length / total) * 100);
-  const speedSlow = Math.round((fbs.filter((f) => f.speed === "slow").length / total) * 100);
-  const compHigh = Math.round((fbs.filter((f) => f.comprehension === "high").length / total) * 100);
-  const compMed = Math.round((fbs.filter((f) => f.comprehension === "medium").length / total) * 100);
-  const compLow = Math.round((fbs.filter((f) => f.comprehension === "low").length / total) * 100);
+  const speedFast = Math.round((fbs.filter((f) => f.speed === "fast" || f.speed === "very_fast").length / total) * 100);
+  const speedSlow = Math.round((fbs.filter((f) => f.speed === "slow" || f.speed === "very_slow").length / total) * 100);
+  const compHigh = Math.round((fbs.filter((f) => comprehensionScore(f.comprehension) >= 4).length / total) * 100);
+  const compMed = Math.round((fbs.filter((f) => comprehensionScore(f.comprehension) === 3).length / total) * 100);
+  const compLow = Math.round((fbs.filter((f) => comprehensionScore(f.comprehension) > 0 && comprehensionScore(f.comprehension) <= 2).length / total) * 100);
   const commAvg = fbs.reduce((s, f) => s + f.communication, 0) / total;
 
   const interestVals = fbs.filter((f) => f.interest != null).map((f) => f.interest as number);
+  const materialVals = fbs.filter((f) => f.materialHelp != null).map((f) => f.materialHelp as number);
   const assignVals = fbs.filter((f) => f.assignment != null).map((f) => f.assignment as number);
   const practiceVals = fbs.filter((f) => f.practice != null).map((f) => f.practice as number);
   const arrAvg = (arr: number[]) => arr.length > 0 ? arr.reduce((a, b) => a + b, 0) / arr.length : null;
@@ -112,19 +115,21 @@ export async function generateClassChecklist(
     `강의명: ${round.course.name}`,
     `주차: ${roundLabel} (피드백 ${total}건)`,
     `수업 속도: 빠름 ${speedFast}% / 적당 ${speedMod}% / 느림 ${speedSlow}%`,
-    `자료 이해도: 높음 ${compHigh}% / 보통 ${compMed}% / 낮음 ${compLow}%`,
-    `소통 만족도: ${commAvg.toFixed(1)}/5`,
+    `내용 이해: 높음 ${compHigh}% / 보통 ${compMed}% / 낮음 ${compLow}%`,
+    `질문·소통 편의: ${commAvg.toFixed(1)}/5`,
   ];
 
-  if (interestVals.length > 0) dataLines.push(`강의 흥미도: ${arrAvg(interestVals)!.toFixed(1)}/5`);
+  if (materialVals.length > 0) dataLines.push(`자료·예시 도움: ${arrAvg(materialVals)!.toFixed(1)}/5`);
+  if (interestVals.length > 0) dataLines.push(`학습 몰입: ${arrAvg(interestVals)!.toFixed(1)}/5`);
   if (assignVals.length > 0) dataLines.push(`과제 적절성: ${arrAvg(assignVals)!.toFixed(1)}/5`);
-  if (practiceVals.length > 0) dataLines.push(`실습/예시 충분도: ${arrAvg(practiceVals)!.toFixed(1)}/5`);
+  if (practiceVals.length > 0) dataLines.push(`실습·예시 도움: ${arrAvg(practiceVals)!.toFixed(1)}/5`);
 
   // 기준선 대비 주의 지표
   const flags: string[] = [];
   if (speedMod < 50) flags.push(`속도 '적당' ${speedMod}% (기준 50% 미달)`);
-  if (compHigh < 50) flags.push(`이해도 '높음' ${compHigh}% (기준 50% 미달)`);
-  if (commAvg < 3.5) flags.push(`소통 만족도 ${commAvg.toFixed(1)}/5 (기준 3.5 미달)`);
+  if (compHigh < 50) flags.push(`내용 이해 '높음' ${compHigh}% (기준 50% 미달)`);
+  if (materialVals.length > 0 && arrAvg(materialVals)! < 3.5) flags.push(`자료·예시 도움 ${arrAvg(materialVals)!.toFixed(1)}/5 (기준 3.5 미달)`);
+  if (commAvg < 3.5) flags.push(`질문·소통 편의 ${commAvg.toFixed(1)}/5 (기준 3.5 미달)`);
   if (flags.length > 0) {
     dataLines.push(`\n[주의 지표]\n${flags.map((f) => `  * ${f}`).join("\n")}`);
   }
@@ -137,7 +142,7 @@ export async function generateClassChecklist(
     const pFbs = prevRound.feedbacks;
     const pTotal = pFbs.length;
     const pCommAvg = pFbs.reduce((s, f) => s + f.communication, 0) / pTotal;
-    const pCompHigh = Math.round((pFbs.filter((f) => f.comprehension === "high").length / pTotal) * 100);
+    const pCompHigh = Math.round((pFbs.filter((f) => comprehensionScore(f.comprehension) >= 4).length / pTotal) * 100);
     const pSpeedMod = Math.round((pFbs.filter((f) => f.speed === "moderate").length / pTotal) * 100);
     const prevLabel = prevRound.label ?? `${prevRound.week}주차`;
     dataLines.push(`\n[이전 ${prevLabel} 대비 변화]`);
@@ -145,8 +150,8 @@ export async function generateClassChecklist(
     const compDelta = compHigh - pCompHigh;
     const speedDelta = speedMod - pSpeedMod;
     dataLines.push(`  소통: ${pCommAvg.toFixed(1)} → ${commAvg.toFixed(1)} (${commDelta >= 0 ? "+" : ""}${commDelta})`);
-    dataLines.push(`  이해도: ${pCompHigh}% → ${compHigh}% (${compDelta >= 0 ? "+" : ""}${compDelta}%p)`);
-    dataLines.push(`  속도적절: ${pSpeedMod}% → ${speedMod}% (${speedDelta >= 0 ? "+" : ""}${speedDelta}%p)`);
+    dataLines.push(`  내용 이해: ${pCompHigh}% → ${compHigh}% (${compDelta >= 0 ? "+" : ""}${compDelta}%p)`);
+    dataLines.push(`  속도 적당: ${pSpeedMod}% → ${speedMod}% (${speedDelta >= 0 ? "+" : ""}${speedDelta}%p)`);
   }
 
   // 연결된 강의자료 분석
@@ -164,7 +169,7 @@ export async function generateClassChecklist(
         : null;
       matParts.push(
         `  ${mat.fileName}: 난이도 ${a.difficulty}, 예시 ${a.exampleSufficiency}` +
-        (impText ? ` / 개선제안: ${impText}` : ""),
+        (impText ? ` / 참고 포인트: ${impText}` : ""),
       );
     } catch {
       // skip malformed
@@ -183,7 +188,7 @@ export async function generateClassChecklist(
 JSON 응답 전 반드시 아래 3단계를 거치세요 (응답에는 포함하지 않음):
 1단계: [주의 지표]에서 가장 시급한 문제 1개를 특정합니다. 없으면 "전체 양호"로 표시.
 2단계: [이번 주차 강의자료 분석]이 있다면 피드백 지표와 교차합니다.
-  - 이해도 낮음 + 강의자료 난이도 '상' → category:content, priority:urgent
+  - 내용 이해 낮음 + 강의자료 난이도 '상' → category:content, priority:urgent
   - 실습 점수 낮음 + 강의자료 예시 '부족' → category:content, priority:urgent
   - 속도 부적절 + 강의자료 용어밀도 '높음' → category:pace, priority:important
   - 두 데이터가 일치하는 경우 해당 action의 reason에 반드시 두 수치를 함께 인용
@@ -196,6 +201,7 @@ JSON 응답 전 반드시 아래 3단계를 거치세요 (응답에는 포함하
 - action: "다음 수업 전에 ~하세요" 형식, 구체적 시간·행동·분량 명시
 - reason: 피드백 수치 + 강의자료 분석 수치 동시 인용 (가능한 경우)
 - encouragement: 잘 된 지표 수치를 언급하는 격려 1문장
+- 출력에 쓰는 지표명은 내용 이해, 자료·예시 도움, 질문·소통 편의, 학습 몰입, 수업 속도로 통일
 - 마크다운 문법(**, *, -, #) 절대 사용 금지
 
 ${TEACHING_TOOLBOX}
@@ -210,10 +216,10 @@ ${TEACHING_TOOLBOX}
       "priority": "urgent",
       "category": "content",
       "action": "다음 수업 전에 핵심 개념 3개에 대해, 추상적 정의보다 먼저 제시할 실생활 예시를 각 2개씩 준비하세요 (구체적 예시 우선/concrete examples). 각 개념 설명 직후 객관식 개념 질문 1개로 거수 응답을 받아 이해도를 즉석 확인하세요 (개념점검질문/ConcepTest).",
-      "reason": "이해도 높음 32%(기준 50% 미달)이며, 강의자료 예시 충분도가 '부족'으로 분석된 점이 일치합니다. 학생 3명이 '예시가 없어 이해가 안 된다'고 언급했습니다."
+      "reason": "내용 이해 높음 32%(기준 50% 미달)이며, 강의자료 예시 충분도가 '부족'으로 분석된 점이 일치합니다. 학생 3명이 '예시가 없어 이해가 안 된다'고 언급했습니다."
     }
   ],
-  "encouragement": "소통 만족도 4.2/5로 교수님과 학생 간 소통은 이 강의의 강점입니다."
+  "encouragement": "질문·소통 편의 4.2/5로 교수님과 학생 간 소통은 이 강의의 강점입니다."
 }
 
 반드시 위 JSON 형식으로만 응답하세요.`,

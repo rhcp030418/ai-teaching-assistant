@@ -4,7 +4,7 @@ import { prisma } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import { chatWithAI } from "@/lib/ai";
 import { parseAIJson } from "@/lib/parse-ai-json";
-import { computeFeedbackCounts } from "@/lib/feedback-stats";
+import { computeFeedbackCounts, scoreToRatio } from "@/lib/feedback-stats";
 import { TEACHING_TOOLBOX } from "@/lib/teaching-methods";
 import {
   FEEDBACK_MIN_COUNT,
@@ -37,6 +37,7 @@ export async function analyzeCauses(
         select: {
           speed: true,
           comprehension: true,
+          materialHelp: true,
           communication: true,
           interest: true,
           assignment: true,
@@ -63,6 +64,8 @@ export async function analyzeCauses(
   // Build feedback summary
   const {
     total, speedCounts, compCounts, commSum,
+    comprehensionSum, comprehensionCount,
+    materialHelpSum, materialHelpCount,
     interestSum, interestCount,
     assignmentSum, assignmentCount,
     practiceSum, practiceCount,
@@ -75,34 +78,41 @@ export async function analyzeCauses(
   const commAvg = Math.round((commSum / total) * 10) / 10;
 
   const speedModPct = Math.round((speedCounts.moderate / total) * 100);
-  const speedFastPct = Math.round((speedCounts.fast / total) * 100);
-  const speedSlowPct = Math.round((speedCounts.slow / total) * 100);
+  const speedFastPct = Math.round(((speedCounts.fast + speedCounts.veryFast) / total) * 100);
+  const speedSlowPct = Math.round(((speedCounts.slow + speedCounts.verySlow) / total) * 100);
   const compHighPct = Math.round((compCounts.high / total) * 100);
   const compMedPct = Math.round((compCounts.medium / total) * 100);
   const compLowPct = Math.round((compCounts.low / total) * 100);
+  const contentRatio = Math.round(scoreToRatio(comprehensionSum, comprehensionCount));
+  const materialRatio = Math.round(scoreToRatio(materialHelpSum, materialHelpCount));
+  const materialAvg = materialHelpCount > 0 ? materialHelpSum / materialHelpCount : null;
+  const engagementAvg = interestCount > 0 ? interestSum / interestCount : null;
 
   // 기준선 대비 이상 여부 표시
   const flags: string[] = [];
   if (speedModPct < SPEED_MODERATE_THRESHOLD) flags.push(`속도 '적당' ${speedModPct}% (기준 50% 미달)`);
-  if (compHighPct < COMP_HIGH_THRESHOLD) flags.push(`이해도 '높음' ${compHighPct}% (기준 50% 미달)`);
-  if (commAvg < COMM_AVG_THRESHOLD) flags.push(`소통 만족도 ${commAvg}/5 (기준 3.5 미달)`);
-  if (interestCount > 0 && interestSum / interestCount < COMM_AVG_THRESHOLD)
-    flags.push(`흥미도 ${(interestSum / interestCount).toFixed(1)}/5 (기준 3.5 미달)`);
+  if (compHighPct < COMP_HIGH_THRESHOLD) flags.push(`내용 이해 높음 ${compHighPct}% (기준 50% 미달)`);
+  if (materialAvg !== null && materialAvg < COMM_AVG_THRESHOLD)
+    flags.push(`자료·예시 도움 ${materialAvg.toFixed(1)}/5 (기준 3.5 미달)`);
+  if (commAvg < COMM_AVG_THRESHOLD) flags.push(`질문·소통 편의 ${commAvg}/5 (기준 3.5 미달)`);
+  if (engagementAvg !== null && engagementAvg < COMM_AVG_THRESHOLD)
+    flags.push(`학습 몰입 ${engagementAvg.toFixed(1)}/5 (기준 3.5 미달)`);
 
   const commentList = comments.slice(0, MAX_COMMENTS_IN_ANALYSIS)
     .map((c, i) => `  ${i + 1}. ${c}`)
     .join("\n");
 
   const extraLines: string[] = [];
-  if (interestCount > 0) extraLines.push(`- 강의 흥미도: ${(interestSum / interestCount).toFixed(1)}/5 (${interestCount}건)`);
+  if (materialHelpCount > 0) extraLines.push(`- 자료·예시 도움: ${materialRatio}% (${materialHelpCount}건)`);
+  if (engagementAvg !== null) extraLines.push(`- 학습 몰입: ${engagementAvg.toFixed(1)}/5 (${interestCount}건)`);
   if (assignmentCount > 0) extraLines.push(`- 과제 적절성: ${(assignmentSum / assignmentCount).toFixed(1)}/5 (${assignmentCount}건)`);
-  if (practiceCount > 0) extraLines.push(`- 실습/예시 충분도: ${(practiceSum / practiceCount).toFixed(1)}/5 (${practiceCount}건)`);
+  if (practiceCount > 0) extraLines.push(`- 실습·예시 도움: ${(practiceSum / practiceCount).toFixed(1)}/5 (${practiceCount}건)`);
 
   const feedbackSummary = `[피드백 요약 (총 ${total}건)]
 강의명: ${course.name}
 - 수업 속도: 빠름 ${speedFastPct}% / 적당 ${speedModPct}% / 느림 ${speedSlowPct}%
-- 자료 이해도: 높음 ${compHighPct}% / 보통 ${compMedPct}% / 낮음 ${compLowPct}%
-- 소통 만족도: 평균 ${commAvg}/5${extraLines.length > 0 ? "\n" + extraLines.join("\n") : ""}
+- 내용 이해: ${contentRatio}% (높음 ${compHighPct}% / 보통 ${compMedPct}% / 낮음 ${compLowPct}%)
+- 질문·소통 편의: 평균 ${commAvg}/5${extraLines.length > 0 ? "\n" + extraLines.join("\n") : ""}
 ${flags.length > 0 ? `\n[주의 지표]\n${flags.map(f => "  * " + f).join("\n")}` : "\n[모든 지표 기준선 충족]"}
 - 학생 의견 (${Math.min(comments.length, 20)}건):
 ${commentList || "  (없음)"}`;
@@ -143,7 +153,7 @@ ${commentList || "  (없음)"}`;
     const response = await chatWithAI([
       {
         role: "system",
-        content: `당신은 10년 경력의 대학 강의 개선 전문 컨설턴트입니다. 학생 피드백 데이터와 강의자료 분석 결과를 교차 분석하여 교수님이 다음 수업에서 바로 실천할 수 있는 구체적 인사이트를 제공합니다.
+        content: `당신은 10년 경력의 대학 강의 지원 전문 컨설턴트입니다. 학생 피드백 데이터와 강의자료 분석 결과를 교차 분석하여 교수님이 다음 수업에서 참고할 수 있는 구체적 인사이트를 제공합니다.
 
 JSON 응답 전에 반드시 다음 분석 단계를 거치세요 (응답에는 포함하지 않음):
 1단계: [주의 지표] 항목에서 기준선 미달 지표를 확인합니다.
@@ -153,6 +163,8 @@ JSON 응답 전에 반드시 다음 분석 단계를 거치세요 (응답에는 
 
 출력 원칙:
 - "~일 수 있습니다", "~가능성이 있습니다" 톤 사용
+- 출력에 쓰는 지표명은 내용 이해, 자료·예시 도움, 질문·소통 편의, 학습 몰입, 수업 속도로 통일
+- 교수에게 명령하는 표현보다 "대응해볼 수 있습니다", "참고할 수 있습니다"처럼 선택권을 남기는 표현 사용
 - observation에 반드시 수치 포함
 - possibleCause에 학생 의견을 직접 인용하거나 반복 패턴 언급
 - actionItems는 causes 순서대로 1:1 대응, "다음 수업에서 ~" 형식으로 언제·무엇을·얼마나 명시
@@ -171,18 +183,18 @@ ${TEACHING_TOOLBOX}
 --- 좋은 출력 예시 ---
 {
   "causes": [{
-    "axis": "자료 이해도",
-    "observation": "이해도 '높음' 비율이 32%로, 전체 응답자의 68%가 강의 내용을 충분히 소화하지 못하고 있습니다.",
+    "axis": "내용 이해",
+    "observation": "내용 이해 점수가 42%이고 이해도 '높음' 비율이 32%로, 일부 학생이 강의 내용을 충분히 소화하지 못하고 있습니다.",
     "possibleCause": "5명의 학생이 '예시가 없어서 이해가 안 된다'고 언급하였으며, 강의자료 분석에서도 예시 충분도가 '낮음'으로 평가된 점을 볼 때, 이론 중심의 설명 방식이 이해도를 저하시키고 있을 가능성이 높습니다.",
     "materialEvidence": "업로드된 강의자료의 예시 충분도 분석 결과: '낮음' (슬라이드 20장 중 예시 포함 2장)"
   }],
-  "actionItems": ["다음 수업 도입부 5분 동안, 지난 시간의 핵심 개념 하나를 학생이 먼저 떠올려 적게 한 뒤 실생활 사례 2가지로 복습합니다 (인출 연습/retrieval practice). 이후 본 강의에서도 추상적 정의보다 예시를 먼저 제시하고 거기서 개념을 끌어내는 루틴을 유지하세요 (구체적 예시 우선/concrete examples)."]
+  "actionItems": ["다음 수업 도입부 5분 동안, 지난 시간의 핵심 개념 하나를 학생이 먼저 떠올려 적게 한 뒤 실생활 사례 2가지로 복습하는 방식을 참고할 수 있습니다 (인출 연습/retrieval practice). 이후 본 강의에서도 추상적 정의보다 예시를 먼저 제시하고 거기서 개념을 끌어내는 루틴을 시도해볼 수 있습니다 (구체적 예시 우선/concrete examples)."]
 }
 
 --- 나쁜 출력 예시 (금지) ---
 {
-  "causes": [{"axis": "자료 이해도", "observation": "이해도가 낮습니다.", "possibleCause": "학생들이 이해를 못하고 있을 수 있습니다.", "materialEvidence": null}],
-  "actionItems": ["설명을 더 잘 해주세요."]
+  "causes": [{"axis": "내용 이해", "observation": "내용 이해가 낮습니다.", "possibleCause": "학생들이 일부 개념을 따라가기 어려웠을 수 있습니다.", "materialEvidence": null}],
+  "actionItems": ["설명 방식을 조정하세요."]
 }
 --- 예시 끝 ---
 

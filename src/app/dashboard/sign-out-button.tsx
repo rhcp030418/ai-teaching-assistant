@@ -6,7 +6,7 @@ export function SignOutButton() {
   return (
     <button
       onClick={() => logoutAction()}
-      className="text-gray-400 hover:text-gray-600 text-sm"
+      className="rounded-full px-3 py-2 text-sm font-bold text-slate-400 hover:bg-blue-50 hover:text-[#0F5FD7]"
     >
       로그아웃
     </button>

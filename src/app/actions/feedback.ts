@@ -9,40 +9,95 @@ function parseFormData(formData: FormData) {
   const token = formData.get("token") as string;
   const speed = formData.get("speed") as string;
   const comprehension = formData.get("comprehension") as string;
+  const materialHelp = Number(formData.get("materialHelp"));
   const communication = Number(formData.get("communication"));
   const interest = formData.get("interest") ? Number(formData.get("interest")) : null;
   const assignment = formData.get("assignment") ? Number(formData.get("assignment")) : null;
   const practice = formData.get("practice") ? Number(formData.get("practice")) : null;
-  const comment = (formData.get("comment") as string) || null;
+  const positiveComment = normalizeOptionalText(formData.get("positiveComment") as string);
+  const difficultyComment = normalizeOptionalText(formData.get("difficultyComment") as string);
+  const legacyComment = normalizeOptionalText(formData.get("comment") as string);
+  const comment = combineComments(positiveComment, difficultyComment, legacyComment);
   const forceSubmit = formData.get("forceSubmit") === "true";
 
-  return { courseId, token, speed, comprehension, communication, interest, assignment, practice, comment, forceSubmit };
+  return {
+    courseId,
+    token,
+    speed,
+    comprehension,
+    materialHelp,
+    communication,
+    interest,
+    assignment,
+    practice,
+    positiveComment,
+    difficultyComment,
+    comment,
+    forceSubmit,
+  };
 }
 
-const VALID_SPEED = ["fast", "moderate", "slow"] as const;
-const VALID_COMPREHENSION = ["high", "medium", "low"] as const;
+const VALID_SPEED = ["very_slow", "slow", "moderate", "fast", "very_fast"] as const;
+const VALID_LEGACY_SPEED = ["slow", "moderate", "fast"] as const;
+
+function normalizeOptionalText(value: string | null) {
+  const trimmed = value?.trim();
+  return trimmed ? trimmed : null;
+}
+
+function combineComments(
+  positiveComment: string | null,
+  difficultyComment: string | null,
+  legacyComment: string | null
+) {
+  const parts: string[] = [];
+  if (positiveComment) parts.push(`좋았던 점: ${positiveComment}`);
+  if (difficultyComment) parts.push(`어려웠던 점: ${difficultyComment}`);
+  if (parts.length > 0) return parts.join("\n\n");
+  return legacyComment;
+}
+
+function isScore(value: number) {
+  return Number.isInteger(value) && value >= 1 && value <= 5;
+}
+
+function activityPoints(positiveComment: string | null, difficultyComment: string | null) {
+  let points = 1;
+  if ((positiveComment?.trim().length ?? 0) >= 10) points += 1;
+  if ((difficultyComment?.trim().length ?? 0) >= 10) points += 1;
+  return points;
+}
 
 function validateBase(data: ReturnType<typeof parseFormData>) {
   if (!data.courseId || !data.token || !data.speed || !data.comprehension) {
     return "필수 항목을 모두 선택해주세요.";
   }
-  if (!VALID_SPEED.includes(data.speed as (typeof VALID_SPEED)[number])) {
+  if (
+    !VALID_SPEED.includes(data.speed as (typeof VALID_SPEED)[number]) &&
+    !VALID_LEGACY_SPEED.includes(data.speed as (typeof VALID_LEGACY_SPEED)[number])
+  ) {
     return "올바른 수업 속도를 선택해주세요.";
   }
-  if (!VALID_COMPREHENSION.includes(data.comprehension as (typeof VALID_COMPREHENSION)[number])) {
-    return "올바른 이해도를 선택해주세요.";
+  if (!["1", "2", "3", "4", "5", "high", "medium", "low"].includes(data.comprehension)) {
+    return "올바른 내용 이해 점수를 선택해주세요.";
   }
-  if (isNaN(data.communication) || data.communication < 1 || data.communication > 5) {
-    return "소통 만족도는 1~5점 사이여야 합니다.";
+  if (!isScore(Number(data.comprehension))) {
+    return "내용 이해는 1~5점 사이여야 합니다.";
   }
-  if (data.interest !== null && (isNaN(data.interest) || data.interest < 1 || data.interest > 5)) {
-    return "강의 흥미도는 1~5점 사이여야 합니다.";
+  if (!isScore(data.materialHelp)) {
+    return "자료·예시 도움은 1~5점 사이여야 합니다.";
   }
-  if (data.assignment !== null && (isNaN(data.assignment) || data.assignment < 1 || data.assignment > 5)) {
+  if (!isScore(data.communication)) {
+    return "질문·소통 편의는 1~5점 사이여야 합니다.";
+  }
+  if (data.interest === null || !isScore(data.interest)) {
+    return "학습 몰입은 1~5점 사이여야 합니다.";
+  }
+  if (data.assignment !== null && !isScore(data.assignment)) {
     return "과제 적절성은 1~5점 사이여야 합니다.";
   }
-  if (data.practice !== null && (isNaN(data.practice) || data.practice < 1 || data.practice > 5)) {
-    return "실습/예시 충분도는 1~5점 사이여야 합니다.";
+  if (data.practice !== null && !isScore(data.practice)) {
+    return "실습·예시 도움은 1~5점 사이여야 합니다.";
   }
   return null;
 }
@@ -59,10 +114,14 @@ function feedbackData(data: ReturnType<typeof parseFormData>) {
   return {
     speed: data.speed,
     comprehension: data.comprehension,
+    materialHelp: data.materialHelp,
     communication: data.communication,
     interest: data.interest,
     assignment: data.assignment,
     practice: data.practice,
+    positiveComment: data.positiveComment,
+    difficultyComment: data.difficultyComment,
+    activityPoints: activityPoints(data.positiveComment, data.difficultyComment),
     comment: data.comment,
   };
 }
@@ -152,4 +211,3 @@ export async function submitStudentFeedback(formData: FormData) {
   backgroundClassify(feedback.id, data.comment);
   return { success: true };
 }
-

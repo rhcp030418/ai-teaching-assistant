@@ -14,6 +14,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 
+const V3_CARD =
+  "rounded-[22px] border-blue-100 bg-white/90 shadow-[0_14px_38px_-26px_rgba(23,87,168,0.45)]";
 
 export function ToneClient() {
   const [text, setText] = useState("");
@@ -40,17 +42,17 @@ export function ToneClient() {
   }
 
   return (
-    <div className="space-y-6 max-w-3xl">
+    <div className="space-y-6">
       {error && (
-        <div className="bg-red-50 text-red-600 text-sm p-3 rounded-md">
+        <div className="rounded-[16px] border border-red-100 bg-red-50 px-4 py-3 text-sm font-medium text-red-600">
           {error}
         </div>
       )}
 
       {/* Input */}
-      <Card>
+      <Card className={V3_CARD}>
         <CardHeader>
-          <CardTitle className="text-base">원문 입력</CardTitle>
+          <CardTitle className="text-base text-[#10233F]">원문 입력</CardTitle>
           <CardDescription>
             학생에게 보낼 공지, 이메일, 메시지를 입력하세요.
           </CardDescription>
@@ -61,8 +63,13 @@ export function ToneClient() {
             onChange={(e) => setText(e.target.value)}
             placeholder="예: 과제 제출 기한을 어긴 학생은 어떠한 사유도 인정하지 않겠음. 명심하기 바람."
             rows={5}
+            className="min-h-[150px] rounded-[18px] border-blue-100 bg-white/85 text-[#27496D] focus-visible:ring-blue-200"
           />
-          <Button onClick={handleSubmit} disabled={pending || text.length < 5}>
+          <Button
+            onClick={handleSubmit}
+            disabled={pending || text.length < 5}
+            className="rounded-full bg-[#1677FF] px-5 font-bold text-white shadow-[0_12px_24px_rgba(22,119,255,0.20)] hover:bg-[#0F5FD7]"
+          >
             {pending ? "분석 중..." : "톤 분석 및 보정"}
           </Button>
         </CardContent>
@@ -72,9 +79,9 @@ export function ToneClient() {
       {result && (
         <>
           {/* Overall tone */}
-          <Card>
+          <Card className={V3_CARD}>
             <CardHeader>
-              <CardTitle className="text-base">전체 톤 평가</CardTitle>
+              <CardTitle className="text-base text-[#10233F]">전체 톤 평가</CardTitle>
             </CardHeader>
             <CardContent>
               <Badge variant="secondary" className="text-sm">
@@ -85,9 +92,9 @@ export function ToneClient() {
 
           {/* Issues */}
           {result.issues.length > 0 && (
-            <Card>
+            <Card className={V3_CARD}>
               <CardHeader>
-                <CardTitle className="text-base">
+                <CardTitle className="text-base text-[#10233F]">
                   감지된 표현 ({result.issues.length}건)
                 </CardTitle>
               </CardHeader>
@@ -117,10 +124,10 @@ export function ToneClient() {
           )}
 
           {/* Corrected text */}
-          <Card>
+          <Card className={V3_CARD}>
             <CardHeader>
               <div className="flex items-center justify-between">
-                <CardTitle className="text-base">수정된 전체 텍스트</CardTitle>
+                <CardTitle className="text-base text-[#10233F]">수정된 전체 텍스트</CardTitle>
                 <Button
                   size="sm"
                   variant="outline"
@@ -131,16 +138,16 @@ export function ToneClient() {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="bg-gray-50 rounded-lg p-4 text-sm text-gray-700 whitespace-pre-wrap">
+              <div className="rounded-[16px] bg-blue-50/50 p-4 text-sm leading-7 text-[#27496D] whitespace-pre-wrap">
                 {result.corrected}
               </div>
             </CardContent>
           </Card>
 
           {/* Comparison */}
-          <Card>
+          <Card className={V3_CARD}>
             <CardHeader>
-              <CardTitle className="text-base">원문 vs 수정문 비교</CardTitle>
+              <CardTitle className="text-base text-[#10233F]">원문 vs 수정문 비교</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

@@ -2,7 +2,7 @@
 
 import { prisma } from "@/lib/db";
 import { auth } from "@/lib/auth";
-import { getPrevSemester, getStatsForCourses } from "@/lib/feedback-stats";
+import { comprehensionScore, getPrevSemester, getStatsForCourses } from "@/lib/feedback-stats";
 
 function detectChanges(
   curr: { communicationAvg: number; comprehensionHigh: number; speedModerate: number },
@@ -10,9 +10,9 @@ function detectChanges(
 ): SignificantChange[] {
   const changes: SignificantChange[] = [];
   const commDelta = Math.round((curr.communicationAvg - prev.communicationAvg) * 10) / 10;
-  if (commDelta >= 0.5) changes.push({ axis: "communication", label: "소통 만족도", delta: commDelta });
+  if (commDelta >= 0.5) changes.push({ axis: "communication", label: "질문·소통 편의", delta: commDelta });
   const compDelta = curr.comprehensionHigh - prev.comprehensionHigh;
-  if (compDelta >= 15) changes.push({ axis: "comprehension", label: "자료 이해도", delta: compDelta });
+  if (compDelta >= 15) changes.push({ axis: "comprehension", label: "내용 이해", delta: compDelta });
   const speedDelta = curr.speedModerate - prev.speedModerate;
   if (speedDelta >= 15) changes.push({ axis: "speed", label: "수업 속도 적절성", delta: speedDelta });
   return changes;
@@ -177,7 +177,7 @@ export async function getRoundReports(courseId: string): Promise<RoundReportsRes
     }
 
     const speedModerate = fbs.filter((f) => f.speed === "moderate").length;
-    const comprehensionHigh = fbs.filter((f) => f.comprehension === "high").length;
+    const comprehensionHigh = fbs.filter((f) => comprehensionScore(f.comprehension) >= 4).length;
     const communicationSum = fbs.reduce((s, f) => s + f.communication, 0);
     const interestVals = fbs.filter((f) => f.interest != null).map((f) => f.interest as number);
     const assignmentVals = fbs.filter((f) => f.assignment != null).map((f) => f.assignment as number);

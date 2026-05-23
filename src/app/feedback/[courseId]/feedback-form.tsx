@@ -1,59 +1,65 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { submitFeedback, submitStudentFeedback } from "@/app/actions/feedback";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { filterComment } from "@/lib/comment-filter";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 
 const speedOptions = [
-  { value: "fast", label: "빠름" },
-  { value: "moderate", label: "적당" },
-  { value: "slow", label: "느림" },
+  { value: "very_slow", label: "많이 느렸어요" },
+  { value: "slow", label: "조금 느렸어요" },
+  { value: "moderate", label: "적당했어요" },
+  { value: "fast", label: "조금 빨랐어요" },
+  { value: "very_fast", label: "많이 빨랐어요" },
 ];
 
-const comprehensionOptions = [
-  { value: "high", label: "높음" },
-  { value: "medium", label: "보통" },
-  { value: "low", label: "낮음" },
-];
+const V3_CARD =
+  "rounded-[22px] border-blue-100 bg-white/90 shadow-[0_10px_30px_-15px_rgba(23,87,168,0.25)]";
 
 function ScoreInput({
   name,
   label,
+  description,
   value,
   onChange,
 }: {
   name: string;
   label: string;
+  description: string;
   value: number | null;
   onChange: (v: number) => void;
 }) {
   return (
-    <Card>
+    <Card className={V3_CARD}>
       <CardHeader>
-        <CardTitle className="text-base">{label}</CardTitle>
+        <CardTitle className="text-base text-[#10233F]">{label}</CardTitle>
+        <CardDescription className="text-slate-500">{description}</CardDescription>
       </CardHeader>
       <CardContent>
         <input type="hidden" name={name} value={value ?? ""} />
-        <div className="flex gap-2">
+        <div className="grid grid-cols-5 gap-2">
           {[1, 2, 3, 4, 5].map((score) => (
             <button
               key={score}
               type="button"
               onClick={() => onChange(score)}
-              className={`w-12 h-12 rounded-lg border-2 text-lg font-semibold transition-colors ${
+              className={`h-12 rounded-[14px] border text-lg font-bold transition-colors ${
                 value === score
-                  ? "border-blue-600 bg-blue-600 text-white"
-                  : "border-gray-200 bg-white text-gray-600 hover:border-blue-300"
+                  ? "border-[#1677FF] bg-gradient-to-br from-[#1677FF] to-[#38BDF8] text-white shadow-[0_10px_20px_-12px_rgba(22,119,255,0.7)]"
+                  : "border-blue-100 bg-white text-[#27496D] hover:border-blue-300 hover:bg-blue-50"
               }`}
+              aria-pressed={value === score}
             >
               {score}
             </button>
           ))}
         </div>
-        <p className="text-xs text-gray-400 mt-2">1 = 매우 불만족, 5 = 매우 만족</p>
+        <div className="mt-2 flex justify-between text-xs font-semibold text-slate-400">
+          <span>전혀 아니다</span>
+          <span>매우 그렇다</span>
+        </div>
       </CardContent>
     </Card>
   );
@@ -67,30 +73,75 @@ interface Props {
   hasPractice?: boolean;
 }
 
-export function FeedbackForm({ courseId, token, mode = "legacy", hasAssignment = false, hasPractice = false }: Props) {
+function commentWarning(...comments: string[]) {
+  const joined = comments.filter(Boolean).join("\n");
+  if (!joined.trim()) return null;
+  const result = filterComment(joined);
+  if (!result.reason) return null;
+  return result;
+}
+
+function writtenPoint(text: string) {
+  return text.trim().length >= 10 ? 1 : 0;
+}
+
+export function FeedbackForm({
+  courseId,
+  token,
+  mode = "legacy",
+  hasAssignment = false,
+  hasPractice = false,
+}: Props) {
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [warned, setWarned] = useState(false);
   const [pending, setPending] = useState(false);
+  const [speed, setSpeed] = useState<string | null>(null);
+  const [comprehension, setComprehension] = useState<number | null>(null);
+  const [materialHelp, setMaterialHelp] = useState<number | null>(null);
   const [communication, setCommunication] = useState<number | null>(null);
   const [interest, setInterest] = useState<number | null>(null);
   const [assignment, setAssignment] = useState<number | null>(null);
   const [practice, setPractice] = useState<number | null>(null);
+  const [positiveComment, setPositiveComment] = useState("");
+  const [difficultyComment, setDifficultyComment] = useState("");
+
+  const liveWarning = useMemo(
+    () => commentWarning(positiveComment, difficultyComment),
+    [positiveComment, difficultyComment]
+  );
+  const points = 1 + writtenPoint(positiveComment) + writtenPoint(difficultyComment);
 
   if (submitted) {
     return (
-      <Card>
+      <Card className={V3_CARD}>
         <CardContent className="py-12 text-center">
-          <p className="text-lg font-semibold text-green-600">
-            피드백이 제출되었습니다!
-          </p>
-          <p className="text-gray-500 mt-2">소중한 의견 감사합니다.</p>
+          <p className="text-lg font-semibold text-green-600">피드백이 제출되었습니다!</p>
+          <p className="mt-2 text-gray-500">소중한 의견 감사합니다. 비교과 포인트는 기준에 따라 집계됩니다.</p>
         </CardContent>
       </Card>
     );
   }
 
+  function validateClient() {
+    if (!speed) return "수업 속도를 선택해주세요.";
+    if (!comprehension) return "내용 이해를 선택해주세요.";
+    if (!materialHelp) return "자료·예시 도움을 선택해주세요.";
+    if (!communication) return "질문·소통 편의를 선택해주세요.";
+    if (!interest) return "학습 몰입을 선택해주세요.";
+    if (hasAssignment && !assignment) return "과제 적절성을 선택해주세요.";
+    if (hasPractice && !practice) return "실습·예시 도움을 선택해주세요.";
+    return null;
+  }
+
   async function handleSubmit(formData: FormData, forceSubmit = false) {
+    const clientError = validateClient();
+    if (clientError) {
+      setError(clientError);
+      setWarned(false);
+      return;
+    }
+
     setPending(true);
     setError(null);
     setWarned(false);
@@ -118,13 +169,13 @@ export function FeedbackForm({ courseId, token, mode = "legacy", hasAssignment =
   return (
     <form className="space-y-6">
       {error && !warned && (
-        <div className="bg-red-50 text-red-600 text-sm p-3 rounded-md">
+        <div className="rounded-[18px] border border-red-100 bg-red-50 p-3 text-sm font-semibold text-red-600">
           {error}
         </div>
       )}
 
       {warned && (
-        <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 text-sm p-3 rounded-md space-y-2">
+        <div className="space-y-2 rounded-[18px] border border-yellow-200 bg-yellow-50 p-3 text-sm font-semibold text-yellow-800">
           <p>{error}</p>
           <div className="flex gap-2">
             <Button
@@ -144,8 +195,7 @@ export function FeedbackForm({ courseId, token, mode = "legacy", hasAssignment =
               onClick={(e) => {
                 e.preventDefault();
                 const form = e.currentTarget.closest("form")!;
-                const formData = new FormData(form);
-                handleSubmit(formData, true);
+                handleSubmit(new FormData(form), true);
               }}
               disabled={pending}
             >
@@ -155,101 +205,191 @@ export function FeedbackForm({ courseId, token, mode = "legacy", hasAssignment =
         </div>
       )}
 
-      {/* 수업 속도 */}
-      <Card>
+      <Card className={`${V3_CARD} bg-gradient-to-br from-white via-white to-blue-50/70`}>
         <CardHeader>
-          <CardTitle className="text-base">수업 속도</CardTitle>
+          <CardTitle className="text-base text-[#10233F]">익명 피드백 안내</CardTitle>
+          <CardDescription className="leading-6 text-slate-500">
+            응답은 익명으로 집계되며 교수자는 누가 작성했는지 알 수 없습니다. 정답은 없으니 오늘 수업에서 느낀 그대로 선택해 주세요.
+          </CardDescription>
         </CardHeader>
         <CardContent>
-          <RadioGroup name="speed" required className="flex gap-4">
+          <div className="flex flex-wrap gap-2">
+            <span className="rounded-full bg-sky-50 px-3 py-1.5 text-xs font-bold text-sky-700">약 2분</span>
+            <span className="rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-bold text-emerald-700">익명 제출</span>
+            <span className="rounded-full bg-blue-50 px-3 py-1.5 text-xs font-bold text-[#0F5FD7]">최대 3P</span>
+          </div>
+        </CardContent>
+      </Card>
+
+      <ScoreInput
+        name="comprehension"
+        label="내용 이해"
+        description="오늘 수업 내용을 잘 이해할 수 있었다."
+        value={comprehension}
+        onChange={setComprehension}
+      />
+
+      <ScoreInput
+        name="materialHelp"
+        label="자료·예시 도움"
+        description="강의 자료와 예시가 이해에 도움이 되었다."
+        value={materialHelp}
+        onChange={setMaterialHelp}
+      />
+
+      <ScoreInput
+        name="communication"
+        label="질문·소통 편의"
+        description="질문하거나 의견을 말하기 편했다."
+        value={communication}
+        onChange={setCommunication}
+      />
+
+      <ScoreInput
+        name="interest"
+        label="학습 몰입"
+        description="수업 흐름이 집중을 유지하는 데 도움이 되었다."
+        value={interest}
+        onChange={setInterest}
+      />
+
+      <Card className={V3_CARD}>
+        <CardHeader>
+          <CardTitle className="text-base text-[#10233F]">수업 속도</CardTitle>
+          <CardDescription className="text-slate-500">
+            속도는 좋고 나쁨이 아니라 느림/빠름의 방향과 강도를 따로 집계합니다.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <input type="hidden" name="speed" value={speed ?? ""} />
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-5">
             {speedOptions.map((opt) => (
-              <label
+              <button
                 key={opt.value}
-                className="flex items-center gap-2 cursor-pointer"
+                type="button"
+                onClick={() => setSpeed(opt.value)}
+                className={`min-h-12 rounded-[14px] border px-2 text-sm font-bold transition-colors ${
+                  speed === opt.value
+                    ? "border-[#1677FF] bg-gradient-to-br from-[#1677FF] to-[#38BDF8] text-white shadow-[0_10px_20px_-12px_rgba(22,119,255,0.7)]"
+                    : "border-blue-100 bg-white text-[#27496D] hover:border-blue-300 hover:bg-blue-50"
+                }`}
+                aria-pressed={speed === opt.value}
               >
-                <RadioGroupItem value={opt.value} />
-                <span>{opt.label}</span>
-              </label>
+                {opt.label}
+              </button>
             ))}
-          </RadioGroup>
+          </div>
         </CardContent>
       </Card>
 
-      {/* 자료 이해도 */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">자료 이해도</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <RadioGroup name="comprehension" required className="flex gap-4">
-            {comprehensionOptions.map((opt) => (
-              <label
-                key={opt.value}
-                className="flex items-center gap-2 cursor-pointer"
-              >
-                <RadioGroupItem value={opt.value} />
-                <span>{opt.label}</span>
-              </label>
-            ))}
-          </RadioGroup>
-        </CardContent>
-      </Card>
-
-      {/* 소통 만족도 */}
-      <ScoreInput name="communication" label="소통 만족도" value={communication} onChange={setCommunication} />
-
-      {/* 강의 흥미도 (항상 표시) */}
-      <ScoreInput name="interest" label="강의 흥미도" value={interest} onChange={setInterest} />
-
-      {/* 과제 적절성 (조건부) */}
       {hasAssignment && (
-        <ScoreInput name="assignment" label="과제 적절성" value={assignment} onChange={setAssignment} />
+        <ScoreInput
+          name="assignment"
+          label="과제 적절성"
+          description="과제의 난이도와 분량이 수업 내용과 잘 맞았다."
+          value={assignment}
+          onChange={setAssignment}
+        />
       )}
 
-      {/* 실습/예시 충분도 (조건부) */}
       {hasPractice && (
-        <ScoreInput name="practice" label="실습/예시 충분도" value={practice} onChange={setPractice} />
+        <ScoreInput
+          name="practice"
+          label="실습·예시 도움"
+          description="실습이나 예시가 내용을 이해하는 데 도움이 되었다."
+          value={practice}
+          onChange={setPractice}
+        />
       )}
 
-      {/* 추가 의견 */}
-      <Card>
+      <Card className={V3_CARD}>
         <CardHeader>
-          <CardTitle className="text-base">
-            추가 의견 <span className="text-gray-400 font-normal">(선택)</span>
+          <CardTitle className="text-base text-[#10233F]">
+            학생 의견 <span className="font-normal text-slate-400">(선택)</span>
           </CardTitle>
+          <CardDescription className="leading-6 text-slate-500">
+            짧게 한 줄만 적어도 충분합니다. 10자 이상 작성한 칸은 비교과 포인트 기준에 반영됩니다.
+          </CardDescription>
         </CardHeader>
-        <CardContent>
-          <Textarea
-            name="comment"
-            placeholder="수업에 대한 의견을 자유롭게 작성해주세요."
-            maxLength={500}
-            rows={3}
-          />
+        <CardContent className="space-y-4">
+          <div>
+            <label className="mb-2 block text-sm font-extrabold text-[#10233F]">좋았던 점</label>
+            <Textarea
+              name="positiveComment"
+              value={positiveComment}
+              onChange={(e) => setPositiveComment(e.target.value)}
+              placeholder="예: 정규화 예시를 표로 보여줘서 이해하기 쉬웠어요."
+              maxLength={500}
+              rows={3}
+              className="rounded-[18px] border-blue-100 focus-visible:ring-blue-200"
+            />
+          </div>
+          <div>
+            <label className="mb-2 block text-sm font-extrabold text-[#10233F]">
+              어려웠던 점 또는 더 설명이 필요한 점
+            </label>
+            <Textarea
+              name="difficultyComment"
+              value={difficultyComment}
+              onChange={(e) => setDifficultyComment(e.target.value)}
+              placeholder="예: 조인 종류별 차이가 아직 헷갈려서 예시가 조금 더 있으면 좋겠습니다."
+              maxLength={500}
+              rows={3}
+              className="rounded-[18px] border-blue-100 focus-visible:ring-blue-200"
+            />
+          </div>
+          {liveWarning?.reason ? (
+            <div
+              className={`rounded-[16px] border p-3 text-sm font-semibold ${
+                liveWarning.blocked
+                  ? "border-red-200 bg-red-50 text-red-700"
+                  : "border-amber-200 bg-amber-50 text-amber-800"
+              }`}
+            >
+              표현을 한 번 확인해 주세요. {liveWarning.reason}
+            </div>
+          ) : null}
         </CardContent>
       </Card>
 
-      {/* 제출 안내 */}
-      <div className="bg-blue-50 border border-blue-200 text-blue-800 text-sm p-3 rounded-md">
-        한 번 제출하면 익명성 보장을 위해 <strong>수정할 수 없습니다</strong>. 신중하게 작성해주세요.
+      <Card className={`${V3_CARD} border-emerald-100 bg-emerald-50/70`}>
+        <CardContent className="space-y-2 py-4 text-sm font-semibold text-emerald-800">
+          <div className="flex items-center justify-between">
+            <span>피드백 제출</span>
+            <strong>1P</strong>
+          </div>
+          <div className="flex items-center justify-between">
+            <span>도움이 된 점 작성(10자 이상)</span>
+            <strong>+{writtenPoint(positiveComment)}P</strong>
+          </div>
+          <div className="flex items-center justify-between">
+            <span>더 설명이 필요한 점 작성(10자 이상)</span>
+            <strong>+{writtenPoint(difficultyComment)}P</strong>
+          </div>
+          <div className="border-t border-emerald-200 pt-2 text-base font-extrabold">
+            예상 비교과 포인트: {points}P
+          </div>
+        </CardContent>
+      </Card>
+
+      <div className="rounded-[18px] border border-blue-200 bg-blue-50 p-3 text-sm text-blue-800">
+        한 번 제출하면 익명성 보장을 위해 <strong>수정할 수 없습니다</strong>. 제출 전 선택한 항목을 확인해 주세요.
       </div>
 
       <Button
         type="button"
-        className="w-full"
+        className="w-full rounded-full bg-[#1677FF] font-extrabold text-white shadow-[0_14px_28px_rgba(22,119,255,0.22)] hover:bg-[#0F5FD7]"
         size="lg"
         disabled={pending}
         onClick={(e) => {
           const form = e.currentTarget.closest("form") as HTMLFormElement;
-          if (!form.reportValidity()) return;
-          const ok = window.confirm(
-            "제출 후에는 수정할 수 없습니다.\n정말 제출하시겠습니까?"
-          );
+          const ok = window.confirm("제출 후에는 수정할 수 없습니다.\n정말 제출하시겠습니까?");
           if (ok) {
             handleSubmit(new FormData(form));
           }
         }}
       >
-        {pending ? "제출 중..." : "피드백 제출"}
+        {pending ? "제출 중..." : "익명 피드백 제출"}
       </Button>
     </form>
   );

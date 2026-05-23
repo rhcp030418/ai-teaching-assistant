@@ -16,12 +16,20 @@ import {
   MyCurrentStats,
   getAIInsightForCase,
 } from "@/app/actions/improvement-cases";
+import {
+  DEMO_CASE_INSIGHT,
+  DEMO_IMPROVEMENT_CASES,
+  DEMO_MY_STATS,
+} from "@/lib/demo-ai-fixtures";
 
 const axisLabel: Record<string, string> = {
-  communication: "소통 만족도",
-  comprehension: "자료 이해도",
+  communication: "질문·소통 편의",
+  comprehension: "내용 이해",
   speed: "수업 속도",
 };
+
+const V3_CARD =
+  "ring-0 border-blue-100 bg-white/90 shadow-[0_10px_30px_-15px_rgba(23,87,168,0.25)]";
 
 function ChangeIndicator({
   label,
@@ -61,12 +69,27 @@ function ChangeIndicator({
   );
 }
 
-function CaseCard({ c, myStats }: { c: ImprovementCase; myStats: MyCurrentStats }) {
-  const [insight, setInsight] = useState<string | null>(c.aiInsight);
+function CaseCard({
+  c,
+  myStats,
+  demoMode = false,
+}: {
+  c: ImprovementCase;
+  myStats: MyCurrentStats;
+  demoMode?: boolean;
+}) {
+  const [insight, setInsight] = useState<string | null>(
+    demoMode ? (c.aiInsight ?? DEMO_CASE_INSIGHT) : c.aiInsight
+  );
   const [loading, setLoading] = useState(false);
 
   async function handleAnalyze() {
     setLoading(true);
+    if (demoMode) {
+      setInsight(DEMO_CASE_INSIGHT);
+      setLoading(false);
+      return;
+    }
     try {
       const result = await getAIInsightForCase(c, myStats);
       setInsight(result);
@@ -76,7 +99,7 @@ function CaseCard({ c, myStats }: { c: ImprovementCase; myStats: MyCurrentStats 
   }
 
   return (
-    <div className="border rounded-lg p-4 space-y-3">
+    <div className="border border-blue-100 rounded-[18px] bg-white/80 p-4 space-y-3">
       <div className="flex items-center justify-between">
         <div>
           <p className="font-medium text-sm">{c.label}</p>
@@ -89,9 +112,9 @@ function CaseCard({ c, myStats }: { c: ImprovementCase; myStats: MyCurrentStats 
         </Badge>
       </div>
 
-      <div className="bg-gray-50 rounded-lg p-3 space-y-2">
+      <div className="bg-blue-50/50 rounded-lg p-3 space-y-2">
         <ChangeIndicator
-          label="소통 만족도"
+          label="질문·소통 편의"
           before={c.beforeAvg}
           after={c.afterAvg}
           unit="점"
@@ -103,7 +126,7 @@ function CaseCard({ c, myStats }: { c: ImprovementCase; myStats: MyCurrentStats 
           unit="%"
         />
         <ChangeIndicator
-          label="이해도 '높음' 비율"
+          label="내용 이해 '높음' 비율"
           before={c.changes.comprehensionHigh.before}
           after={c.changes.comprehensionHigh.after}
           unit="%"
@@ -135,7 +158,7 @@ function CaseCard({ c, myStats }: { c: ImprovementCase; myStats: MyCurrentStats 
                   <div className="space-y-1">
                     <p className="text-xs text-gray-400 font-medium">다른 분야</p>
                     {other.map((n, i) => (
-                      <div key={i} className="bg-gray-50 rounded p-2 text-xs text-gray-600">
+                      <div key={i} className="bg-blue-50/50 rounded p-2 text-xs text-[#27496D]">
                         &ldquo;{n.note}&rdquo;
                       </div>
                     ))}
@@ -173,26 +196,30 @@ function CaseCard({ c, myStats }: { c: ImprovementCase; myStats: MyCurrentStats 
 export function ImprovementCases({
   cases,
   myStats,
+  demoMode = false,
 }: {
   cases: ImprovementCase[];
   myStats: MyCurrentStats;
+  demoMode?: boolean;
 }) {
-  if (cases.length === 0) return null;
+  const displayCases = demoMode && cases.length === 0 ? DEMO_IMPROVEMENT_CASES : cases;
+  const displayStats = demoMode ? DEMO_MY_STATS : myStats;
+  if (displayCases.length === 0) return null;
 
   return (
-    <Card>
+    <Card className={V3_CARD}>
       <CardHeader>
-        <CardTitle className="text-base">개선 사례</CardTitle>
-        <CardDescription>
+        <CardTitle className="text-base text-[#10233F]">개선 사례</CardTitle>
+        <CardDescription className="text-slate-500">
           같은 카테고리에서 평점이 상승한 익명 교수들의 사례입니다.
           &quot;내 강의에 적용하기&quot;를 누르면 AI가 내 강의 통계와 비교해 맞춤 제안을 드립니다.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        {cases.map((c, i) => (
+        {displayCases.map((c, i) => (
           <div key={i}>
             {i > 0 && <Separator className="mb-4" />}
-            <CaseCard c={c} myStats={myStats} />
+            <CaseCard c={c} myStats={displayStats} demoMode={demoMode} />
           </div>
         ))}
       </CardContent>

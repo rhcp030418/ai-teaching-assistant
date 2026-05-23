@@ -13,6 +13,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 
+const V3_CARD =
+  "ring-0 border-blue-100 bg-white/90 shadow-[0_10px_30px_-15px_rgba(23,87,168,0.25)]";
+
 interface Round {
   id: string;
   week: number;
@@ -116,10 +119,10 @@ export function RoundManager({ courseId, initialRounds }: Props) {
   }
 
   return (
-    <Card>
+    <Card className={V3_CARD}>
       <CardHeader>
-        <CardTitle className="text-base">주차별 평가 관리</CardTitle>
-        <CardDescription>
+        <CardTitle className="text-base text-[#10233F]">주차별 평가 관리</CardTitle>
+        <CardDescription className="text-slate-500">
           시작/종료 시간을 지정하면 자동으로 평가가 열리고 닫힙니다.
         </CardDescription>
       </CardHeader>
@@ -134,7 +137,7 @@ export function RoundManager({ courseId, initialRounds }: Props) {
               <div
                 key={round.id}
                 className={`flex items-center justify-between p-3 rounded-lg border ${
-                  round.status === "active" ? "border-blue-300 bg-blue-50" : "border-gray-200"
+                  round.status === "active" ? "border-blue-300 bg-blue-50" : "border-blue-100 bg-white/70"
                 }`}
               >
                 <div className="flex items-center gap-3 flex-wrap">
@@ -167,8 +170,8 @@ export function RoundManager({ courseId, initialRounds }: Props) {
         )}
 
         {/* 새 라운드 생성 */}
-        <div className="border-t pt-4 space-y-2">
-          <p className="text-sm font-medium">새 라운드 추가</p>
+        <div className="border-t border-blue-100 pt-4 space-y-2">
+          <p className="text-sm font-bold text-[#10233F]">새 라운드 추가</p>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
             <div>
               <label className="text-xs text-gray-500">주차</label>

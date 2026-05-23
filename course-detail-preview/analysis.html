@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>지원 인사이트 프리뷰</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="global-nav">
+    <div class="brand">AI Teaching Assistant</div>
+    <nav class="global-links">
+      <span>강의 목록</span>
+      <span>톤 보정</span>
+      <span class="divider"></span>
+      <span>김재환 교수님</span>
+      <span>로그아웃</span>
+    </nav>
+  </header>
+
+  <main class="shell">
+    <div class="route-note">실제 라우트: <strong>/dashboard/course/[courseId]/analysis</strong> · 선택형 지원 도구를 모은 페이지입니다.</div>
+
+    <section class="course-header">
+      <div class="course-title">
+        <h1>데이터베이스</h1>
+        <p>김재환 교수님 · 2026년 1학기 · 수강생 40명</p>
+      </div>
+      <div class="course-actions">
+        <a class="button" href="../COURSE_DETAIL_RESTRUCTURE_PREVIEW.html">프리뷰 목록</a>
+        <button class="button">자료실 바로가기</button>
+      </div>
+    </section>
+
+    <nav class="course-nav">
+      <a href="overview.html">현황 요약</a>
+      <a class="active" href="analysis.html">지원 인사이트</a>
+      <a href="management.html">관리 및 기록</a>
+      <a href="benchmark.html">비교 참고</a>
+    </nav>
+
+    <section class="page-layout">
+      <div class="main-column">
+        <article class="card">
+          <div class="card-header">
+            <p class="card-title">지원 인사이트</p>
+            <p class="card-desc">교수가 필요할 때 직접 여는 선택형 도구입니다. 자동 처방처럼 보이지 않도록 기본은 카드 요약 상태로 둡니다.</p>
+          </div>
+          <div class="card-body">
+            <div class="badge-row" style="margin-top:0">
+              <span class="badge">교수 선택 실행</span>
+              <span class="badge">학생 의견 기반</span>
+              <span class="badge">자료 근거 표시</span>
+            </div>
+          </div>
+        </article>
+
+        <section class="tool-grid">
+          <article class="card tool-card">
+            <span class="badge sky">자료 연결</span>
+            <h3 style="margin-top:12px">피드백-자료 맥락 연결</h3>
+            <p>학생 의견과 강의자료에서 함께 볼 만한 연결점을 정리합니다. 원인을 단정하지 않고 맥락을 나란히 보여주는 도구입니다.</p>
+            <div class="muted-panel">
+              <div class="list-title">예상 결과</div>
+              <div class="list-meta">학생 의견 근거 · 자료 근거 · 함께 볼 맥락</div>
+            </div>
+            <div style="margin-top:14px"><button class="button primary">연결점 정리</button></div>
+          </article>
+
+          <article class="card tool-card">
+            <span class="badge amber">수업 지원</span>
+            <h3 style="margin-top:12px">학생 반응 대응 가이드</h3>
+            <p>기존 AI 개선 로드맵 기능을 유지하되, 교수에게 지시하는 표현보다 참고 계획으로 보이도록 배치합니다.</p>
+            <div class="muted-panel">
+              <div class="list-title">우선 확인 항목</div>
+              <div class="list-meta">과제 설명 기준 · 실습 예시 보완 · 수업 속도 확인</div>
+            </div>
+            <div style="margin-top:14px"><button class="button">가이드 생성</button></div>
+          </article>
+
+          <article class="card tool-card">
+            <span class="badge green">이번 주차</span>
+            <h3 style="margin-top:12px">수업 운영 참고 포인트</h3>
+            <p>현재 주차 피드백을 바탕으로 다음 수업 전에 확인할 포인트를 정리합니다. 과거 기록은 관리 및 기록 페이지에 남깁니다.</p>
+            <div class="muted-panel">
+              <div class="list-title">현재 상태</div>
+              <div class="list-meta">5주차 피드백 28건 · 생성 가능</div>
+            </div>
+            <div style="margin-top:14px"><button class="button">참고 포인트 확인</button></div>
+          </article>
+
+          <article class="card tool-card">
+            <span class="badge">질문</span>
+            <h3 style="margin-top:12px">피드백에 대해 질문하기</h3>
+            <p>학생 의견의 반복 표현, 특정 주차 반응, 강의자료와 연결되는 부분을 질문합니다. 실제 구현은 Drawer 방식을 우선 검토합니다.</p>
+            <div class="muted-panel">
+              <div class="list-title">추천 질문</div>
+              <div class="list-meta">과제 관련 반복 의견만 모아줘.</div>
+            </div>
+            <div style="margin-top:14px"><button class="button">질문 열기</button></div>
+          </article>
+        </section>
+
+        <article class="card">
+          <div class="card-header">
+            <p class="card-title">지원 도구 결과 노출 방식</p>
+            <p class="card-desc">상세 결과는 버튼 클릭 후 펼쳐지는 구조를 가정합니다.</p>
+          </div>
+          <div class="card-body list">
+            <div class="list-row">
+              <div>
+                <div class="list-title">기본 상태</div>
+                <div class="list-meta">카드 제목, 설명, 생성 버튼만 노출합니다.</div>
+              </div>
+              <span class="badge">요약</span>
+            </div>
+            <div class="list-row">
+              <div>
+                <div class="list-title">결과 상태</div>
+                <div class="list-meta">교수가 실행한 뒤에만 상세 결과를 펼쳐 보여줍니다.</div>
+              </div>
+              <span class="badge blue">선택 실행</span>
+            </div>
+          </div>
+        </article>
+      </div>
+
+      <aside class="sidebar">
+        <article class="card">
+          <div class="card-header">
+            <p class="card-title">자료 상태</p>
+            <p class="card-desc">지원 인사이트 근거</p>
+          </div>
+          <div class="card-body">
+            <div class="side-stat"><span>분석된 자료</span><strong>4개</strong></div>
+            <div class="side-stat"><span>최근 업데이트</span><strong>5월 20일</strong></div>
+            <button class="button full">자료실 바로가기</button>
+          </div>
+        </article>
+
+        <article class="card">
+          <div class="card-body">
+            <button class="button primary full">학생 의견에 대해 질문하기</button>
+            <p class="hint">이 버튼은 실제 구현에서 AI 채팅 Drawer를 여는 진입점입니다.</p>
+          </div>
+        </article>
+      </aside>
+    </section>
+  </main>
+</body>
+</html>

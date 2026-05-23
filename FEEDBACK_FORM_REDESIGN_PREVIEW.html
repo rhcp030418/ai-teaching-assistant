@@ -1,0 +1,660 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>강의평가 항목 개편 Preview</title>
+    <style>
+      :root {
+        --navy: #10233f;
+        --text: #27496d;
+        --muted: #6b7c93;
+        --blue: #1677ff;
+        --sky: #38bdf8;
+        --line: #dbeafe;
+        --soft: #eff6ff;
+        --paper: rgba(255, 255, 255, 0.9);
+        --green: #10b981;
+        --amber: #f59e0b;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Apple SD Gothic Neo",
+          "Noto Sans KR", "Malgun Gothic", sans-serif;
+        color: var(--text);
+        background:
+          radial-gradient(circle at 10% -8%, rgba(56, 189, 248, 0.28), transparent 32%),
+          radial-gradient(circle at 88% 4%, rgba(22, 119, 255, 0.14), transparent 30%),
+          linear-gradient(180deg, #f8fbff 0%, #f4f8ff 46%, #f7fbff 100%);
+      }
+
+      .page {
+        width: min(1180px, calc(100vw - 40px));
+        margin: 0 auto;
+        padding: 34px 0 44px;
+      }
+
+      .shell {
+        overflow: hidden;
+        border: 1px solid rgba(191, 219, 254, 0.9);
+        border-radius: 34px;
+        background: rgba(255, 255, 255, 0.74);
+        box-shadow: 0 28px 76px -46px rgba(23, 87, 168, 0.58);
+        backdrop-filter: blur(18px);
+      }
+
+      .hero {
+        position: relative;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 330px;
+        gap: 28px;
+        padding: 34px;
+        border-bottom: 1px solid rgba(191, 219, 254, 0.82);
+        background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(237, 247, 255, 0.82));
+      }
+
+      .hero::before {
+        content: "";
+        position: absolute;
+        inset: 0 0 auto 0;
+        height: 6px;
+        background: linear-gradient(90deg, var(--blue), var(--sky), #8ee7ff);
+      }
+
+      .eyebrow {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        border-radius: 999px;
+        background: rgba(219, 234, 254, 0.8);
+        padding: 8px 12px;
+        color: #0f5fd7;
+        font-size: 12px;
+        font-weight: 900;
+      }
+
+      h1 {
+        margin: 16px 0 0;
+        color: var(--navy);
+        font-size: 34px;
+        line-height: 1.22;
+        letter-spacing: 0;
+      }
+
+      .hero p {
+        margin: 12px 0 0;
+        max-width: 680px;
+        color: var(--muted);
+        font-size: 15px;
+        font-weight: 600;
+        line-height: 1.75;
+      }
+
+      .status-card {
+        align-self: stretch;
+        border: 1px solid rgba(191, 219, 254, 0.86);
+        border-radius: 24px;
+        background: rgba(255, 255, 255, 0.74);
+        padding: 20px;
+        box-shadow: 0 12px 30px rgba(23, 87, 168, 0.07);
+      }
+
+      .status-card strong {
+        display: block;
+        color: var(--navy);
+        font-size: 16px;
+      }
+
+      .chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 16px;
+      }
+
+      .chip {
+        border-radius: 999px;
+        padding: 8px 11px;
+        font-size: 12px;
+        font-weight: 900;
+      }
+
+      .chip.blue {
+        background: #eaf4ff;
+        color: #0f5fd7;
+      }
+
+      .chip.green {
+        background: #ecfdf5;
+        color: #047857;
+      }
+
+      .chip.slate {
+        background: #f1f5f9;
+        color: #475569;
+      }
+
+      .content {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 300px;
+        gap: 24px;
+        padding: 26px;
+      }
+
+      .main {
+        display: grid;
+        gap: 18px;
+      }
+
+      .panel {
+        border: 1px solid rgba(191, 219, 254, 0.9);
+        border-radius: 26px;
+        background: var(--paper);
+        padding: 22px;
+        box-shadow: 0 16px 42px -30px rgba(23, 87, 168, 0.52);
+      }
+
+      .section-head {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 18px;
+        margin-bottom: 18px;
+      }
+
+      h2 {
+        margin: 0;
+        color: var(--navy);
+        font-size: 19px;
+        line-height: 1.35;
+      }
+
+      .section-head p,
+      .help {
+        margin: 6px 0 0;
+        color: var(--muted);
+        font-size: 13px;
+        font-weight: 600;
+        line-height: 1.6;
+      }
+
+      .question-grid {
+        display: grid;
+        gap: 14px;
+      }
+
+      .question {
+        display: grid;
+        grid-template-columns: minmax(210px, 1fr) 340px;
+        gap: 18px;
+        align-items: center;
+        border: 1px solid rgba(219, 234, 254, 0.9);
+        border-radius: 20px;
+        background: rgba(248, 251, 255, 0.78);
+        padding: 16px;
+      }
+
+      .question-title {
+        color: var(--navy);
+        font-size: 15px;
+        font-weight: 900;
+      }
+
+      .scale {
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        gap: 7px;
+      }
+
+      .scale button,
+      .speed button {
+        border: 1px solid rgba(191, 219, 254, 0.9);
+        border-radius: 999px;
+        background: white;
+        color: #3b5678;
+        font: inherit;
+        font-size: 13px;
+        font-weight: 900;
+        padding: 10px 0;
+        cursor: default;
+        transition: 0.18s ease;
+      }
+
+      .scale button.active,
+      .speed button.active {
+        border-color: transparent;
+        background: linear-gradient(135deg, var(--blue), var(--sky));
+        color: white;
+        box-shadow: 0 12px 24px rgba(22, 119, 255, 0.2);
+      }
+
+      .labels {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 7px;
+        color: #94a3b8;
+        font-size: 11px;
+        font-weight: 800;
+      }
+
+      .speed {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 9px;
+      }
+
+      .speed.five {
+        grid-template-columns: repeat(5, 1fr);
+      }
+
+      .textarea-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+      }
+
+      .textarea-card {
+        border: 1px solid rgba(219, 234, 254, 0.9);
+        border-radius: 22px;
+        background: rgba(248, 251, 255, 0.72);
+        padding: 16px;
+      }
+
+      .textarea-card h3 {
+        margin: 0;
+        color: var(--navy);
+        font-size: 15px;
+      }
+
+      .textarea-card p {
+        margin: 7px 0 12px;
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 600;
+        line-height: 1.55;
+      }
+
+      .mock-textarea {
+        min-height: 128px;
+        border: 1px dashed rgba(148, 163, 184, 0.5);
+        border-radius: 16px;
+        background: white;
+        padding: 14px;
+        color: #94a3b8;
+        font-size: 13px;
+        font-weight: 600;
+        line-height: 1.55;
+      }
+
+      .aside {
+        display: grid;
+        align-content: start;
+        gap: 14px;
+      }
+
+      .mini-card {
+        border: 1px solid rgba(191, 219, 254, 0.9);
+        border-radius: 24px;
+        background: rgba(255, 255, 255, 0.84);
+        padding: 18px;
+        box-shadow: 0 12px 32px -26px rgba(23, 87, 168, 0.46);
+      }
+
+      .mini-card h3 {
+        margin: 0;
+        color: var(--navy);
+        font-size: 15px;
+      }
+
+      .mini-card p,
+      .map-row {
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 700;
+        line-height: 1.6;
+      }
+
+      .map-row {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 10px 0;
+        border-bottom: 1px solid #eff6ff;
+      }
+
+      .map-row:last-child {
+        border-bottom: 0;
+      }
+
+      .map-row strong {
+        color: var(--navy);
+        white-space: nowrap;
+      }
+
+      .notice {
+        border-color: rgba(245, 158, 11, 0.28);
+        background: linear-gradient(135deg, rgba(255, 251, 235, 0.92), rgba(255, 255, 255, 0.88));
+      }
+
+      .points {
+        border-color: rgba(16, 185, 129, 0.24);
+        background: linear-gradient(135deg, rgba(236, 253, 245, 0.94), rgba(255, 255, 255, 0.88));
+      }
+
+      .point-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 10px 0;
+        border-bottom: 1px solid rgba(16, 185, 129, 0.12);
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 800;
+      }
+
+      .point-row:last-child {
+        border-bottom: 0;
+      }
+
+      .point-row strong {
+        color: #047857;
+        white-space: nowrap;
+      }
+
+      .moderation {
+        border-color: rgba(244, 63, 94, 0.18);
+        background: linear-gradient(135deg, rgba(255, 241, 242, 0.92), rgba(255, 255, 255, 0.9));
+      }
+
+      .modal-sample {
+        margin-top: 12px;
+        border: 1px solid rgba(251, 113, 133, 0.26);
+        border-radius: 18px;
+        background: rgba(255, 255, 255, 0.82);
+        padding: 14px;
+      }
+
+      .inline-alert {
+        margin-top: 12px;
+        border: 1px solid rgba(245, 158, 11, 0.28);
+        border-radius: 14px;
+        background: rgba(255, 251, 235, 0.82);
+        padding: 10px 12px;
+        color: #92400e;
+        font-size: 12px;
+        font-weight: 800;
+        line-height: 1.55;
+      }
+
+      .modal-sample strong {
+        display: block;
+        color: #9f1239;
+        font-size: 13px;
+      }
+
+      .modal-sample span {
+        display: block;
+        margin-top: 6px;
+        color: #7f1d1d;
+        font-size: 12px;
+        font-weight: 700;
+        line-height: 1.55;
+      }
+
+      .submit-bar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 20px;
+        border-top: 1px solid rgba(191, 219, 254, 0.82);
+        background: rgba(239, 246, 255, 0.58);
+        padding: 20px 26px;
+      }
+
+      .submit-bar p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 13px;
+        font-weight: 700;
+      }
+
+      .submit {
+        border: 0;
+        border-radius: 999px;
+        background: linear-gradient(135deg, var(--blue), var(--sky));
+        color: white;
+        padding: 14px 24px;
+        font-size: 14px;
+        font-weight: 900;
+        box-shadow: 0 16px 34px rgba(22, 119, 255, 0.24);
+      }
+
+      @media (max-width: 980px) {
+        .hero,
+        .content,
+        .question,
+        .textarea-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .status-card {
+          max-width: none;
+        }
+
+        h1 {
+          font-size: 28px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="page">
+      <div class="shell">
+        <section class="hero">
+          <div>
+            <span class="eyebrow">익명 강의 피드백 · 5주차</span>
+            <h1>데이터베이스 강의 피드백</h1>
+            <p>
+              오늘 수업에서 느낀 점을 짧게 남겨 주세요. 응답은 익명으로 집계되며,
+              교수자는 개인을 식별할 수 없습니다.
+            </p>
+          </div>
+
+          <aside class="status-card">
+            <strong>응답 기준</strong>
+            <p class="help">문항은 수업 경험을 정리하기 위한 기준입니다. 정답은 없고, 느낀 그대로 선택하면 됩니다.</p>
+            <div class="chips">
+              <span class="chip blue">약 2분</span>
+              <span class="chip green">익명 제출</span>
+              <span class="chip blue">최대 3P</span>
+              <span class="chip slate">1회 제출</span>
+            </div>
+          </aside>
+        </section>
+
+        <section class="content">
+          <div class="main">
+            <section class="panel">
+              <div class="section-head">
+                <div>
+                  <h2>핵심 4개 지표</h2>
+                  <p>비교 가능성을 위해 핵심 지표는 4개로 고정합니다.</p>
+                </div>
+                <span class="chip blue">1 전혀 아니다 · 5 매우 그렇다</span>
+              </div>
+
+              <div class="question-grid">
+                <div class="question">
+                  <div>
+                    <div class="question-title">내용 이해</div>
+                    <p class="help">오늘 수업 내용을 잘 이해할 수 있었다.</p>
+                  </div>
+                  <div>
+                    <div class="scale">
+                      <button>1</button><button>2</button><button>3</button><button class="active">4</button><button>5</button>
+                    </div>
+                    <div class="labels"><span>전혀 아니다</span><span>매우 그렇다</span></div>
+                  </div>
+                </div>
+
+                <div class="question">
+                  <div>
+                    <div class="question-title">자료·예시 도움</div>
+                    <p class="help">강의 자료와 예시가 이해에 도움이 되었다.</p>
+                  </div>
+                  <div>
+                    <div class="scale">
+                      <button>1</button><button>2</button><button>3</button><button class="active">4</button><button>5</button>
+                    </div>
+                    <div class="labels"><span>전혀 아니다</span><span>매우 그렇다</span></div>
+                  </div>
+                </div>
+
+                <div class="question">
+                  <div>
+                    <div class="question-title">질문·소통 편의</div>
+                    <p class="help">질문하거나 의견을 말하기 편했다.</p>
+                  </div>
+                  <div>
+                    <div class="scale">
+                      <button>1</button><button>2</button><button>3</button><button class="active">4</button><button>5</button>
+                    </div>
+                    <div class="labels"><span>전혀 아니다</span><span>매우 그렇다</span></div>
+                  </div>
+                </div>
+
+                <div class="question">
+                  <div>
+                    <div class="question-title">학습 몰입</div>
+                    <p class="help">수업 흐름이 집중을 유지하는 데 도움이 되었다.</p>
+                  </div>
+                  <div>
+                    <div class="scale">
+                      <button>1</button><button>2</button><button>3</button><button class="active">4</button><button>5</button>
+                    </div>
+                    <div class="labels"><span>전혀 아니다</span><span>매우 그렇다</span></div>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <section class="panel">
+              <div class="section-head">
+                <div>
+                  <h2>수업 속도</h2>
+                  <p>속도는 좋고 나쁨이 아니라 느림/빠름의 방향과 강도를 따로 집계합니다.</p>
+                </div>
+              </div>
+              <div class="speed five">
+                <button>많이 느렸어요</button>
+                <button>조금 느렸어요</button>
+                <button class="active">적당했어요</button>
+                <button>조금 빨랐어요</button>
+                <button>많이 빨랐어요</button>
+              </div>
+            </section>
+
+            <section class="panel">
+              <div class="section-head">
+                <div>
+                  <h2>선택 항목</h2>
+                  <p>과제와 실습이 있는 강의에만 각각 별도 카드로 표시됩니다.</p>
+                </div>
+              </div>
+              <div class="question-grid">
+                <div class="question">
+                  <div>
+                    <div class="question-title">과제 적절성</div>
+                    <p class="help">과제의 난이도와 분량이 수업 내용과 잘 맞았다.</p>
+                  </div>
+                  <div>
+                    <div class="scale">
+                      <button>1</button><button>2</button><button>3</button><button class="active">4</button><button>5</button>
+                    </div>
+                    <div class="labels"><span>전혀 아니다</span><span>매우 그렇다</span></div>
+                  </div>
+                </div>
+
+                <div class="question">
+                  <div>
+                    <div class="question-title">실습·예시 도움</div>
+                    <p class="help">실습이나 예시가 내용을 이해하는 데 도움이 되었다.</p>
+                  </div>
+                  <div>
+                    <div class="scale">
+                      <button>1</button><button>2</button><button>3</button><button class="active">4</button><button>5</button>
+                    </div>
+                    <div class="labels"><span>전혀 아니다</span><span>매우 그렇다</span></div>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <section class="panel">
+              <div class="section-head">
+                <div>
+                  <h2>학생 의견</h2>
+                  <p>두 칸 모두 선택 입력입니다. 짧게 한 줄만 적어도 충분합니다.</p>
+                </div>
+              </div>
+              <div class="textarea-grid">
+                <div class="textarea-card">
+                  <h3>좋았던 점</h3>
+                  <p>이번 수업에서 도움이 되었거나 계속 유지되면 좋겠는 점을 적어 주세요.</p>
+                  <div class="mock-textarea">예: 정규화 예시를 표로 보여줘서 이해하기 쉬웠어요.</div>
+                </div>
+                <div class="textarea-card">
+                  <h3>어려웠던 점 또는 더 설명이 필요한 점</h3>
+                  <p>헷갈렸던 부분, 더 천천히 다뤄주면 좋겠는 부분을 적어 주세요.</p>
+                  <div class="mock-textarea">예: 조인 종류별 차이가 아직 헷갈려서 예시가 조금 더 있으면 좋겠습니다.</div>
+                  <div class="inline-alert">개인정보나 공격적으로 읽힐 수 있는 표현은 제출 전 안내가 표시됩니다.</div>
+                </div>
+              </div>
+            </section>
+          </div>
+
+          <aside class="aside">
+            <div class="mini-card notice">
+              <h3>익명성 안내</h3>
+              <p>
+                제출 내용은 익명으로 집계됩니다. 교수자는 누가 어떤 응답을 남겼는지 확인할 수 없습니다.
+              </p>
+            </div>
+
+            <div class="mini-card points">
+              <h3>비교과 포인트</h3>
+              <p>성실한 참여를 돕기 위한 보상입니다. 의견의 긍정/부정 방향이나 내용의 품질은 평가하지 않습니다.</p>
+              <div class="point-row"><span>피드백 제출</span><strong>1P</strong></div>
+              <div class="point-row"><span>도움이 된 점 작성(10자 이상)</span><strong>+1P</strong></div>
+              <div class="point-row"><span>더 설명이 필요한 점 작성(10자 이상)</span><strong>+1P</strong></div>
+              <div class="point-row"><span>최대 지급</span><strong>3P</strong></div>
+            </div>
+
+            <div class="mini-card moderation">
+              <h3>표현 확인</h3>
+              <p>
+                주관식 의견은 입력 중 비속어, 은어, 폭력적 표현, 개인정보 노출 가능성을 먼저 안내합니다.
+              </p>
+              <div class="modal-sample">
+                <strong>표현을 한 번 확인해 주세요</strong>
+                <span>공격적으로 읽힐 수 있는 표현이 포함되어 있습니다. 전달하려는 내용을 조금 더 구체적으로 바꿔 주세요.</span>
+              </div>
+            </div>
+          </aside>
+        </section>
+
+        <section class="submit-bar">
+          <p>제출 전 선택한 항목을 한 번 더 확인해 주세요. 제출 후에는 수정할 수 없습니다.</p>
+          <button class="submit">익명 피드백 제출</button>
+        </section>
+      </div>
+    </main>
+  </body>
+</html>
