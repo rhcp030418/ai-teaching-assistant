@@ -140,3 +140,12 @@ Status: Complete
 - 추가 피드백 링크로 들어온 강의 전반 의견은 `Feedback.roundId = null`로 저장되는 구조를 유지하고, 데모 시드에서도 `commentCategory = "추가"` 추가 피드백 8건을 생성.
 - 관리 및 기록의 추가 피드백 링크 카드에서 최근 추가 피드백을 직접 확인할 수 있도록 연결.
 - 로컬 데모 DB에 `npx tsx prisma/enrich-demo-database.ts` 실행 완료.
+
+## F9 — Comment Filter Tone Hotfix
+Status: Complete
+
+- Claude/Gemini post-review에서 `존나/졸라/ㅈㄴ`이 건설적인 피드백까지 하드 차단할 수 있다는 리스크가 지적됨.
+- 해당 강조 슬랭은 `blocked`에서 `warned`로 강등해, 학생이 문구를 다듬도록 안내하되 필요하면 제출을 계속할 수 있게 변경.
+- `개못함`류의 거친 평가 표현은 하드 차단이 아닌 `warned`로 추가해 정상 비판은 막지 않되 표현 재검토를 유도.
+- 차단/경고 문구를 `검열` 느낌보다 `더 정확한 분석을 위한 표현 안내` 톤으로 완화.
+- 강한 욕설·인격 모독 표현은 계속 hard block 유지.

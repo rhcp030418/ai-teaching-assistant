@@ -59,11 +59,6 @@ const BLOCKED_PATTERNS: RegExp[] = [
   /지[랄럴랠]/,
   /ㅈㄹ/,
 
-  // ─ 존나/졸라 ─
-  /존나/,
-  /졸라/,
-  /ㅈㄴ/,
-
   // ─ 좆/욕설성 ─
   /좆/,
   /좇/,
@@ -113,6 +108,12 @@ const WARNED_PATTERNS: RegExp[] = [
   /수준\s*미달/,
   /함량\s*미달/,
   /한심/,
+  /개\s*못\s*(함|해|하|한|했)/,
+
+  // 강조 슬랭은 건설적인 피드백에도 붙을 수 있어 하드 차단하지 않고 재확인만 요청한다.
+  /존나/,
+  /졸라/,
+  /ㅈㄴ/,
 ];
 
 export interface FilterResult {
@@ -133,7 +134,7 @@ export function filterComment(comment: string): FilterResult {
       return {
         blocked: true,
         warned: false,
-        reason: "부적절한 표현이 포함되어 있습니다. 학습 경험 중심으로 작성해주세요.",
+        reason: "학습 경험을 전달하기 어려운 표현이 포함되어 있습니다. 내용을 조금 더 부드럽게 바꿔주세요.",
       };
     }
   }
@@ -143,7 +144,7 @@ export function filterComment(comment: string): FilterResult {
       return {
         blocked: false,
         warned: true,
-        reason: "감정적 표현이 감지되었습니다. 이대로 제출하시겠습니까?",
+        reason: "더 정확한 분석을 위해 표현을 한 번 다듬어 주세요. 원하면 이대로 제출할 수도 있습니다.",
       };
     }
   }

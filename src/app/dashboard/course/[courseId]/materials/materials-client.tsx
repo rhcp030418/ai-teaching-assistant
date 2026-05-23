@@ -202,9 +202,11 @@ function AnalysisResult({ analysis }: { analysis: MaterialAnalysis }) {
         <MaterialMetric label="예시 충분도" value={analysis.exampleSufficiency} kind="example" />
       </div>
 
-      <div className="rounded-[16px] border border-blue-100 bg-white/80 p-3">
-        <h4 className="text-xs font-bold text-[#0F5FD7]">판단 기준</h4>
-        <dl className="mt-2 grid gap-2 text-xs leading-5 text-slate-500">
+      <details className="rounded-[16px] border border-blue-100 bg-white/70 p-3">
+        <summary className="cursor-pointer text-xs font-bold text-[#0F5FD7]">
+          판단 기준 보기
+        </summary>
+        <dl className="mt-3 grid gap-2 text-xs leading-5 text-slate-500">
           <div>
             <dt className="font-bold text-[#27496D]">난이도</dt>
             <dd>개념 복잡도, 선수지식 필요 정도, 학생 이해도 반응을 함께 참고합니다.</dd>
@@ -218,7 +220,7 @@ function AnalysisResult({ analysis }: { analysis: MaterialAnalysis }) {
             <dd>개념별 사례, 실습, 비교 설명, 예상 결과가 자료 안에서 충분히 제공되는지 봅니다. 보완 필요는 예시가 없다는 뜻이 아니라, 특정 개념을 이해하려면 추가 사례가 더 도움이 된다는 의미입니다.</dd>
           </div>
         </dl>
-      </div>
+      </details>
 
       <div>
           <h4 className="text-sm font-semibold text-[#10233F] mb-1">

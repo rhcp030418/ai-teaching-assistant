@@ -408,21 +408,21 @@ export function FeedbackForm({
       </Card>
 
       {!isAdditionalFeedback && (
-        <Card className={`${V3_CARD} border-emerald-100 bg-emerald-50/70`}>
-          <CardContent className="space-y-2 py-4 text-sm font-semibold text-emerald-800">
+        <Card className={`${V3_CARD} border-blue-100 bg-[linear-gradient(135deg,rgba(239,246,255,0.82),rgba(255,255,255,0.92))]`}>
+          <CardContent className="space-y-2 py-4 text-sm font-semibold text-[#27496D]">
             <div className="flex items-center justify-between">
               <span>피드백 제출</span>
-              <strong>1P</strong>
+              <strong className="text-[#0F5FD7]">1P</strong>
             </div>
             <div className="flex items-center justify-between">
               <span>도움이 된 점 작성(10자 이상)</span>
-              <strong>+{writtenPoint(positiveComment)}P</strong>
+              <strong className="text-[#0F5FD7]">+{writtenPoint(positiveComment)}P</strong>
             </div>
             <div className="flex items-center justify-between">
               <span>더 설명이 필요한 점 작성(10자 이상)</span>
-              <strong>+{writtenPoint(difficultyComment)}P</strong>
+              <strong className="text-[#0F5FD7]">+{writtenPoint(difficultyComment)}P</strong>
             </div>
-            <div className="border-t border-emerald-200 pt-2 text-base font-extrabold">
+            <div className="border-t border-blue-100 pt-2 text-base font-extrabold text-[#10233F]">
               예상 비교과 포인트: {points}P
             </div>
           </CardContent>

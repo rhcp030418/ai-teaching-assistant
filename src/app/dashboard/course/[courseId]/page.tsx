@@ -197,19 +197,21 @@ export default async function CourseDashboardPage(
                 강의 범위 내 질문만 사용
               </div>
             </div>
-          </div>
 
-          <div className="rounded-[22px] border border-amber-200/80 bg-[linear-gradient(135deg,rgba(255,251,235,0.92),rgba(255,255,255,0.86))] p-[18px] shadow-[0_10px_30px_rgba(245,158,11,0.08)]">
-            <p className="text-sm font-extrabold text-[#10233F]">해석 안내</p>
-            <p className="mt-2 text-sm leading-6 text-[#6B5A31]">
-              AI 요약과 지표는 학생 의견을 빠르게 훑기 위한 참고 자료입니다. 응답 수가 적거나 의견이 짧은 회차는 원문과 수업 맥락을 함께 확인해 주세요.
-            </p>
-            <Link
-              href="/dashboard/guide"
-              className="mt-4 inline-flex rounded-full border border-amber-200 bg-white/70 px-3 py-2 text-xs font-extrabold text-amber-700 transition hover:bg-amber-50"
-            >
-              사용 설명서 보기 →
-            </Link>
+            <details className="mt-4 rounded-2xl border border-amber-100 bg-amber-50/50 px-3 py-2">
+              <summary className="cursor-pointer text-xs font-extrabold text-amber-700">
+                AI 해석 안내
+              </summary>
+              <p className="mt-2 text-xs leading-5 text-[#6B5A31]">
+                AI 요약과 지표는 참고 자료입니다. 응답 수가 적거나 의견이 짧은 회차는 원문과 수업 맥락을 함께 확인해 주세요.
+              </p>
+              <Link
+                href="/dashboard/guide"
+                className="mt-3 inline-flex rounded-full border border-amber-200 bg-white/70 px-3 py-1.5 text-[11px] font-extrabold text-amber-700 transition hover:bg-amber-50"
+              >
+                사용 설명서 보기 →
+              </Link>
+            </details>
           </div>
         </aside>
       </div>

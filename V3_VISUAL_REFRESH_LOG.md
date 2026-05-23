@@ -745,3 +745,24 @@ Reason: User found that management opened 1주차 by default, material-analysis 
 - **Additional feedback visibility**: management's additional-feedback link card now shows recently submitted course-wide additional feedbacks from `roundId: null`.
 - **Demo comment diversity**: database demo seeding now uses week-specific positive/difficulty comment pools so Overview comments, Management recent comments, round reports, and AI context sample different student voices.
 - **Demo additional feedback data**: seed enrichment creates course-wide additional-feedback rows so the additional feedback area has visible demo data.
+
+### V2.13 — Post-Review Density Hotfix (Codex)
+
+Status: Complete
+
+Reason: Gemini/Claude review flagged demo-video polish risks: overview sidebar density, long material-analysis criteria text, and the student point card feeling too event-like.
+
+#### Files Changed
+
+- `src/app/dashboard/course/[courseId]/page.tsx`
+- `src/app/dashboard/course/[courseId]/feedback-analysis.tsx`
+- `src/app/dashboard/course/[courseId]/materials/materials-client.tsx`
+- `src/app/feedback/[courseId]/feedback-form.tsx`
+- `V3_VISUAL_REFRESH_LOG.md`
+
+#### Changes
+
+- **Overview sidebar density**: merged `데이터 기준` and `AI 해석 안내` into one sidebar card; AI interpretation copy is now collapsed under `AI 해석 안내` so the active round card keeps priority.
+- **Representative opinions summary**: incorporated the remote `fix/representative-opinions-summary` branch behavior manually so the collapsed `대표 학생 의견` card can show the generated opinion summary and use course-wide comments, not only the current round.
+- **Material criteria disclosure**: changed the always-visible `판단 기준` block into a collapsed `판단 기준 보기` details section, keeping analysis results first.
+- **Student point card tone**: changed the comparison-point card from green/event styling to calmer V3 blue/navy styling.
