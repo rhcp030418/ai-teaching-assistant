@@ -19,9 +19,17 @@ const V3_CARD =
 interface Props {
   courseId: string;
   initialStats: { total: number; used: number; unused: number };
+  initialFeedbacks: { id: string; text: string; createdAt: string }[];
 }
 
-export function TokenManager({ courseId, initialStats }: Props) {
+function formatDate(iso: string) {
+  return new Date(iso).toLocaleDateString("ko-KR", {
+    month: "long",
+    day: "numeric",
+  });
+}
+
+export function TokenManager({ courseId, initialStats, initialFeedbacks }: Props) {
   const [stats, setStats] = useState(initialStats);
   const [count, setCount] = useState(30);
   const [generatedLinks, setGeneratedLinks] = useState<string[]>([]);
@@ -99,6 +107,29 @@ export function TokenManager({ courseId, initialStats }: Props) {
 
         <div className="rounded-2xl border border-blue-100 bg-blue-50/55 px-3 py-2 text-xs font-medium leading-5 text-[#27496D]">
           이 링크로 제출된 의견은 특정 주차가 아닌 강의 전반에 대한 추가 피드백으로 저장됩니다.
+        </div>
+
+        <div className="rounded-2xl border border-amber-100 bg-amber-50/45 p-3">
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-xs font-extrabold text-[#10233F]">최근 추가 피드백</p>
+            <span className="rounded-full bg-white/75 px-2 py-1 text-[11px] font-bold text-amber-700">
+              {initialFeedbacks.length}건 표시
+            </span>
+          </div>
+          {initialFeedbacks.length > 0 ? (
+            <ul className="mt-3 space-y-2">
+              {initialFeedbacks.map((feedback) => (
+                <li key={feedback.id} className="rounded-xl bg-white/85 px-3 py-2 text-xs leading-5 text-[#27496D]">
+                  <p className="font-semibold text-amber-700">{formatDate(feedback.createdAt)}</p>
+                  <p className="mt-1 line-clamp-2">{feedback.text}</p>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="mt-2 text-xs font-medium leading-5 text-amber-700/80">
+              아직 추가 피드백 링크로 제출된 의견이 없습니다. 제출되면 이 영역에 강의 전반 의견으로 모입니다.
+            </p>
+          )}
         </div>
 
         {/* Generated links */}

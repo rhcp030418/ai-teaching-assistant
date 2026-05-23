@@ -54,6 +54,98 @@ const MAX_UPLOAD_SIZE = 10 * 1024 * 1024; // 10MB
 const V3_CARD =
   "ring-0 border-blue-100 bg-white/90 shadow-[0_10px_30px_-15px_rgba(23,87,168,0.25)]";
 
+function normalizeExampleSufficiency(value: string) {
+  if (value.includes("부족") || value.includes("보완")) return "보완 필요";
+  if (value.includes("충분")) return "충분";
+  return "보통";
+}
+
+function metricStyle(kind: "difficulty" | "term" | "example", value: string) {
+  if (kind === "difficulty") {
+    if (value.includes("상") || value.includes("높")) {
+      return {
+        card: "border-rose-100 bg-rose-50/80",
+        label: "text-rose-600",
+        badge: "bg-rose-100 text-rose-700",
+      };
+    }
+    if (value.includes("중") || value.includes("보통")) {
+      return {
+        card: "border-amber-100 bg-amber-50/80",
+        label: "text-amber-600",
+        badge: "bg-amber-100 text-amber-700",
+      };
+    }
+    return {
+      card: "border-emerald-100 bg-emerald-50/80",
+      label: "text-emerald-600",
+      badge: "bg-emerald-100 text-emerald-700",
+    };
+  }
+
+  if (kind === "term") {
+    if (value.includes("높")) {
+      return {
+        card: "border-orange-100 bg-orange-50/80",
+        label: "text-orange-600",
+        badge: "bg-orange-100 text-orange-700",
+      };
+    }
+    if (value.includes("낮")) {
+      return {
+        card: "border-emerald-100 bg-emerald-50/80",
+        label: "text-emerald-600",
+        badge: "bg-emerald-100 text-emerald-700",
+      };
+    }
+    return {
+      card: "border-sky-100 bg-sky-50/80",
+      label: "text-sky-600",
+      badge: "bg-sky-100 text-sky-700",
+    };
+  }
+
+  const normalized = normalizeExampleSufficiency(value);
+  if (normalized === "충분") {
+    return {
+      card: "border-emerald-100 bg-emerald-50/80",
+      label: "text-emerald-600",
+      badge: "bg-emerald-100 text-emerald-700",
+    };
+  }
+  if (normalized === "보완 필요") {
+    return {
+      card: "border-amber-100 bg-amber-50/80",
+      label: "text-amber-600",
+      badge: "bg-amber-100 text-amber-700",
+    };
+  }
+  return {
+    card: "border-blue-100 bg-blue-50/80",
+    label: "text-[#0F5FD7]",
+    badge: "bg-blue-100 text-blue-700",
+  };
+}
+
+function MaterialMetric({
+  label,
+  value,
+  kind,
+}: {
+  label: string;
+  value: string;
+  kind: "difficulty" | "term" | "example";
+}) {
+  const style = metricStyle(kind, value);
+  const displayValue = kind === "example" ? normalizeExampleSufficiency(value) : value;
+  return (
+    <div className={`rounded-2xl border p-3 text-center ${style.card}`}>
+      <p className={`mb-1 text-xs font-extrabold ${style.label}`}>{label}</p>
+      <Badge className={style.badge}>{displayValue}</Badge>
+    </div>
+  );
+}
+
 function withDemoMaterialData(materials: Material[], rounds: Round[]): Material[] {
   const fallbackRound = rounds[rounds.length - 1] ?? null;
   if (materials.length === 0) {
@@ -97,13 +189,6 @@ function withDemoMaterialData(materials: Material[], rounds: Round[]): Material[
 }
 
 function AnalysisResult({ analysis }: { analysis: MaterialAnalysis }) {
-  const diffColor =
-    analysis.difficulty === "상"
-      ? "bg-red-100 text-red-700"
-      : analysis.difficulty === "중"
-        ? "bg-yellow-100 text-yellow-700"
-        : "bg-green-100 text-green-700";
-
   return (
     <div className="space-y-4 mt-4">
       <div>
@@ -112,18 +197,9 @@ function AnalysisResult({ analysis }: { analysis: MaterialAnalysis }) {
       </div>
 
       <div className="grid grid-cols-3 gap-3">
-        <div className="text-center p-3 bg-blue-50/60 rounded-lg">
-          <p className="text-xs text-gray-400 mb-1">난이도</p>
-          <Badge className={diffColor}>{analysis.difficulty}</Badge>
-        </div>
-        <div className="text-center p-3 bg-blue-50/60 rounded-lg">
-          <p className="text-xs text-gray-400 mb-1">용어 밀도</p>
-          <Badge variant="secondary">{analysis.termDensity}</Badge>
-        </div>
-        <div className="text-center p-3 bg-blue-50/60 rounded-lg">
-          <p className="text-xs text-gray-400 mb-1">예시 충분도</p>
-          <Badge variant="secondary">{analysis.exampleSufficiency}</Badge>
-        </div>
+        <MaterialMetric label="난이도" value={analysis.difficulty} kind="difficulty" />
+        <MaterialMetric label="전문 용어 밀도" value={analysis.termDensity} kind="term" />
+        <MaterialMetric label="예시 충분도" value={analysis.exampleSufficiency} kind="example" />
       </div>
 
       <div className="rounded-[16px] border border-blue-100 bg-white/80 p-3">
@@ -134,12 +210,12 @@ function AnalysisResult({ analysis }: { analysis: MaterialAnalysis }) {
             <dd>개념 복잡도, 선수지식 필요 정도, 학생 이해도 반응을 함께 참고합니다.</dd>
           </div>
           <div>
-            <dt className="font-bold text-[#27496D]">용어 밀도</dt>
-            <dd>전문 용어가 얼마나 자주, 압축적으로 등장하는지 확인합니다.</dd>
+            <dt className="font-bold text-[#27496D]">전문 용어 밀도</dt>
+            <dd>한 단락이나 한 장 안에서 새 개념·약어·전문 용어가 연속해서 등장하는 정도입니다. 높음은 용어가 나쁘다는 뜻이 아니라, 첫 학습자에게 중간 정리나 용어표가 필요할 수 있다는 신호입니다.</dd>
           </div>
           <div>
             <dt className="font-bold text-[#27496D]">예시 충분도</dt>
-            <dd>개념별 예시, 실습, 비교 설명이 학습 흐름을 돕는지 확인합니다.</dd>
+            <dd>개념별 사례, 실습, 비교 설명, 예상 결과가 자료 안에서 충분히 제공되는지 봅니다. 보완 필요는 예시가 없다는 뜻이 아니라, 특정 개념을 이해하려면 추가 사례가 더 도움이 된다는 의미입니다.</dd>
           </div>
         </dl>
       </div>

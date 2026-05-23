@@ -84,7 +84,7 @@ const SYSTEM_PROMPT = `당신은 대학 강의자료 분석 전문가입니다. 
   "difficultyReason": "난이도 판단 근거 — 학생 피드백 현황이 있으면 이해도 수치와 연결해 설명",
   "termDensity": "높음/보통/낮음",
   "termExamples": ["전문 용어 예시 최대 5개"],
-  "exampleSufficiency": "충분/보통/부족",
+  "exampleSufficiency": "충분/보통/보완 필요",
   "exampleFeedback": "예시 관련 피드백 — 학생 실습·예시 도움 점수가 있으면 연결해 설명",
   "improvements": {
     "structure": "자료 구조·흐름·순서 개선 제안 (해당 없으면 null)",

@@ -132,3 +132,11 @@ Status: Complete
 - 교수용 추가 피드백 링크는 정규 주차 평가와 분리해, 강의 전반에 대한 서술형 `피드백 내용 작성`만 받도록 UI/검증/저장 흐름을 변경.
 - 추가 피드백은 `roundId`가 없는 일반 의견으로 저장되며, 현황 요약의 주차/라운드 통계에서는 제외되도록 보정.
 - 검증: `npm run lint`, `npx tsc --noEmit`, `npm run build` 통과.
+
+## F8 — Demo Additional Feedback + Comment Diversity
+Status: Complete
+
+- `prisma/enrich-demo-database.ts`에 주차별 학생 의견 풀을 추가해 현황 요약, 관리 및 기록, 주차별 리포트, AI 분석 컨텍스트에서 반복 문장이 덜 보이도록 보강.
+- 추가 피드백 링크로 들어온 강의 전반 의견은 `Feedback.roundId = null`로 저장되는 구조를 유지하고, 데모 시드에서도 `commentCategory = "추가"` 추가 피드백 8건을 생성.
+- 관리 및 기록의 추가 피드백 링크 카드에서 최근 추가 피드백을 직접 확인할 수 있도록 연결.
+- 로컬 데모 DB에 `npx tsx prisma/enrich-demo-database.ts` 실행 완료.

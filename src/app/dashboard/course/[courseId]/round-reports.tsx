@@ -401,8 +401,8 @@ function getCorrelations(mat: RoundMaterialSummary, rs: NonNullable<RoundStatsFo
     corrs.push({ text: `높은 난이도 × 이해도 ${rs.comprehensionHigh}% — 우선 개선 대상`, type: "warn" });
   if (mat.difficulty === "하" && rs.comprehensionHigh >= 70)
     corrs.push({ text: `낮은 난이도 × 이해도 ${rs.comprehensionHigh}% — 양호`, type: "ok" });
-  if (mat.exampleSufficiency === "부족" && rs.practiceAvg !== null && rs.practiceAvg < 3.5)
-    corrs.push({ text: `예시 부족 × 실습 점수 ${rs.practiceAvg}/5 — 일치`, type: "warn" });
+  if ((mat.exampleSufficiency === "부족" || mat.exampleSufficiency === "보완 필요") && rs.practiceAvg !== null && rs.practiceAvg < 3.5)
+    corrs.push({ text: `예시 보완 필요 × 실습 점수 ${rs.practiceAvg}/5 — 일치`, type: "warn" });
   if (mat.termDensity === "높음" && rs.speedModerate < 50)
     corrs.push({ text: `용어 밀도 높음 × 적정 속도 응답 ${rs.speedModerate}% — 연관 가능`, type: "info" });
   if (mat.exampleSufficiency === "충분" && rs.practiceAvg !== null && rs.practiceAvg >= 4.0)
@@ -482,7 +482,7 @@ function MaterialsSection({
                       {mat.exampleSufficiency && (
                         <Badge
                           className={
-                            mat.exampleSufficiency === "부족"
+                            mat.exampleSufficiency === "부족" || mat.exampleSufficiency === "보완 필요"
                               ? "bg-orange-100 text-orange-700 text-xs"
                               : mat.exampleSufficiency === "충분"
                                 ? "bg-green-100 text-green-700 text-xs"
@@ -493,7 +493,16 @@ function MaterialsSection({
                         </Badge>
                       )}
                       {mat.termDensity && (
-                        <Badge variant="outline" className="text-xs text-gray-500">
+                        <Badge
+                          variant="outline"
+                          className={`text-xs ${
+                            mat.termDensity === "높음"
+                              ? "border-orange-200 bg-orange-50 text-orange-700"
+                              : mat.termDensity === "낮음"
+                                ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                                : "border-sky-200 bg-sky-50 text-sky-700"
+                          }`}
+                        >
                           용어 {mat.termDensity}
                         </Badge>
                       )}

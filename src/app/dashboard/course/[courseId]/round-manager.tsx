@@ -68,6 +68,15 @@ function toLocalDateTimeInput(d: Date) {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
+function defaultExpandedRoundId(rounds: Round[]) {
+  return (
+    rounds.find((round) => round.status === "active") ??
+    rounds.find((round) => round.status === "overlap") ??
+    [...rounds].reverse().find((round) => round.status !== "closed") ??
+    [...rounds].reverse()[0]
+  )?.id ?? null;
+}
+
 export function RoundManager({ courseId, initialRounds }: Props) {
   const [rounds, setRounds] = useState<Round[]>(initialRounds);
   const [newWeek, setNewWeek] = useState(
@@ -78,7 +87,7 @@ export function RoundManager({ courseId, initialRounds }: Props) {
   const [endDate, setEndDate] = useState(defaults.end);
   const [pending, setPending] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
-  const [expandedId, setExpandedId] = useState<string | null>(initialRounds[0]?.id ?? null);
+  const [expandedId, setExpandedId] = useState<string | null>(defaultExpandedRoundId(initialRounds));
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editStartDate, setEditStartDate] = useState("");
   const [editEndDate, setEditEndDate] = useState("");

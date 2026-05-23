@@ -55,7 +55,7 @@ function buildGuideItems(courseBase: string | null) {
       },
       {
         title: "강의자료 분석",
-        body: "PDF, PPT, TXT 자료를 업로드하면 자료 난이도, 용어 밀도, 예시 충분도와 학생 반응의 연결 맥락을 볼 수 있습니다.",
+        body: "PDF, PPT, TXT 자료를 업로드하면 자료 난이도, 전문 용어 밀도, 예시 충분도와 학생 반응의 연결 맥락을 볼 수 있습니다.",
         href: materialsHref,
       },
       {
