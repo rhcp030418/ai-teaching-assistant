@@ -24,12 +24,14 @@ function ScoreInput({
   description,
   value,
   onChange,
+  optional = false,
 }: {
   name: string;
   label: string;
   description: string;
   value: number | null;
-  onChange: (v: number) => void;
+  onChange: (v: number | null) => void;
+  optional?: boolean;
 }) {
   return (
     <Card className={V3_CARD}>
@@ -56,6 +58,20 @@ function ScoreInput({
             </button>
           ))}
         </div>
+        {optional && (
+          <button
+            type="button"
+            onClick={() => onChange(null)}
+            className={`mt-3 w-full rounded-[14px] border px-3 py-2 text-sm font-bold transition-colors ${
+              value === null
+                ? "border-slate-300 bg-slate-100 text-slate-600"
+                : "border-blue-100 bg-white text-slate-500 hover:bg-blue-50"
+            }`}
+            aria-pressed={value === null}
+          >
+            이번 회차에는 해당 없음
+          </button>
+        )}
         <div className="mt-2 flex justify-between text-xs font-semibold text-slate-400">
           <span>전혀 아니다</span>
           <span>매우 그렇다</span>
@@ -92,6 +108,7 @@ export function FeedbackForm({
   hasAssignment = false,
   hasPractice = false,
 }: Props) {
+  const isAdditionalFeedback = mode === "legacy";
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [warned, setWarned] = useState(false);
@@ -129,8 +146,6 @@ export function FeedbackForm({
     if (!materialHelp) return "자료·예시 도움을 선택해주세요.";
     if (!communication) return "질문·소통 편의를 선택해주세요.";
     if (!interest) return "학습 몰입을 선택해주세요.";
-    if (hasAssignment && !assignment) return "과제 적절성을 선택해주세요.";
-    if (hasPractice && !practice) return "실습·예시 도움을 선택해주세요.";
     return null;
   }
 
@@ -207,9 +222,13 @@ export function FeedbackForm({
 
       <Card className={`${V3_CARD} bg-gradient-to-br from-white via-white to-blue-50/70`}>
         <CardHeader>
-          <CardTitle className="text-base text-[#10233F]">익명 피드백 안내</CardTitle>
+          <CardTitle className="text-base text-[#10233F]">
+            {isAdditionalFeedback ? "추가 피드백 안내" : "익명 피드백 안내"}
+          </CardTitle>
           <CardDescription className="leading-6 text-slate-500">
-            응답은 익명으로 집계되며 교수자는 누가 작성했는지 알 수 없습니다. 정답은 없으니 오늘 수업에서 느낀 그대로 선택해 주세요.
+            {isAdditionalFeedback
+              ? "정규 주차 평가와 별도로 남기는 익명 의견입니다. 강의 전반에서 더 전달하고 싶은 내용을 자유롭게 남겨주세요."
+              : "응답은 익명으로 집계되며 교수자는 누가 작성했는지 알 수 없습니다. 정답은 없으니 오늘 수업에서 느낀 그대로 선택해 주세요."}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -224,7 +243,7 @@ export function FeedbackForm({
       <ScoreInput
         name="comprehension"
         label="내용 이해"
-        description="오늘 수업 내용을 잘 이해할 수 있었다."
+        description={isAdditionalFeedback ? "최근 강의 내용을 전반적으로 이해할 수 있었다." : "오늘 수업 내용을 잘 이해할 수 있었다."}
         value={comprehension}
         onChange={setComprehension}
       />
@@ -232,7 +251,7 @@ export function FeedbackForm({
       <ScoreInput
         name="materialHelp"
         label="자료·예시 도움"
-        description="강의 자료와 예시가 이해에 도움이 되었다."
+        description={isAdditionalFeedback ? "강의 자료, 예시, 설명 방식이 이해에 도움이 되었다." : "강의 자료와 예시가 이해에 도움이 되었다."}
         value={materialHelp}
         onChange={setMaterialHelp}
       />
@@ -248,7 +267,7 @@ export function FeedbackForm({
       <ScoreInput
         name="interest"
         label="학습 몰입"
-        description="수업 흐름이 집중을 유지하는 데 도움이 되었다."
+        description={isAdditionalFeedback ? "강의 흐름이 학습을 이어가는 데 도움이 되었다." : "수업 흐름이 집중을 유지하는 데 도움이 되었다."}
         value={interest}
         onChange={setInterest}
       />
@@ -257,7 +276,9 @@ export function FeedbackForm({
         <CardHeader>
           <CardTitle className="text-base text-[#10233F]">수업 속도</CardTitle>
           <CardDescription className="text-slate-500">
-            속도는 좋고 나쁨이 아니라 느림/빠름의 방향과 강도를 따로 집계합니다.
+            {isAdditionalFeedback
+              ? "최근 강의 전반의 진행 속도를 기준으로 선택해 주세요."
+              : "속도는 좋고 나쁨이 아니라 느림/빠름의 방향과 강도를 따로 집계합니다."}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -286,9 +307,10 @@ export function FeedbackForm({
         <ScoreInput
           name="assignment"
           label="과제 적절성"
-          description="과제의 난이도와 분량이 수업 내용과 잘 맞았다."
+          description="이번 회차에 과제가 있었다면, 난이도와 분량이 수업 내용과 잘 맞았다."
           value={assignment}
           onChange={setAssignment}
+          optional
         />
       )}
 
@@ -296,9 +318,10 @@ export function FeedbackForm({
         <ScoreInput
           name="practice"
           label="실습·예시 도움"
-          description="실습이나 예시가 내용을 이해하는 데 도움이 되었다."
+          description="이번 회차에 실습이나 예시가 있었다면, 내용을 이해하는 데 도움이 되었다."
           value={practice}
           onChange={setPractice}
+          optional
         />
       )}
 
@@ -308,7 +331,9 @@ export function FeedbackForm({
             학생 의견 <span className="font-normal text-slate-400">(선택)</span>
           </CardTitle>
           <CardDescription className="leading-6 text-slate-500">
-            짧게 한 줄만 적어도 충분합니다. 10자 이상 작성한 칸은 비교과 포인트 기준에 반영됩니다.
+            {isAdditionalFeedback
+              ? "강의 전반에 대해 추가로 전달하고 싶은 내용을 적어주세요. 짧게 한 줄만 적어도 충분합니다."
+              : "짧게 한 줄만 적어도 충분합니다. 10자 이상 작성한 칸은 비교과 포인트 기준에 반영됩니다."}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -318,7 +343,11 @@ export function FeedbackForm({
               name="positiveComment"
               value={positiveComment}
               onChange={(e) => setPositiveComment(e.target.value)}
-              placeholder="예: 정규화 예시를 표로 보여줘서 이해하기 쉬웠어요."
+              placeholder={
+                isAdditionalFeedback
+                  ? "예: 전체적으로 예시가 많아서 개념을 따라가기 좋았습니다."
+                  : "예: 정규화 예시를 표로 보여줘서 이해하기 쉬웠어요."
+              }
               maxLength={500}
               rows={3}
               className="rounded-[18px] border-blue-100 focus-visible:ring-blue-200"
@@ -332,7 +361,11 @@ export function FeedbackForm({
               name="difficultyComment"
               value={difficultyComment}
               onChange={(e) => setDifficultyComment(e.target.value)}
-              placeholder="예: 조인 종류별 차이가 아직 헷갈려서 예시가 조금 더 있으면 좋겠습니다."
+              placeholder={
+                isAdditionalFeedback
+                  ? "예: 과제 안내 기준이나 복습 자료가 조금 더 구체적이면 좋겠습니다."
+                  : "예: 조인 종류별 차이가 아직 헷갈려서 예시가 조금 더 있으면 좋겠습니다."
+              }
               maxLength={500}
               rows={3}
               className="rounded-[18px] border-blue-100 focus-visible:ring-blue-200"
@@ -389,7 +422,7 @@ export function FeedbackForm({
           }
         }}
       >
-        {pending ? "제출 중..." : "익명 피드백 제출"}
+        {pending ? "제출 중..." : isAdditionalFeedback ? "추가 피드백 제출" : "익명 피드백 제출"}
       </Button>
     </form>
   );

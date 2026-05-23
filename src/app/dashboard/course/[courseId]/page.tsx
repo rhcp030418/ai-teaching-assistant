@@ -58,6 +58,7 @@ export default async function CourseDashboardPage(
     commentFilterReason: string | null;
     commentHasProfanity: boolean;
     roundId: string | null;
+    createdAt: string;
   }[] = [];
 
   for (const fb of overviewFeedbacks) {
@@ -70,6 +71,7 @@ export default async function CourseDashboardPage(
         commentFilterReason: fb.commentFilterReason,
         commentHasProfanity: fb.commentHasProfanity,
         roundId: fb.roundId,
+        createdAt: fb.createdAt.toISOString(),
       });
     }
   }

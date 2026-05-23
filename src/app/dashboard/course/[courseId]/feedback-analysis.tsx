@@ -26,6 +26,7 @@ interface CommentFeedback {
   commentFilterReason: string | null;
   commentHasProfanity: boolean;
   roundId?: string | null;
+  createdAt?: string;
 }
 
 interface RoundInfo {
@@ -72,7 +73,7 @@ function OverviewKpi({
   label: string;
   value: string | number;
   suffix?: string;
-  tone?: "navy" | "blue" | "green" | "amber";
+  tone?: "navy" | "blue" | "green" | "amber" | "rose";
   sub?: string;
 }) {
   const toneClass = {
@@ -80,6 +81,7 @@ function OverviewKpi({
     blue: "text-[#1677FF]",
     green: "text-emerald-600",
     amber: "text-amber-500",
+    rose: "text-rose-600",
   }[tone];
 
   return (
@@ -101,14 +103,20 @@ function MetricBar({
   label,
   value,
   valueLabel,
-  fillClass,
+  tone,
 }: {
   label: string;
   value: number;
   valueLabel?: string;
-  fillClass: string;
+  tone: "blue" | "green" | "amber" | "rose";
 }) {
   const pct = Math.max(0, Math.min(100, Math.round(value)));
+  const fillClass = {
+    blue: "bg-gradient-to-r from-[#1677FF] to-[#38BDF8]",
+    green: "bg-gradient-to-r from-emerald-500 to-teal-300",
+    amber: "bg-gradient-to-r from-amber-400 to-yellow-300",
+    rose: "bg-gradient-to-r from-rose-500 to-red-300",
+  }[tone];
 
   return (
     <div className="grid grid-cols-[96px_minmax(0,1fr)_52px] items-center gap-3">
@@ -121,6 +129,20 @@ function MetricBar({
       </span>
     </div>
   );
+}
+
+function percentTone(value: number): "blue" | "green" | "amber" | "rose" {
+  if (value >= 75) return "blue";
+  if (value >= 50) return "green";
+  if (value >= 25) return "amber";
+  return "rose";
+}
+
+function scoreTone(value: number): "blue" | "green" | "amber" | "rose" {
+  if (value >= 4) return "blue";
+  if (value >= 3.5) return "green";
+  if (value >= 2.5) return "amber";
+  return "rose";
 }
 
 function ResponseRateWarning({
@@ -286,9 +308,9 @@ export function FeedbackAnalysis({
           tone="navy"
           sub={studentCount ? `수강생 ${studentCount}명${responseRate !== null ? ` 중 ${responseRate}%` : ""}` : undefined}
         />
-        <OverviewKpi label="내용 이해" value={Math.round(contentRatio)} suffix="%" tone="green" />
-        <OverviewKpi label="자료·예시 도움" value={Math.round(materialRatio)} suffix="%" tone="blue" />
-        <OverviewKpi label="질문·소통 편의" value={communicationAvg} suffix="/ 5" tone="blue" />
+        <OverviewKpi label="내용 이해" value={Math.round(contentRatio)} suffix="%" tone={percentTone(contentRatio)} />
+        <OverviewKpi label="자료·예시 도움" value={Math.round(materialRatio)} suffix="%" tone={percentTone(materialRatio)} />
+        <OverviewKpi label="질문·소통 편의" value={communicationAvg} suffix="/ 5" tone={scoreTone(communicationAvg)} />
       </div>
 
       {/* Radar chart */}
@@ -318,29 +340,29 @@ export function FeedbackAnalysis({
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <MetricBar label="내용 이해" value={contentRatio} fillClass="bg-gradient-to-r from-emerald-500 to-teal-300" />
-              <MetricBar label="자료·예시" value={materialRatio} fillClass="bg-gradient-to-r from-[#1677FF] to-[#38BDF8]" />
+              <MetricBar label="내용 이해" value={contentRatio} tone={percentTone(contentRatio)} />
+              <MetricBar label="자료·예시" value={materialRatio} tone={percentTone(materialRatio)} />
               <MetricBar
                 label="소통 편의"
                 value={communicationAxisRatio}
                 valueLabel={`${communicationAvg}/5`}
-                fillClass="bg-gradient-to-r from-[#1677FF] to-[#38BDF8]"
+                tone={percentTone(communicationAxisRatio)}
               />
               <MetricBar
                 label="학습 몰입"
                 value={engagementRatio}
-                fillClass="bg-gradient-to-r from-[#1677FF] to-[#5EEAD4]"
+                tone={percentTone(engagementRatio)}
               />
               <MetricBar
-                label="속도 적당"
+                label="적정 속도"
                 value={speedModerateRatio}
                 valueLabel={`${speedModerateRatio}%`}
-                fillClass="bg-gradient-to-r from-amber-400 to-yellow-300"
+                tone={percentTone(speedModerateRatio)}
               />
               <div className="grid gap-2 pt-1 text-xs font-semibold text-slate-500 sm:grid-cols-3">
-                <span className="rounded-full bg-blue-50 px-3 py-2 text-center">느림 {slowRatio}%</span>
-                <span className="rounded-full bg-amber-50 px-3 py-2 text-center text-amber-700">적당 {speedModerateRatio}%</span>
-                <span className="rounded-full bg-blue-50 px-3 py-2 text-center">빠름 {fastRatio}%</span>
+                <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-2 text-center">느림 응답 {slowRatio}%</span>
+                <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-2 text-center">적정 응답 {speedModerateRatio}%</span>
+                <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-2 text-center">빠름 응답 {fastRatio}%</span>
               </div>
             </CardContent>
           </Card>
@@ -420,6 +442,7 @@ export function CommentsSection({
   demoMode?: boolean;
 }) {
   const [open, setOpen] = useState(false);
+  const [sortMode, setSortMode] = useState<"newest" | "oldest" | "longest" | "shortest">("newest");
 
   // 전체 요약 (펼친 상태 상단)
   const [summary, setSummary] = useState<string | null>(demoMode ? DEMO_COMMENT_SUMMARY : null);
@@ -433,8 +456,17 @@ export function CommentsSection({
   const visibleComments = commentFeedbacks.filter(
     (cf) => Boolean((cf.filteredComment ?? cf.comment)?.trim())
   );
+  const sortedComments = [...visibleComments].sort((a, b) => {
+    const aText = (a.filteredComment ?? a.comment ?? "").trim();
+    const bText = (b.filteredComment ?? b.comment ?? "").trim();
+    if (sortMode === "longest") return bText.length - aText.length;
+    if (sortMode === "shortest") return aText.length - bText.length;
+    const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+    const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+    return sortMode === "oldest" ? aTime - bTime : bTime - aTime;
+  });
   const total = visibleComments.length;
-  const previewComments = visibleComments.slice(0, 2);
+  const previewComments = sortedComments.slice(0, 2);
 
   // 현재 진행 중인 라운드의 바로 전 주차 계산
   const sortedRounds = [...rounds].sort((a, b) => a.week - b.week);
@@ -525,6 +557,19 @@ export function CommentsSection({
         ) : open ? (
           <div className="space-y-4">
             {/* 전체 요약 */}
+            <div className="flex items-center justify-between gap-3 rounded-2xl border border-blue-100 bg-white/80 px-3 py-2">
+              <span className="text-xs font-bold text-slate-500">정렬</span>
+              <select
+                value={sortMode}
+                onChange={(e) => setSortMode(e.target.value as typeof sortMode)}
+                className="rounded-full border border-blue-100 bg-blue-50 px-3 py-1.5 text-xs font-bold text-[#27496D] outline-none transition focus:border-blue-300"
+              >
+                <option value="newest">최신순</option>
+                <option value="oldest">오래된 순</option>
+                <option value="longest">글자수 많은 순</option>
+                <option value="shortest">글자수 적은 순</option>
+              </select>
+            </div>
             {(summaryLoading || summary) && (
               <div className="rounded-lg border border-blue-100 bg-blue-50/60 px-4 py-3 text-sm text-[#27496D] leading-relaxed">
                 {summaryLoading ? (
@@ -535,7 +580,7 @@ export function CommentsSection({
               </div>
             )}
             <ul className="space-y-3">
-              {visibleComments.map((item, i) => (
+              {sortedComments.map((item, i) => (
                 <CommentItem key={`c-${i}`} item={item} />
               ))}
             </ul>

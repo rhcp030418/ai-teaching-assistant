@@ -117,7 +117,7 @@ export async function generateRoadmap(
       const contentRatio = Math.round(scoreToRatio(roundCounts.comprehensionSum, roundCounts.comprehensionCount));
       const speedMod = Math.round((roundCounts.speedCounts.moderate / roundCounts.total) * 100);
       const label = r.label ?? `${r.week}주차`;
-      return `${label}: 내용 이해 ${contentRatio}%, 질문·소통 ${commAvg}/5, 속도 적당 ${speedMod}%`;
+      return `${label}: 내용 이해 ${contentRatio}%, 질문·소통 ${commAvg}/5, 적정 속도 응답 ${speedMod}%`;
     });
   const contentRatio = Math.round(scoreToRatio(comprehensionSum, comprehensionCount));
   const materialRatio = Math.round(scoreToRatio(materialHelpSum, materialHelpCount));

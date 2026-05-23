@@ -26,6 +26,7 @@ export const getOwnedCourse = cache(async (courseId: string) => {
       feedbacks: { orderBy: { createdAt: "desc" } },
       feedbackRounds: {
         select: { id: true, week: true, label: true, startDate: true, endDate: true },
+        orderBy: [{ startDate: "desc" }, { week: "desc" }],
       },
     },
   });

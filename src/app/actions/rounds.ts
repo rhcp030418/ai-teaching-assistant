@@ -5,6 +5,8 @@ import { auth } from "@/lib/auth";
 import { getRoundStatus } from "@/lib/round-utils";
 import { isDemoUser, DEMO_READ_ONLY } from "@/lib/auth-utils";
 
+type RoundStatusForUi = "pending" | "active" | "closed" | "overlap";
+
 export async function getRounds(courseId: string) {
   const session = await auth();
   if (!session?.user?.id) return [];
@@ -22,16 +24,54 @@ export async function getRounds(courseId: string) {
     orderBy: { week: "asc" },
   });
 
-  return rounds.map((r) => ({
-    id: r.id,
-    week: r.week,
-    label: r.label,
-    startDate: r.startDate.toISOString(),
-    endDate: r.endDate.toISOString(),
-    status: getRoundStatus(r),
-    feedbackCount: r._count.feedbacks,
-    submissionCount: r._count.submissions,
-  }));
+  const now = new Date();
+  const activeRoundIds = rounds
+    .filter((round) => getRoundStatus(round, now) === "active")
+    .sort((a, b) => {
+      const startDiff = b.startDate.getTime() - a.startDate.getTime();
+      return startDiff !== 0 ? startDiff : b.week - a.week;
+    })
+    .map((round) => round.id);
+  const primaryActiveRoundId = activeRoundIds[0] ?? null;
+  const overlappingActiveIds = new Set(activeRoundIds.slice(1));
+
+  return rounds.map((r) => {
+    const status: RoundStatusForUi = overlappingActiveIds.has(r.id)
+      ? "overlap"
+      : primaryActiveRoundId === r.id
+        ? "active"
+        : getRoundStatus(r, now);
+
+    return {
+      id: r.id,
+      week: r.week,
+      label: r.label,
+      startDate: r.startDate.toISOString(),
+      endDate: r.endDate.toISOString(),
+      status,
+      feedbackCount: r._count.feedbacks,
+      submissionCount: r._count.submissions,
+    };
+  });
+}
+
+async function hasOverlappingRound(
+  courseId: string,
+  start: Date,
+  end: Date,
+  excludeRoundId?: string,
+) {
+  const overlap = await prisma.feedbackRound.findFirst({
+    where: {
+      courseId,
+      ...(excludeRoundId ? { id: { not: excludeRoundId } } : {}),
+      startDate: { lt: end },
+      endDate: { gt: start },
+    },
+    select: { week: true, label: true },
+  });
+
+  return overlap;
 }
 
 export async function createRound(
@@ -63,6 +103,14 @@ export async function createRound(
     return { success: false, error: "종료일은 시작일보다 뒤여야 합니다." };
   }
 
+  const overlap = await hasOverlappingRound(courseId, start, end);
+  if (overlap) {
+    return {
+      success: false,
+      error: `${overlap.label ?? `${overlap.week}주차`}와 기간이 겹칩니다. 평가 기간은 서로 겹치지 않게 설정해주세요.`,
+    };
+  }
+
   const existing = await prisma.feedbackRound.findUnique({
     where: { courseId_week: { courseId, week } },
   });
@@ -70,6 +118,48 @@ export async function createRound(
 
   await prisma.feedbackRound.create({
     data: { courseId, week, label: label || `${week}주차`, startDate: start, endDate: end },
+  });
+
+  return { success: true };
+}
+
+export async function updateRoundPeriod(
+  roundId: string,
+  startDate: string,
+  endDate: string,
+) {
+  const session = await auth();
+  if (!session?.user?.id) return { success: false, error: "인증 필요" };
+  if (isDemoUser(session.user.email)) return DEMO_READ_ONLY;
+
+  const round = await prisma.feedbackRound.findUnique({
+    where: { id: roundId },
+    include: { course: true },
+  });
+  if (!round || round.course.professorId !== session.user.id) {
+    return { success: false, error: "권한 없음" };
+  }
+
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+  if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+    return { success: false, error: "날짜 형식이 잘못되었습니다." };
+  }
+  if (end <= start) {
+    return { success: false, error: "종료일은 시작일보다 뒤여야 합니다." };
+  }
+
+  const overlap = await hasOverlappingRound(round.courseId, start, end, roundId);
+  if (overlap) {
+    return {
+      success: false,
+      error: `${overlap.label ?? `${overlap.week}주차`}와 기간이 겹칩니다. 평가 기간은 서로 겹치지 않게 설정해주세요.`,
+    };
+  }
+
+  await prisma.feedbackRound.update({
+    where: { id: roundId },
+    data: { startDate: start, endDate: end },
   });
 
   return { success: true };

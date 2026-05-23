@@ -8,26 +8,11 @@ import { generateTrendNarrative, type TrendNarrative } from "@/app/actions/trend
 import type { RoundReport } from "@/app/actions/round-reports";
 import { DEMO_TREND_NARRATIVE } from "@/lib/demo-ai-fixtures";
 
-// ─── SVG 라인 차트 ───────────────────────────────────────────────────────────
-
-const W = 720;
-const H = 260;
-const PAD = { top: 22, right: 32, bottom: 48, left: 48 };
-const CW = W - PAD.left - PAD.right;
-const CH = H - PAD.top - PAD.bottom;
-
 const SERIES = [
-  { key: "comprehensionHigh" as const, label: "내용 이해", color: "#10B981", strokeDash: "" },
-  { key: "speedModerate" as const, label: "속도 적당", color: "#F5B544", strokeDash: "" },
-  { key: "commNorm" as const, label: "질문·소통", color: "#1677FF", strokeDash: "" },
+  { key: "comprehensionHigh" as const, label: "내용 이해", className: "bg-[#1677FF]" },
+  { key: "commNorm" as const, label: "질문·소통", className: "bg-emerald-500" },
+  { key: "speedModerate" as const, label: "적정 속도", className: "bg-amber-400" },
 ];
-
-function xOf(i: number, n: number) {
-  return PAD.left + (n > 1 ? (i / (n - 1)) * CW : CW / 2);
-}
-function yOf(v: number) {
-  return PAD.top + (1 - Math.max(0, Math.min(100, v)) / 100) * CH;
-}
 
 interface PlotPoint {
   week: number;
@@ -44,7 +29,6 @@ function TrendChart({
   points: PlotPoint[];
   predicted: TrendNarrative["predicted"] | null;
 }) {
-  const n = points.length;
   const allPoints = predicted
     ? [
         ...points,
@@ -57,172 +41,55 @@ function TrendChart({
         },
       ]
     : points;
-  const total = allPoints.length;
 
   return (
-    <div className="w-full overflow-x-auto">
-      <svg
-        viewBox={`0 0 ${W} ${H}`}
-        width="100%"
-        style={{ minWidth: "560px" }}
-        className="select-none"
-      >
-        <defs>
-          <linearGradient id="trendArea" x1="0" x2="0" y1="0" y2="1">
-            <stop offset="0%" stopColor="#dbeafe" stopOpacity="0.55" />
-            <stop offset="100%" stopColor="#eff6ff" stopOpacity="0.15" />
-          </linearGradient>
-        </defs>
-
-        {/* Plot area soft blue background */}
-        <rect
-          x={PAD.left}
-          y={PAD.top}
-          width={CW}
-          height={CH}
-          rx="10"
-          fill="url(#trendArea)"
-        />
-
-        {/* Y grid lines */}
-        {[0, 25, 50, 75, 100].map((v) => (
-          <g key={v}>
-            <line
-              x1={PAD.left}
-              x2={W - PAD.right}
-              y1={yOf(v)}
-              y2={yOf(v)}
-              stroke="#DBEAFE"
-              strokeWidth="1"
-            />
-            <text
-              x={PAD.left - 6}
-              y={yOf(v)}
-              textAnchor="end"
-              dominantBaseline="middle"
-              fontSize="10"
-              fill="#9aa9bc"
-            >
-              {v}
-            </text>
-          </g>
-        ))}
-
-        {/* Prediction divider */}
-        {predicted && (
-          <>
-            <line
-              x1={xOf(n - 1, total)}
-              x2={xOf(n - 1, total)}
-              y1={PAD.top}
-              y2={PAD.top + CH}
-              stroke="#bfdbfe"
-              strokeWidth="1"
-              strokeDasharray="4 3"
-            />
-            <text
-              x={xOf(n - 1, total) + 4}
-              y={PAD.top + 8}
-              fontSize="9"
-              fill="#9aa9bc"
-            >
-              예측
-            </text>
-          </>
-        )}
-
-        {/* Series */}
-        {SERIES.map(({ key, color }) => {
-          const histPts = points.map((p, i) => `${xOf(i, total)},${yOf(p[key])}`).join(" ");
-          const predPt =
-            predicted && total > n
-              ? `${xOf(n - 1, total)},${yOf(points[n - 1][key])} ${xOf(n, total)},${yOf(allPoints[n][key])}`
-              : null;
-
-          return (
-            <g key={key}>
-              {/* Historical line */}
-              <polyline
-                points={histPts}
-                fill="none"
-                stroke={color}
-                strokeWidth="3"
-                strokeLinejoin="round"
-                strokeLinecap="round"
-              />
-              {/* Predicted dashed extension */}
-              {predPt && (
-                <polyline
-                  points={predPt}
-                  fill="none"
-                  stroke={color}
-                  strokeWidth="2"
-                  strokeDasharray="5 4"
-                  strokeLinejoin="round"
-                  strokeLinecap="round"
-                  opacity="0.7"
-                />
-              )}
-              {/* Data points */}
-              {points.map((p, i) => (
-                <circle
-                  key={i}
-                  cx={xOf(i, total)}
-                  cy={yOf(p[key])}
-                  r="5.5"
-                  fill="white"
-                  stroke={color}
-                  strokeWidth="2.75"
-                />
-              ))}
-              {/* Predicted point */}
-              {predicted && total > n && (
-                <circle
-                  cx={xOf(n, total)}
-                  cy={yOf(allPoints[n][key])}
-                  r="5"
-                  fill={color}
-                  opacity="0.4"
-                  stroke={color}
-                  strokeWidth="2"
-                />
-              )}
-            </g>
-          );
-        })}
-
-        {/* X axis labels */}
-        {allPoints.map((p, i) => (
-          <text
-            key={i}
-            x={xOf(i, total)}
-            y={H - 6}
-            textAnchor="middle"
-            fontSize="11"
-            fill={i === n && predicted ? "#9aa9bc" : "#27496D"}
-          >
-            {p.label ?? `${p.week}주`}
-          </text>
-        ))}
-      </svg>
-
-      {/* Legend */}
-      <div className="flex gap-5 justify-center mt-2 flex-wrap">
-        {SERIES.map(({ key, label, color }) => (
-          <div key={key} className="flex items-center gap-1.5 text-xs text-slate-500">
-            <span
-              className="inline-block w-5 h-0.5 rounded"
-              style={{ backgroundColor: color }}
-            />
+    <div className="space-y-4">
+      <div className="flex flex-wrap gap-4 rounded-2xl border border-blue-100 bg-blue-50/45 px-4 py-3">
+        {SERIES.map(({ key, label, className }) => (
+          <div key={key} className="flex items-center gap-2 text-xs font-bold text-slate-500">
+            <span className={`h-2.5 w-2.5 rounded-full ${className}`} />
             {label}
           </div>
         ))}
-        {predicted && (
-          <div className="flex items-center gap-1.5 text-xs text-slate-400">
-            <span className="inline-block w-5 h-0.5 border-t border-dashed border-slate-300" />
-            다음 주차 예측
-          </div>
-        )}
+      </div>
+
+      <div className="space-y-3">
+        {allPoints.map((point, pointIndex) => {
+          const isPredicted = predicted && pointIndex === allPoints.length - 1;
+          return (
+            <div
+              key={`${point.week}-${point.label ?? pointIndex}`}
+              className={`rounded-2xl border p-4 ${
+                isPredicted ? "border-dashed border-blue-200 bg-blue-50/35" : "border-blue-100 bg-white/75"
+              }`}
+            >
+              <div className="mb-3 flex items-center justify-between gap-3">
+                <span className="text-sm font-extrabold text-[#10233F]">
+                  {point.label ?? `${point.week}주차`}
+                </span>
+                {isPredicted && (
+                  <span className="rounded-full bg-blue-100 px-2.5 py-1 text-[11px] font-bold text-[#0F5FD7]">
+                    다음 주차 예측
+                  </span>
+                )}
+              </div>
+              <div className="space-y-2.5">
+                {SERIES.map(({ key, label, className }) => {
+                  const value = Math.max(0, Math.min(100, Math.round(point[key])));
+                  return (
+                    <div key={key} className="grid grid-cols-[76px_minmax(0,1fr)_44px] items-center gap-3">
+                      <span className="text-xs font-bold text-slate-500">{label}</span>
+                      <div className="h-3 overflow-hidden rounded-full bg-blue-50">
+                        <div className={`h-full rounded-full ${className}`} style={{ width: `${value}%` }} />
+                      </div>
+                      <span className="text-right text-xs font-extrabold text-[#10233F]">{value}%</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
@@ -313,7 +180,7 @@ export function TrendAnalysis({ courseId, rounds, demoMode = false }: Props) {
           <div>
             <CardTitle className="text-base text-[#10233F]">주차별 평가 추이</CardTitle>
             <CardDescription className="text-slate-500">
-              종료된 {validRounds.length}개 라운드에서 내용 이해·속도·질문 소통 반응이 어떻게 달라졌는지 보여줍니다.
+              종료된 {validRounds.length}개 라운드에서 내용 이해·질문 소통·적정 속도 응답이 어떻게 달라졌는지 보여줍니다.
             </CardDescription>
           </div>
           <div className="flex items-center gap-2">
@@ -357,7 +224,7 @@ export function TrendAnalysis({ courseId, rounds, demoMode = false }: Props) {
                 <div className="flex gap-4 text-sm">
                   <span className="text-emerald-600">이해도 {narrative.predicted.comprehension}%</span>
                   <span className="text-[#1677FF]">질문·소통 {(narrative.predicted.communication / 20).toFixed(1)}/5</span>
-                  <span className="text-amber-500">속도 적당 {narrative.predicted.speed}%</span>
+                  <span className="text-amber-500">적정 속도 {narrative.predicted.speed}%</span>
                 </div>
               </div>
             )}
