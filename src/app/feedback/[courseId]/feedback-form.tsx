@@ -97,10 +97,6 @@ function commentWarning(...comments: string[]) {
   return result;
 }
 
-function writtenPoint(text: string) {
-  return text.trim().length >= 10 ? 1 : 0;
-}
-
 export function FeedbackForm({
   courseId,
   token,
@@ -128,14 +124,13 @@ export function FeedbackForm({
     () => commentWarning(isAdditionalFeedback ? generalComment : positiveComment, difficultyComment),
     [difficultyComment, generalComment, isAdditionalFeedback, positiveComment]
   );
-  const points = 1 + writtenPoint(positiveComment) + writtenPoint(difficultyComment);
 
   if (submitted) {
     return (
       <Card className={V3_CARD}>
         <CardContent className="py-12 text-center">
           <p className="text-lg font-semibold text-green-600">피드백이 제출되었습니다!</p>
-          <p className="mt-2 text-gray-500">소중한 의견 감사합니다. 비교과 포인트는 기준에 따라 집계됩니다.</p>
+          <p className="mt-2 text-gray-500">소중한 의견 감사합니다.</p>
         </CardContent>
       </Card>
     );
@@ -244,11 +239,6 @@ export function FeedbackForm({
           <div className="flex flex-wrap gap-2">
             <span className="rounded-full bg-sky-50 px-3 py-1.5 text-xs font-bold text-sky-700">약 2분</span>
             <span className="rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-bold text-emerald-700">익명 제출</span>
-            {!isAdditionalFeedback && (
-              <span className="rounded-full bg-amber-50 px-3 py-1.5 text-xs font-bold text-amber-700">
-                최대 비교과 포인트 3P
-              </span>
-            )}
           </div>
         </CardContent>
       </Card>
@@ -349,7 +339,7 @@ export function FeedbackForm({
           <CardDescription className="leading-6 text-slate-500">
             {isAdditionalFeedback
               ? "특정 주차가 아니라 강의 전반에 대해 추가로 전달하고 싶은 내용을 자유롭게 작성해 주세요."
-              : "짧게 한 줄만 적어도 충분합니다. 10자 이상 작성한 칸은 비교과 포인트 기준에 반영됩니다."}
+              : "짧게 한 줄만 적어도 충분합니다."}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -406,28 +396,6 @@ export function FeedbackForm({
           ) : null}
         </CardContent>
       </Card>
-
-      {!isAdditionalFeedback && (
-        <Card className={`${V3_CARD} border-blue-100 bg-[linear-gradient(135deg,rgba(239,246,255,0.82),rgba(255,255,255,0.92))]`}>
-          <CardContent className="space-y-2 py-4 text-sm font-semibold text-[#27496D]">
-            <div className="flex items-center justify-between">
-              <span>피드백 제출</span>
-              <strong className="text-[#0F5FD7]">1P</strong>
-            </div>
-            <div className="flex items-center justify-between">
-              <span>도움이 된 점 작성(10자 이상)</span>
-              <strong className="text-[#0F5FD7]">+{writtenPoint(positiveComment)}P</strong>
-            </div>
-            <div className="flex items-center justify-between">
-              <span>더 설명이 필요한 점 작성(10자 이상)</span>
-              <strong className="text-[#0F5FD7]">+{writtenPoint(difficultyComment)}P</strong>
-            </div>
-            <div className="border-t border-blue-100 pt-2 text-base font-extrabold text-[#10233F]">
-              예상 비교과 포인트: {points}P
-            </div>
-          </CardContent>
-        </Card>
-      )}
 
       <div className="rounded-[18px] border border-blue-200 bg-blue-50 p-3 text-sm text-blue-800">
         한 번 제출하면 익명성 보장을 위해 <strong>수정할 수 없습니다</strong>. 제출 전 선택한 항목을 확인해 주세요.
