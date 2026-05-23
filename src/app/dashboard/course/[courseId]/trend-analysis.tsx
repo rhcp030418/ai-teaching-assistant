@@ -9,9 +9,9 @@ import type { RoundReport } from "@/app/actions/round-reports";
 import { DEMO_TREND_NARRATIVE } from "@/lib/demo-ai-fixtures";
 
 const SERIES = [
-  { key: "comprehensionHigh" as const, label: "내용 이해", className: "bg-[#1677FF]" },
-  { key: "commNorm" as const, label: "질문·소통", className: "bg-emerald-500" },
-  { key: "speedModerate" as const, label: "적정 속도", className: "bg-amber-400" },
+  { key: "comprehensionHigh" as const, label: "내용 이해", className: "bg-gradient-to-t from-[#0B4DBA] to-[#7DD3FC]" },
+  { key: "commNorm" as const, label: "질문·소통", className: "bg-gradient-to-t from-[#047857] to-[#99F6E4]" },
+  { key: "speedModerate" as const, label: "적정 속도", className: "bg-gradient-to-t from-[#B45309] to-[#FDE68A]" },
 ];
 
 interface PlotPoint {
@@ -44,52 +44,52 @@ function TrendChart({
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap gap-4 rounded-2xl border border-blue-100 bg-blue-50/45 px-4 py-3">
-        {SERIES.map(({ key, label, className }) => (
-          <div key={key} className="flex items-center gap-2 text-xs font-bold text-slate-500">
-            <span className={`h-2.5 w-2.5 rounded-full ${className}`} />
-            {label}
-          </div>
-        ))}
-      </div>
-
-      <div className="space-y-3">
-        {allPoints.map((point, pointIndex) => {
+      <div className="overflow-x-auto rounded-2xl border border-blue-100 bg-[linear-gradient(180deg,rgba(239,246,255,0.82),rgba(255,255,255,0.96))] p-4">
+        <div className="flex min-w-[680px] items-end gap-4">
+          {allPoints.map((point, pointIndex) => {
           const isPredicted = predicted && pointIndex === allPoints.length - 1;
           return (
             <div
               key={`${point.week}-${point.label ?? pointIndex}`}
-              className={`rounded-2xl border p-4 ${
-                isPredicted ? "border-dashed border-blue-200 bg-blue-50/35" : "border-blue-100 bg-white/75"
-              }`}
+              className={`flex min-w-[92px] flex-1 flex-col items-center ${isPredicted ? "opacity-55" : ""}`}
             >
-              <div className="mb-3 flex items-center justify-between gap-3">
-                <span className="text-sm font-extrabold text-[#10233F]">
-                  {point.label ?? `${point.week}주차`}
-                </span>
-                {isPredicted && (
-                  <span className="rounded-full bg-blue-100 px-2.5 py-1 text-[11px] font-bold text-[#0F5FD7]">
-                    다음 주차 예측
-                  </span>
-                )}
-              </div>
-              <div className="space-y-2.5">
+              <div className="flex h-48 w-full items-end justify-center gap-2 rounded-2xl border border-blue-100 bg-white/78 px-2 pb-3 pt-4">
                 {SERIES.map(({ key, label, className }) => {
                   const value = Math.max(0, Math.min(100, Math.round(point[key])));
                   return (
-                    <div key={key} className="grid grid-cols-[76px_minmax(0,1fr)_44px] items-center gap-3">
-                      <span className="text-xs font-bold text-slate-500">{label}</span>
-                      <div className="h-3 overflow-hidden rounded-full bg-blue-50">
-                        <div className={`h-full rounded-full ${className}`} style={{ width: `${value}%` }} />
+                    <div key={key} className="flex h-full min-w-0 flex-1 flex-col items-center justify-end gap-1" title={`${label} ${value}%`}>
+                      <span className="text-[10px] font-extrabold text-[#10233F]">{value}</span>
+                      <div className="flex h-[148px] w-full items-end rounded-full bg-blue-50">
+                        <div
+                          className={`w-full rounded-full ${className}`}
+                          style={{ height: `${Math.max(4, value)}%` }}
+                        />
                       </div>
-                      <span className="text-right text-xs font-extrabold text-[#10233F]">{value}%</span>
                     </div>
                   );
                 })}
               </div>
+              <p className="mt-2 text-center text-xs font-extrabold text-[#10233F]">
+                {point.label ?? `${point.week}주차`}
+              </p>
+              {isPredicted && (
+                <p className="mt-1 rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-bold text-[#0F5FD7]">
+                  예측
+                </p>
+              )}
             </div>
           );
-        })}
+          })}
+        </div>
+      </div>
+
+      <div className="flex flex-wrap justify-center gap-4">
+        {SERIES.map(({ key, label, className }) => (
+          <div key={key} className="flex items-center gap-2 text-xs font-bold text-slate-500">
+            <span className={`h-3 w-3 rounded-full ${className}`} />
+            {label}
+          </div>
+        ))}
       </div>
     </div>
   );

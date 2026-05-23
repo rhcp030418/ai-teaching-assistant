@@ -25,6 +25,12 @@ interface Round {
   status: "pending" | "active" | "closed" | "overlap";
   feedbackCount: number;
   submissionCount: number;
+  summary: {
+    speedModerate: number;
+    comprehensionHigh: number;
+    communicationAvg: number;
+  };
+  comments: string[];
 }
 
 interface Props {
@@ -222,6 +228,39 @@ export function RoundManager({ courseId, initialRounds }: Props) {
                       <p className="rounded-xl border border-red-100 bg-white/75 px-3 py-2 text-xs font-semibold leading-5 text-red-600">
                         현재 시간 기준으로 다른 평가 회차와 기간이 겹칩니다. 학생 제출 라운드가 모호해질 수 있으니 운영 기간을 조정해주세요.
                       </p>
+                    )}
+
+                    {round.feedbackCount > 0 && (
+                      <div className="rounded-2xl border border-blue-100 bg-white/80 p-3">
+                        <p className="text-xs font-extrabold text-[#10233F]">응답 요약</p>
+                        <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-3">
+                          <div className="rounded-xl bg-blue-50/70 px-3 py-2">
+                            <p className="text-[11px] font-bold text-slate-500">적정 속도</p>
+                            <p className="mt-0.5 text-sm font-extrabold text-[#0F5FD7]">{round.summary.speedModerate}%</p>
+                          </div>
+                          <div className="rounded-xl bg-emerald-50/70 px-3 py-2">
+                            <p className="text-[11px] font-bold text-slate-500">내용 이해 4점 이상</p>
+                            <p className="mt-0.5 text-sm font-extrabold text-emerald-700">{round.summary.comprehensionHigh}%</p>
+                          </div>
+                          <div className="rounded-xl bg-amber-50/70 px-3 py-2">
+                            <p className="text-[11px] font-bold text-slate-500">질문·소통 평균</p>
+                            <p className="mt-0.5 text-sm font-extrabold text-amber-700">{round.summary.communicationAvg}/5</p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {round.comments.length > 0 && (
+                      <div className="rounded-2xl border border-blue-100 bg-white/80 p-3">
+                        <p className="text-xs font-extrabold text-[#10233F]">최근 학생 의견</p>
+                        <ul className="mt-2 space-y-2">
+                          {round.comments.map((comment, index) => (
+                            <li key={index} className="rounded-xl bg-blue-50/45 px-3 py-2 text-xs font-medium leading-5 text-[#27496D]">
+                              {comment}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
                     )}
 
                     {editingId === round.id ? (

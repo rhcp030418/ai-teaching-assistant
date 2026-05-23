@@ -25,6 +25,11 @@ function ErrorCard({ title, description }: { title: string; description: string 
   );
 }
 
+function formatRoundEvaluationLabel(round: { week: number; label: string | null }) {
+  const label = round.label ?? `${round.week}주차`;
+  return label.endsWith("평가") ? label : `${label} 평가`;
+}
+
 function InfoCard({ title, description }: { title: string; description: string }) {
   return (
     <div className={PAGE_BG}>
@@ -90,7 +95,7 @@ export default async function FeedbackPage(
     });
 
     if (submitted) {
-      return <InfoCard title="이번 주차 평가를 이미 완료했습니다" description={`${activeRound.label ?? activeRound.week + "주차"} 평가가 제출되었습니다.`} />;
+      return <InfoCard title="이번 주차 평가를 이미 완료했습니다" description={`${formatRoundEvaluationLabel(activeRound)}가 제출되었습니다.`} />;
     }
 
     const course = await prisma.course.findUnique({
@@ -104,7 +109,7 @@ export default async function FeedbackPage(
         <div className="max-w-3xl mx-auto">
           <div className="mb-8 rounded-[24px] border border-blue-100 bg-white/90 p-6 text-center shadow-[0_18px_48px_-30px_rgba(23,87,168,0.42)]">
             <span className="inline-flex rounded-full bg-blue-100/80 px-3 py-1.5 text-xs font-bold text-[#0F5FD7]">
-              {activeRound.label ?? `${activeRound.week}주차`} 평가
+              {formatRoundEvaluationLabel(activeRound)}
             </span>
             <h1 className="mt-3 text-2xl font-extrabold text-[#10233F]">{course.name}</h1>
             <p className="text-slate-500 mt-1">

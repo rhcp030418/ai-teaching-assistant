@@ -103,20 +103,21 @@ function MetricBar({
   label,
   value,
   valueLabel,
-  tone,
+  palette,
 }: {
   label: string;
   value: number;
   valueLabel?: string;
-  tone: "blue" | "green" | "amber" | "rose";
+  palette: "content" | "material" | "communication" | "engagement" | "speed";
 }) {
   const pct = Math.max(0, Math.min(100, Math.round(value)));
   const fillClass = {
-    blue: "bg-gradient-to-r from-[#1677FF] to-[#38BDF8]",
-    green: "bg-gradient-to-r from-emerald-500 to-teal-300",
-    amber: "bg-gradient-to-r from-amber-400 to-yellow-300",
-    rose: "bg-gradient-to-r from-rose-500 to-red-300",
-  }[tone];
+    content: "bg-gradient-to-r from-[#0B4DBA] via-[#1677FF] to-[#7DD3FC]",
+    material: "bg-gradient-to-r from-[#B45309] via-[#F59E0B] to-[#FDE68A]",
+    communication: "bg-gradient-to-r from-[#047857] via-[#10B981] to-[#99F6E4]",
+    engagement: "bg-gradient-to-r from-[#6D28D9] via-[#8B5CF6] to-[#C4B5FD]",
+    speed: "bg-gradient-to-r from-[#0E7490] via-[#06B6D4] to-[#A5F3FC]",
+  }[palette];
 
   return (
     <div className="grid grid-cols-[96px_minmax(0,1fr)_52px] items-center gap-3">
@@ -218,15 +219,6 @@ export function FeedbackAnalysis({
   const materialRatio = axisValue("자료·예시 도움");
   const communicationAxisRatio = axisValue("질문·소통 편의") || communicationRatio;
   const engagementRatio = axisValue("학습 몰입");
-  const slowRatio =
-    totalFeedbacks > 0
-      ? Math.round((((speedCounts.verySlow ?? 0) + speedCounts.slow) / totalFeedbacks) * 100)
-      : 0;
-  const fastRatio =
-    totalFeedbacks > 0
-      ? Math.round(((speedCounts.fast + (speedCounts.veryFast ?? 0)) / totalFeedbacks) * 100)
-      : 0;
-
   return (
     <div className="space-y-5">
       {/* Header */}
@@ -340,30 +332,25 @@ export function FeedbackAnalysis({
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <MetricBar label="내용 이해" value={contentRatio} tone={percentTone(contentRatio)} />
-              <MetricBar label="자료·예시" value={materialRatio} tone={percentTone(materialRatio)} />
+              <MetricBar label="내용 이해" value={contentRatio} palette="content" />
+              <MetricBar label="자료·예시" value={materialRatio} palette="material" />
               <MetricBar
                 label="소통 편의"
                 value={communicationAxisRatio}
                 valueLabel={`${communicationAvg}/5`}
-                tone={percentTone(communicationAxisRatio)}
+                palette="communication"
               />
               <MetricBar
                 label="학습 몰입"
                 value={engagementRatio}
-                tone={percentTone(engagementRatio)}
+                palette="engagement"
               />
               <MetricBar
                 label="적정 속도"
                 value={speedModerateRatio}
                 valueLabel={`${speedModerateRatio}%`}
-                tone={percentTone(speedModerateRatio)}
+                palette="speed"
               />
-              <div className="grid gap-2 pt-1 text-xs font-semibold text-slate-500 sm:grid-cols-3">
-                <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-2 text-center">느림 응답 {slowRatio}%</span>
-                <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-2 text-center">적정 응답 {speedModerateRatio}%</span>
-                <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-2 text-center">빠름 응답 {fastRatio}%</span>
-              </div>
             </CardContent>
           </Card>
         </div>

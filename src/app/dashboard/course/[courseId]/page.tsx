@@ -13,6 +13,11 @@ import { isDemoUser } from "@/lib/auth-utils";
 
 // ─── 페이지 (현황 요약) ─────────────────────────────────────────────────────────
 
+function formatRoundProgressLabel(round: { week: number; label: string | null }) {
+  const label = round.label ?? `${round.week}주차`;
+  return label.endsWith("평가") ? `${label} 진행 중` : `${label} 평가 진행 중`;
+}
+
 export default async function CourseDashboardPage(
   props: PageProps<"/dashboard/course/[courseId]">
 ) {
@@ -124,7 +129,7 @@ export default async function CourseDashboardPage(
             <div className="overflow-hidden rounded-[22px] border border-transparent bg-[radial-gradient(circle_at_86%_16%,rgba(255,255,255,0.3),transparent_30%),linear-gradient(155deg,#1677ff_0%,#38bdf8_100%)] p-[18px] text-white shadow-[0_20px_46px_rgba(22,119,255,0.24)]">
               <h2 className="text-base font-extrabold">현재 라운드</h2>
               <p className="mt-1 text-sm text-white/80">
-                {activeRound.label ?? `${activeRound.week}주차`} 평가 진행 중
+                {formatRoundProgressLabel(activeRound)}
               </p>
               <div className="mt-[18px] space-y-0">
                 <div className="flex items-center justify-between border-t border-white/25 py-3 text-sm font-bold">
