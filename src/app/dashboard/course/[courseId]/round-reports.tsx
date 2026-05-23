@@ -19,14 +19,25 @@ function formatDate(iso: string) {
   return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, "0")}.${String(d.getDate()).padStart(2, "0")}`;
 }
 
-function Stat({ label, value, suffix = "" }: { label: string; value: string | number; suffix?: string }) {
+function Stat({
+  label,
+  value,
+  suffix = "",
+  caption,
+}: {
+  label: string;
+  value: string | number;
+  suffix?: string;
+  caption?: string;
+}) {
   return (
-    <div className="text-center">
-      <div className="text-xs font-medium text-slate-500">{label}</div>
-      <div className="text-base font-semibold text-[#10233F] mt-0.5">
+    <div className="min-w-0 rounded-2xl border border-blue-100 bg-blue-50/35 px-3 py-2.5 text-center">
+      <div className="whitespace-nowrap text-[11px] font-bold text-slate-600">{label}</div>
+      <div className="mt-0.5 text-lg font-extrabold text-[#10233F]">
         {value}
-        <span className="text-xs text-gray-400 ml-0.5">{suffix}</span>
+        <span className="ml-0.5 text-xs font-semibold text-slate-400">{suffix}</span>
       </div>
+      {caption && <p className="mt-0.5 text-[10px] leading-tight text-slate-400">{caption}</p>}
     </div>
   );
 }
@@ -370,7 +381,7 @@ function getCorrelations(mat: RoundMaterialSummary, rs: NonNullable<RoundStatsFo
   if (mat.exampleSufficiency === "부족" && rs.practiceAvg !== null && rs.practiceAvg < 3.5)
     corrs.push({ text: `예시 부족 × 실습 점수 ${rs.practiceAvg}/5 — 일치`, type: "warn" });
   if (mat.termDensity === "높음" && rs.speedModerate < 50)
-    corrs.push({ text: `용어 밀도 높음 × 속도 적절 ${rs.speedModerate}% — 연관 가능`, type: "info" });
+    corrs.push({ text: `용어 밀도 높음 × 적정 속도 응답 ${rs.speedModerate}% — 연관 가능`, type: "info" });
   if (mat.exampleSufficiency === "충분" && rs.practiceAvg !== null && rs.practiceAvg >= 4.0)
     corrs.push({ text: `예시 충분 × 실습 점수 ${rs.practiceAvg}/5 — 강점`, type: "ok" });
   return corrs;
@@ -539,8 +550,8 @@ function SemesterCard({ courseId, sem }: { courseId: string; sem: SemesterCompar
 
       <div className="bg-white rounded-lg p-3 space-y-2">
         <CompareRow label="질문·소통 편의" prev={sem.prev.communicationAvg} curr={sem.curr.communicationAvg} unit="점" />
-        <CompareRow label="내용 이해 높음" prev={sem.prev.comprehensionHigh} curr={sem.curr.comprehensionHigh} unit="%" />
-        <CompareRow label="속도 적당" prev={sem.prev.speedModerate} curr={sem.curr.speedModerate} unit="%" />
+        <CompareRow label="내용 이해 4점 이상" prev={sem.prev.comprehensionHigh} curr={sem.curr.comprehensionHigh} unit="%" />
+        <CompareRow label="적정 속도 응답" prev={sem.prev.speedModerate} curr={sem.curr.speedModerate} unit="%" />
       </div>
 
       <p className="text-xs text-gray-400 mt-2">
@@ -619,13 +630,49 @@ export function RoundReports({ courseId, data, demoMode = false }: Props) {
             {r.totalFeedbacks === 0 ? (
               <p className="text-xs text-gray-400 text-center py-2">응답 없음</p>
             ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <Stat label="속도 적절" value={r.speedModerate} suffix="%" />
-                <Stat label="내용 이해 높음" value={r.comprehensionHigh} suffix="%" />
-                <Stat label="질문·소통" value={r.communicationAvg} suffix="/5" />
-                {r.interestAvg !== null && <Stat label="학습 몰입" value={r.interestAvg} suffix="/5" />}
-                {r.assignmentAvg !== null && <Stat label="과제 평균" value={r.assignmentAvg} suffix="/5" />}
-                {r.practiceAvg !== null && <Stat label="실습 평균" value={r.practiceAvg} suffix="/5" />}
+              <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6">
+                <Stat
+                  label="적정 속도 응답"
+                  value={r.speedModerate}
+                  suffix="%"
+                  caption="‘적당해요’ 선택 비율"
+                />
+                <Stat
+                  label="내용 이해 4점 이상"
+                  value={r.comprehensionHigh}
+                  suffix="%"
+                  caption="4~5점 응답 비율"
+                />
+                <Stat
+                  label="질문·소통 평균"
+                  value={r.communicationAvg}
+                  suffix="/5"
+                  caption="질문 편의 평균"
+                />
+                {r.interestAvg !== null && (
+                  <Stat
+                    label="학습 몰입 평균"
+                    value={r.interestAvg}
+                    suffix="/5"
+                    caption="몰입도 평균"
+                  />
+                )}
+                {r.assignmentAvg !== null && (
+                  <Stat
+                    label="과제 적절성 평균"
+                    value={r.assignmentAvg}
+                    suffix="/5"
+                    caption="과제 난이도·분량"
+                  />
+                )}
+                {r.practiceAvg !== null && (
+                  <Stat
+                    label="실습 도움 평균"
+                    value={r.practiceAvg}
+                    suffix="/5"
+                    caption="실습·예시 도움"
+                  />
+                )}
               </div>
             )}
 
