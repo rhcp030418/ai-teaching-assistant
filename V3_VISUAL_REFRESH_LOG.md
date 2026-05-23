@@ -693,3 +693,24 @@ Status: optional / not started
 Notes:
 
 - Not part of the immediate task.
+
+### V2.11 — Guide Links + Visual Label Hotfix (Codex)
+
+Status: Complete
+
+Reason: User found several polish issues after deployment: duplicated prediction labels, guide cards routing to `/dashboard`, and material-analysis pedagogy color not matching the requested semantics.
+
+#### Files Changed
+
+- `src/app/dashboard/guide/page.tsx`
+- `src/app/dashboard/course/[courseId]/trend-analysis.tsx`
+- `src/app/dashboard/course/[courseId]/materials/materials-client.tsx`
+- `V3_VISUAL_REFRESH_LOG.md`
+
+#### Changes
+
+- **Guide cards now route to actual feature pages**: guide page resolves the current professor's first available course and sends each card to the correct course-level destination (`overview`, `analysis`, `management`, `benchmark`, `materials`, or `tone`) instead of sending everything to `/dashboard`.
+- **Prediction label duplication fixed**: trend chart predicted column now labels the x-axis as `다음 주차` and keeps only one `예측` badge.
+- **Material-analysis pedagogy color fixed**: `교수법` detail block now uses purple border/text.
+- **Guide copy updated**: additional feedback link is described as a course-wide anonymous written feedback path, not a regular weekly evaluation.
+- Verification: `npm run lint`, `npx tsc --noEmit`, `npm run build` passed.

@@ -1,5 +1,8 @@
 import { AlertTriangle, BookOpenCheck, CheckCircle2, Sparkles } from "lucide-react";
 import Link from "next/link";
+import { auth } from "@/lib/auth";
+import { prisma } from "@/lib/db";
+import { isDemoUser, isDemoVisibleCourse } from "@/lib/auth-utils";
 
 const SECTION =
   "rounded-[24px] border border-blue-100 bg-white/90 p-6 shadow-[0_18px_48px_-30px_rgba(23,87,168,0.42)]";
@@ -14,79 +17,87 @@ type GuideItem = {
   href?: string;
 };
 
-const required = [
-  {
-    title: "강의 선택",
-    body: "대시보드의 강의 목록에서 확인할 강의를 선택합니다. 모든 분석과 채팅은 선택한 강의 범위 안에서만 확인하는 것을 기준으로 합니다.",
-    href: "/dashboard",
-  },
-  {
-    title: "평가 라운드 열기",
-    body: "관리 및 기록에서 주차별 평가 라운드를 만들고 시작·종료 시간을 지정합니다. 진행 중인 라운드가 있어야 학생 피드백이 해당 주차에 모입니다.",
-    href: "/dashboard",
-  },
-  {
-    title: "피드백 링크 배포",
-    body: "관리 및 기록에서 추가 피드백 링크를 생성한 뒤 e-class나 공지에 공유합니다. 학생은 링크로 들어와 익명 피드백을 제출합니다.",
-    href: "/dashboard",
-  },
-  {
-    title: "현황 요약 확인",
-    body: "현황 요약에서 응답 수, 학생 의견 요약, 주요 지표 흐름, 주차별 평가 추이를 먼저 확인합니다. 이 화면은 매주 가장 먼저 보는 기본 화면입니다.",
-    href: "/dashboard",
-  },
-];
+function buildGuideItems(courseBase: string | null) {
+  const courseHref = courseBase ?? "/dashboard";
+  const managementHref = courseBase ? `${courseBase}/management` : "/dashboard";
+  const analysisHref = courseBase ? `${courseBase}/analysis` : "/dashboard";
+  const materialsHref = courseBase ? `${courseBase}/materials` : "/dashboard";
+  const benchmarkHref = courseBase ? `${courseBase}/benchmark` : "/dashboard";
 
-const optional = [
-  {
-    title: "지원 인사이트",
-    body: "피드백이 충분히 쌓였을 때 원인 연결 분석과 로드맵을 참고합니다. 수업 운영을 대신 결정하는 기능이 아니라, 학생 반응을 더 빨리 훑기 위한 보조 도구입니다.",
-    href: "/dashboard",
-  },
-  {
-    title: "강의자료 분석",
-    body: "PDF, PPT, TXT 자료를 업로드하면 자료 난이도, 용어 밀도, 예시 충분도와 학생 반응의 연결 맥락을 볼 수 있습니다.",
-    href: "/dashboard",
-  },
-  {
-    title: "비교 참고",
-    body: "유사 강의 경향과 익명 사례를 참고합니다. 동일한 방식으로 따라 하라는 의미가 아니라, 수업을 바라보는 비교 관점을 넓히는 용도입니다.",
-    href: "/dashboard",
-  },
-  {
-    title: "AI 강의 어시스턴트",
-    body: "오른쪽 하단 버튼을 열어 현재 강의 데이터에 대해 질문합니다. 답변은 선택한 강의의 피드백과 자료 맥락을 바탕으로 한 참고 답변입니다.",
-    href: "/dashboard",
-  },
-  {
-    title: "말투 교정",
-    body: "공지나 피드백 답변 문장을 정돈할 때 사용합니다. 학생에게 전달하기 전 최종 표현은 교수자가 직접 확인하는 것이 좋습니다.",
-    href: "/dashboard/tone",
-  },
-];
-
-const caution = [
-  {
-    title: "응답 수가 적을 때",
-    body: "피드백이 3건 미만이거나 응답률이 낮으면 차트와 요약이 한쪽 의견에 치우칠 수 있습니다. 수치보다 실제 의견 원문을 함께 확인하세요.",
-    href: "/dashboard",
-  },
-  {
-    title: "AI 요약·분석 결과",
-    body: "AI는 학생 의견을 정리하는 도구입니다. 표현을 오해하거나, 원인을 단정하거나, 일부 의견을 과하게 일반화할 수 있습니다.",
-    href: "/dashboard",
-  },
-  {
-    title: "비교와 사례",
-    body: "다른 강의와의 비교는 참고용입니다. 강의 목표, 수강생 구성, 평가 방식이 다르면 같은 수치라도 의미가 달라질 수 있습니다.",
-    href: "/dashboard",
-  },
-  {
-    title: "강의자료 분석",
-    body: "자료 텍스트 추출 품질이나 파일 형식에 따라 분석이 누락될 수 있습니다. 스캔 이미지 중심 자료는 PDF 텍스트 변환 후 업로드하는 편이 좋습니다.",
-    href: "/dashboard",
-  },
-];
+  return {
+    required: [
+      {
+        title: "강의 선택",
+        body: "대시보드의 강의 목록에서 확인할 강의를 선택합니다. 모든 분석과 채팅은 선택한 강의 범위 안에서만 확인하는 것을 기준으로 합니다.",
+        href: "/dashboard",
+      },
+      {
+        title: "평가 라운드 열기",
+        body: "관리 및 기록에서 주차별 평가 라운드를 만들고 시작·종료 시간을 지정합니다. 진행 중인 라운드가 있어야 학생 피드백이 해당 주차에 모입니다.",
+        href: managementHref,
+      },
+      {
+        title: "피드백 링크 배포",
+        body: "관리 및 기록에서 추가 피드백 링크를 생성한 뒤 e-class나 공지에 공유합니다. 학생은 링크로 들어와 강의 전반에 대한 익명 서술형 피드백을 제출합니다.",
+        href: managementHref,
+      },
+      {
+        title: "현황 요약 확인",
+        body: "현황 요약에서 응답 수, 학생 의견 요약, 주요 지표 흐름, 주차별 평가 추이를 먼저 확인합니다. 이 화면은 매주 가장 먼저 보는 기본 화면입니다.",
+        href: courseHref,
+      },
+    ],
+    optional: [
+      {
+        title: "지원 인사이트",
+        body: "피드백이 충분히 쌓였을 때 원인 연결 분석과 로드맵을 참고합니다. 수업 운영을 대신 결정하는 기능이 아니라, 학생 반응을 더 빨리 훑기 위한 보조 도구입니다.",
+        href: analysisHref,
+      },
+      {
+        title: "강의자료 분석",
+        body: "PDF, PPT, TXT 자료를 업로드하면 자료 난이도, 용어 밀도, 예시 충분도와 학생 반응의 연결 맥락을 볼 수 있습니다.",
+        href: materialsHref,
+      },
+      {
+        title: "비교 참고",
+        body: "유사 강의 경향과 익명 사례를 참고합니다. 동일한 방식으로 따라 하라는 의미가 아니라, 수업을 바라보는 비교 관점을 넓히는 용도입니다.",
+        href: benchmarkHref,
+      },
+      {
+        title: "AI 강의 어시스턴트",
+        body: "오른쪽 하단 버튼을 열어 현재 강의 데이터에 대해 질문합니다. 답변은 선택한 강의의 피드백과 자료 맥락을 바탕으로 한 참고 답변입니다.",
+        href: courseHref,
+      },
+      {
+        title: "말투 교정",
+        body: "공지나 피드백 답변 문장을 정돈할 때 사용합니다. 학생에게 전달하기 전 최종 표현은 교수자가 직접 확인하는 것이 좋습니다.",
+        href: "/dashboard/tone",
+      },
+    ],
+    caution: [
+      {
+        title: "응답 수가 적을 때",
+        body: "피드백이 3건 미만이거나 응답률이 낮으면 차트와 요약이 한쪽 의견에 치우칠 수 있습니다. 수치보다 실제 의견 원문을 함께 확인하세요.",
+        href: courseHref,
+      },
+      {
+        title: "AI 요약·분석 결과",
+        body: "AI는 학생 의견을 정리하는 도구입니다. 표현을 오해하거나, 원인을 단정하거나, 일부 의견을 과하게 일반화할 수 있습니다.",
+        href: analysisHref,
+      },
+      {
+        title: "비교와 사례",
+        body: "다른 강의와의 비교는 참고용입니다. 강의 목표, 수강생 구성, 평가 방식이 다르면 같은 수치라도 의미가 달라질 수 있습니다.",
+        href: benchmarkHref,
+      },
+      {
+        title: "강의자료 분석",
+        body: "자료 텍스트 추출 품질이나 파일 형식에 따라 분석이 누락될 수 있습니다. 스캔 이미지 중심 자료는 PDF 텍스트 변환 후 업로드하는 편이 좋습니다.",
+        href: materialsHref,
+      },
+    ],
+  };
+}
 
 function GuideSection({
   icon: Icon,
@@ -141,7 +152,21 @@ function GuideSection({
   );
 }
 
-export default function GuidePage() {
+export default async function GuidePage() {
+  const session = await auth();
+  const courses = session?.user?.id
+    ? await prisma.course.findMany({
+        where: { professorId: session.user.id },
+        select: { id: true, name: true },
+        orderBy: { createdAt: "desc" },
+      })
+    : [];
+  const course = courses.find(
+    (item) => !isDemoUser(session?.user?.email) || isDemoVisibleCourse(item.name),
+  );
+  const courseBase = course ? `/dashboard/course/${course.id}` : null;
+  const { required, optional, caution } = buildGuideItems(courseBase);
+
   return (
     <div className="space-y-8">
       <div className="rounded-[24px] border border-blue-100/90 bg-[linear-gradient(135deg,rgba(255,255,255,0.96),rgba(237,247,255,0.82))] p-7 shadow-[0_18px_48px_-30px_rgba(23,87,168,0.42)]">
