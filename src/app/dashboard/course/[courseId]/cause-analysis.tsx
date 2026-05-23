@@ -69,7 +69,7 @@ export function CauseAnalysis({
   return (
     <Card className={V3_CARD}>
       <CardHeader>
-        <CardTitle className="text-base text-[#10233F]">원인 연결 분석</CardTitle>
+        <CardTitle className="text-base text-[#10233F]">AI 원인 연결 분석</CardTitle>
         <CardDescription className="text-slate-500">
           학생 피드백과 강의자료를 교차 분석하여 가능한 원인을 추정합니다
         </CardDescription>
@@ -85,7 +85,7 @@ export function CauseAnalysis({
               </p>
             )}
             <Button onClick={handleAnalyze} disabled={pending}>
-              {pending ? "AI 분석 중..." : "원인 분석 실행"}
+              {pending ? "AI 분석 중..." : "AI 원인 분석 실행"}
             </Button>
           </div>
         )}

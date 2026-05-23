@@ -192,7 +192,7 @@ function AnalysisResult({ analysis }: { analysis: MaterialAnalysis }) {
   return (
     <div className="space-y-4 mt-4">
       <div>
-        <h4 className="text-sm font-semibold text-[#10233F] mb-1">핵심 요약</h4>
+        <h4 className="text-sm font-semibold text-[#10233F] mb-1">AI 핵심 요약</h4>
         <p className="text-sm text-[#27496D]">{analysis.summary}</p>
       </div>
 
@@ -253,7 +253,7 @@ function AnalysisResult({ analysis }: { analysis: MaterialAnalysis }) {
 
       {analysis.improvements && (analysis.improvements.structure || analysis.improvements.examples || analysis.improvements.pedagogy) && (
         <div>
-          <h4 className="text-sm font-semibold text-[#10233F] mb-2">개선 제안</h4>
+          <h4 className="text-sm font-semibold text-[#10233F] mb-2">AI 개선 제안</h4>
           <div className="space-y-2">
             {analysis.improvements.structure && (
               <details open className="rounded-[14px] border border-blue-100 bg-white/80 p-3 text-sm">

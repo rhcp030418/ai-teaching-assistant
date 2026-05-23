@@ -236,7 +236,7 @@ export function FeedbackAnalysis({
         <CardHeader>
           <div className="flex items-start justify-between gap-4">
             <div>
-              <CardTitle className="text-base text-[#10233F]">학생 의견 요약</CardTitle>
+              <CardTitle className="text-base text-[#10233F]">AI 학생 의견 요약</CardTitle>
               <CardDescription className="text-slate-500">
                 차트보다 먼저 학생 의견의 흐름을 문장으로 확인합니다.
               </CardDescription>
@@ -249,7 +249,7 @@ export function FeedbackAnalysis({
         <CardContent>
           <div className="grid gap-4 rounded-[20px] border border-sky-200/50 bg-gradient-to-br from-sky-50/80 to-white/90 p-5 sm:grid-cols-[54px_minmax(0,1fr)]">
             <div className="grid h-[54px] w-[54px] place-items-center rounded-[18px] bg-gradient-to-br from-[#1677FF] to-[#38BDF8] text-sm font-black text-white shadow-[0_12px_24px_rgba(22,119,255,0.22)]">
-              요약
+              AI 요약
             </div>
             <div>
               {!isLowData ? (
@@ -487,7 +487,7 @@ export function CommentsSection({
 
   const summaryBox = (
     <div className="rounded-lg border border-blue-100 bg-blue-50/60 px-4 py-3 text-sm leading-relaxed text-[#27496D]">
-      <p className="mb-1 text-xs font-bold text-slate-400">{prevRoundLabel} 의견 요약</p>
+      <p className="mb-1 text-xs font-bold text-slate-400">{prevRoundLabel} AI 의견 요약</p>
       {summaryLoading ? (
         <p className="text-slate-400">AI 요약 생성 중...</p>
       ) : summary ? (

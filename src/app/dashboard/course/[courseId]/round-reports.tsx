@@ -293,7 +293,7 @@ function ClassChecklistPanel({
           disabled={loading}
           className="text-xs"
         >
-          {loading ? "생성 중..." : "다음 수업 준비 체크리스트 생성"}
+          {loading ? "생성 중..." : "AI 다음 수업 준비 체크리스트 생성"}
         </Button>
         {errorMsg && <p className="text-xs text-red-500">{errorMsg}</p>}
       </div>
@@ -316,7 +316,7 @@ function ClassChecklistPanel({
     <div className="mt-3 border border-indigo-100 rounded-lg bg-indigo-50/30 p-3">
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
-          <p className="text-xs font-semibold text-indigo-800">다음 수업 준비 체크리스트</p>
+          <p className="text-xs font-semibold text-indigo-800">AI 다음 수업 준비 체크리스트</p>
           {allDone ? (
             <span className="text-[10px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded-full font-medium">
               완료
@@ -443,7 +443,7 @@ function MaterialsSection({
         >
           <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
         </svg>
-        강의자료 분석
+        AI 강의자료 분석
         <span className="text-gray-400">({analyzed.length}/{materials.length}건 분석됨)</span>
         {hasAnyCorrelation && (
           <span className="ml-1 text-[10px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full">

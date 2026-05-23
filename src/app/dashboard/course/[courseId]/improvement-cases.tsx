@@ -186,7 +186,7 @@ function CaseCard({
           disabled={loading}
           className="w-full"
         >
-          {loading ? "분석 중..." : "내 강의에 적용하기"}
+          {loading ? "분석 중..." : "AI로 내 강의에 적용하기"}
         </Button>
       )}
     </div>
