@@ -324,6 +324,41 @@ function closedRoundDates(week: number) {
   return { startDate, endDate };
 }
 
+// 주차별 강의 주제에 맞춘 서로 다른 개선 제안 (검증된 교수법 기법명 포함).
+// 카드에서 기본 펼침으로 보이므로 한 줄로 짧고 구체적으로 작성한다.
+const weekImprovements: Record<number, { structure: string; examples: string; pedagogy: string }> = {
+  1: {
+    structure: "데이터베이스가 왜 필요한지 실제 서비스 사례로 도입한 뒤 ERD 전체 구조를 한 장으로 먼저 보여주면 세부 용어를 걸어 둘 틀이 생깁니다 (사전 안내자/advance organizer).",
+    examples: "기본키·외래키 같은 핵심 용어를 한 장짜리 정의표로 정리해 ERD 예시와 나란히 배치하세요 (이중 부호화/dual coding).",
+    pedagogy: "개체와 관계를 구분하는 짧은 객관식 질문을 중간에 던져 학생이 헷갈리는 지점을 즉석에서 드러내게 하세요 (개념점검질문/ConcepTest).",
+  },
+  2: {
+    structure: "관계형 모델을 테이블로 바꾸는 과정을 단계별로 끊고, 각 단계마다 중간 결과 테이블을 보여주세요 (청킹/chunking).",
+    examples: "정규화 전후 테이블을 같은 데이터로 비교한 예시를 함수 종속 설명 직후에 붙이면 정규형 차이가 분명해집니다 (구체적 예시 우선/concrete examples).",
+    pedagogy: "정규형 단계마다 '왜 더 쪼개야 하는가'를 학생이 직접 답하게 해 판단 기준을 스스로 세우게 하세요 (정교화 질문/elaboration).",
+  },
+  3: {
+    structure: "JOIN과 서브쿼리를 한 슬라이드에 몰지 말고 SELECT→WHERE→JOIN→서브쿼리 순으로 끊어 각 단위 끝에 실행 결과를 확인하세요 (청킹/chunking).",
+    examples: "INNER JOIN과 OUTER JOIN 차이를 같은 테이블에 적용한 결과 비교 예시로 보여주면 어떤 상황에 쓰는지 감이 잡힙니다 (구체적 예시 우선/concrete examples).",
+    pedagogy: "쿼리를 실행하기 전에 결과가 어떻게 나올지 학생이 먼저 예측하게 한 뒤 실행하세요 (생성·예측 효과/generation).",
+  },
+  4: {
+    structure: "잘못된 설계와 수정된 설계를 나란히 놓고 차이를 짚는 순서로 구성하면 정규화의 효용이 한눈에 드러납니다 (오개념 직면/confronting misconceptions).",
+    examples: "과제 예시 답안의 범위와 좋은 결과물 기준을 과제 안내 시점에 함께 제시하세요 (채점 기준 사전 공유/success criteria).",
+    pedagogy: "함께 풀기→일부만 비워 풀기→혼자 풀기 순으로 정규화 실습 난이도를 단계화하세요 (점진적 책임 이양/scaffolding).",
+  },
+  5: {
+    structure: "인덱스 종류와 선택 기준을 수업 말미에 한 장 요약표로 정리해 복습 포인트를 잡게 하세요 (이중 부호화/dual coding).",
+    examples: "EXPLAIN 결과를 인덱스 적용 전후로 직접 비교하는 실습을 1개 더 넣어 성능 차이를 숫자로 확인하게 하세요 (워크드 예제/worked example).",
+    pedagogy: "트리거 코드는 완성본을 먼저 시연한 뒤 빈칸 코드를 채우게 하는 순서로 진행하세요 (점진적 책임 이양/scaffolding).",
+  },
+  6: {
+    structure: "집계 파이프라인은 $match→$lookup→$unwind 단계마다 중간 결과 문서를 보여주며 끊어 진행하세요 (청킹/chunking).",
+    examples: "같은 데이터를 SQL과 MongoDB로 나란히 표현한 비교 예시로 새 개념을 기존 관계형 지식에 연결하세요 (구체적 예시 우선/concrete examples).",
+    pedagogy: "CAP 이론은 실제 장애 상황 시나리오를 먼저 던지고 학생이 트레이드오프를 추론하게 한 뒤 정리하세요 (생산적 실패/productive failure).",
+  },
+};
+
 function materialAnalysis(week: number) {
   return JSON.stringify({
     difficulty: week >= 5 ? "보통~높음" : "보통",
@@ -333,11 +368,7 @@ function materialAnalysis(week: number) {
         : "핵심 개념은 명확하지만 처음 접하는 용어가 있어 예시와 표가 함께 제시될 때 이해가 쉽습니다.",
     termDensity: week >= 5 ? "높음" : "중간",
     exampleSufficiency: week >= 4 ? "충분" : "보완 필요",
-    improvements: {
-      structure: "수업 말미에 핵심 흐름을 한 장으로 다시 정리하면 학생들이 복습 포인트를 잡기 쉽습니다.",
-      examples: "과제 기준과 예시 답안의 범위를 함께 보여주면 반복 질문을 줄일 수 있습니다.",
-      pedagogy: "실습 전 예상 결과를 먼저 보여주고, 이후 쿼리를 직접 실행하는 순서가 이해를 돕습니다.",
-    },
+    improvements: weekImprovements[week] ?? weekImprovements[6],
   });
 }
 

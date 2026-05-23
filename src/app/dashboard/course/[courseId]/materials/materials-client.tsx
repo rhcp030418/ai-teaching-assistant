@@ -256,19 +256,19 @@ function AnalysisResult({ analysis }: { analysis: MaterialAnalysis }) {
           <h4 className="text-sm font-semibold text-[#10233F] mb-2">개선 제안</h4>
           <div className="space-y-2">
             {analysis.improvements.structure && (
-              <details className="rounded-[14px] border border-blue-100 bg-white/80 p-3 text-sm">
+              <details open className="rounded-[14px] border border-blue-100 bg-white/80 p-3 text-sm">
                 <summary className="cursor-pointer font-bold text-blue-600">구조</summary>
                 <p className="mt-2 leading-6 text-[#27496D]">{analysis.improvements.structure}</p>
               </details>
             )}
             {analysis.improvements.examples && (
-              <details className="rounded-[14px] border border-emerald-100 bg-white/80 p-3 text-sm">
+              <details open className="rounded-[14px] border border-emerald-100 bg-white/80 p-3 text-sm">
                 <summary className="cursor-pointer font-bold text-green-600">예시</summary>
                 <p className="mt-2 leading-6 text-[#27496D]">{analysis.improvements.examples}</p>
               </details>
             )}
             {analysis.improvements.pedagogy && (
-              <details className="rounded-[14px] border border-purple-100 bg-white/80 p-3 text-sm">
+              <details open className="rounded-[14px] border border-purple-100 bg-white/80 p-3 text-sm">
                 <summary className="cursor-pointer font-bold text-purple-600">교수법</summary>
                 <p className="mt-2 leading-6 text-[#27496D]">{analysis.improvements.pedagogy}</p>
               </details>
