@@ -49,7 +49,7 @@ export default async function ManagementPage({
           </p>
         </div>
         <div className="space-y-6">
-          <RoundManager courseId={courseId} initialRounds={rounds} />
+          <RoundManager courseId={courseId} initialRounds={rounds} demoMode={demoMode} />
           <TokenManager courseId={courseId} initialStats={tokenStats} initialFeedbacks={additionalFeedbacks} />
         </div>
       </section>

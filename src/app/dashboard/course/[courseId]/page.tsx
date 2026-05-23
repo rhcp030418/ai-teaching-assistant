@@ -81,7 +81,7 @@ export default async function CourseDashboardPage(
     }
   }
 
-  // 하단 "대표 학생 의견" 카드는 학기 전체 코멘트 기준 (이전 라운드 요약 + 학기 전체 요약용)
+  // 하단 "지난 라운드 학생 의견" 카드는 이전 라운드만 표시 (CommentsSection 내부에서 roundId로 필터링)
   const allCommentFeedbacks: typeof commentFeedbacks = [];
   for (const fb of course.feedbacks) {
     if (!fb.comment) continue;

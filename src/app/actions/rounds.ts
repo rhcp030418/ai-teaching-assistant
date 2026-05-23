@@ -72,8 +72,7 @@ export async function getRounds(courseId: string) {
       : 0;
     const comments = r.feedbacks
       .map((fb) => fb.filteredComment ?? fb.comment ?? fb.positiveComment ?? fb.difficultyComment)
-      .filter((text): text is string => Boolean(text?.trim()))
-      .slice(0, 4);
+      .filter((text): text is string => Boolean(text?.trim()));
 
     return {
       id: r.id,

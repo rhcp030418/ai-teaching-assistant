@@ -431,19 +431,30 @@ export function CommentsSection({
   const [open, setOpen] = useState(false);
   const [sortMode, setSortMode] = useState<"newest" | "oldest" | "longest" | "shortest">("newest");
 
-  // 전체 요약 (펼친 상태 상단)
+  // 이전 라운드 의견 요약
   const [summary, setSummary] = useState<string | null>(demoMode ? DEMO_COMMENT_SUMMARY : null);
   const [summaryLoading, setSummaryLoading] = useState(false);
 
-  // 전주차 요약 (접힌 상태)
-  const [prevSummary, setPrevSummary] = useState<string | null>(demoMode ? DEMO_COMMENT_SUMMARY : null);
-  const [prevSummaryLoading, setPrevSummaryLoading] = useState(false);
+  // 이전 라운드 결정: 진행 중 라운드의 바로 앞 라운드, 진행 중 라운드가 없으면 가장 최근 종료된 라운드
+  const sortedRounds = [...rounds].sort((a, b) => a.week - b.week);
+  const activeIdx = sortedRounds.findIndex((r) => r.status === "active");
+  const prevRound =
+    activeIdx > 0
+      ? sortedRounds[activeIdx - 1]
+      : activeIdx === -1
+        ? ([...sortedRounds].reverse().find((r) => r.status === "closed") ?? null)
+        : null;
+  const prevRoundLabel = prevRound ? (prevRound.label ?? `${prevRound.week}주차`) : null;
 
-  // commentCategory는 의미 분류로 신뢰하지 않음. 표시 가능한 익명 의견만 나열.
-  const visibleComments = commentFeedbacks.filter(
-    (cf) => Boolean((cf.filteredComment ?? cf.comment)?.trim())
-  );
-  const sortedComments = [...visibleComments].sort((a, b) => {
+  // 이전 라운드의 표시 가능한 익명 의견만 추출
+  const roundComments = prevRound
+    ? commentFeedbacks.filter(
+        (cf) =>
+          cf.roundId === prevRound.id &&
+          Boolean((cf.filteredComment ?? cf.comment)?.trim())
+      )
+    : [];
+  const sortedComments = [...roundComments].sort((a, b) => {
     const aText = (a.filteredComment ?? a.comment ?? "").trim();
     const bText = (b.filteredComment ?? b.comment ?? "").trim();
     if (sortMode === "longest") return bText.length - aText.length;
@@ -452,25 +463,7 @@ export function CommentsSection({
     const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
     return sortMode === "oldest" ? aTime - bTime : bTime - aTime;
   });
-  const total = visibleComments.length;
-  const previewComments = sortedComments.slice(0, 2);
-
-  // 현재 진행 중인 라운드의 바로 전 주차 계산
-  const sortedRounds = [...rounds].sort((a, b) => a.week - b.week);
-  const activeIdx = sortedRounds.findIndex((r) => r.status === "active");
-  const prevRound = activeIdx > 0 ? sortedRounds[activeIdx - 1] : null;
-
-  // 주차별 그룹핑 (전주차 요약 대상 계산용)
-  const byRound = new Map<string | null, CommentFeedback[]>();
-  for (const cf of visibleComments) {
-    const key = cf.roundId ?? null;
-    if (!byRound.has(key)) byRound.set(key, []);
-    byRound.get(key)!.push(cf);
-  }
-
-  const prevRoundComments = prevRound ? (byRound.get(prevRound.id) ?? []) : [];
-  const hasPrevRound = prevRound !== null && prevRoundComments.length > 0;
-  const prevRoundLabel = prevRound ? (prevRound.label ?? `${prevRound.week}주차`) : null;
+  const total = roundComments.length;
 
   const runSummarize = () => {
     if (total === 0 || summaryLoading) return;
@@ -479,54 +472,41 @@ export function CommentsSection({
       return;
     }
     setSummaryLoading(true);
-    const texts = visibleComments.map((cf) => cf.filteredComment ?? cf.comment ?? "").filter(Boolean);
+    const texts = roundComments.map((cf) => cf.filteredComment ?? cf.comment ?? "").filter(Boolean);
     summarizeComments(texts)
       .then((res) => { setSummary(res.summary); })
       .catch(() => {})
       .finally(() => setSummaryLoading(false));
   };
 
-  const runPrevSummarize = () => {
-    if (prevRoundComments.length === 0 || prevSummaryLoading) return;
-    if (demoMode) {
-      setPrevSummary(DEMO_COMMENT_SUMMARY);
-      return;
-    }
-    setPrevSummaryLoading(true);
-    const texts = prevRoundComments.map((cf) => cf.filteredComment ?? cf.comment ?? "").filter(Boolean);
-    summarizeComments(texts)
-      .then((res) => { setPrevSummary(res.summary); })
-      .catch(() => {})
-      .finally(() => setPrevSummaryLoading(false));
-  };
-
-  // 마운트 시: 전주차 요약 우선 로드, 없으면 전체 요약 로드
+  // 마운트 시 이전 라운드 의견 요약 로드
   useEffect(() => {
-    if (total === 0) return;
-    if (hasPrevRound) {
-      runPrevSummarize();
-    } else {
-      runSummarize();
-    }
+    if (total > 0 && !summary && !summaryLoading) runSummarize();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // 펼칠 때 전체 요약 로드
-  useEffect(() => {
-    if (!open || total === 0) return;
-    if (!summary && !summaryLoading) runSummarize();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open]);
+  const summaryBox = (
+    <div className="rounded-lg border border-blue-100 bg-blue-50/60 px-4 py-3 text-sm leading-relaxed text-[#27496D]">
+      <p className="mb-1 text-xs font-bold text-slate-400">{prevRoundLabel} 의견 요약</p>
+      {summaryLoading ? (
+        <p className="text-slate-400">AI 요약 생성 중...</p>
+      ) : summary ? (
+        <p>{summary}</p>
+      ) : (
+        <p className="text-slate-400">요약을 불러오지 못했습니다.</p>
+      )}
+    </div>
+  );
 
   return (
     <Card className={V3_CARD}>
       <CardHeader>
         <div className="flex items-start justify-between">
           <div>
-            <CardTitle className="text-base text-[#10233F]">
-              {open ? "학생 의견" : "대표 학생 의견"}
-            </CardTitle>
-            <CardDescription className="text-slate-500">학생들이 남긴 의견 ({total}건)</CardDescription>
+            <CardTitle className="text-base text-[#10233F]">지난 라운드 학생 의견</CardTitle>
+            <CardDescription className="text-slate-500">
+              {prevRound ? `${prevRoundLabel} 의견 (${total}건)` : "표시할 이전 라운드가 없습니다"}
+            </CardDescription>
           </div>
           {total > 0 && (
             <button
@@ -539,11 +519,14 @@ export function CommentsSection({
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        {total === 0 ? (
-          <p className="text-slate-400 text-sm">남겨진 의견이 없습니다.</p>
+        {!prevRound ? (
+          <p className="text-slate-400 text-sm">
+            아직 종료된 이전 라운드가 없습니다. 라운드가 마무리되면 직전 라운드 의견을 모아 보여드립니다.
+          </p>
+        ) : total === 0 ? (
+          <p className="text-slate-400 text-sm">{prevRoundLabel}에 남겨진 의견이 없습니다.</p>
         ) : open ? (
           <div className="space-y-4">
-            {/* 전체 요약 */}
             <div className="flex items-center justify-between gap-3 rounded-2xl border border-blue-100 bg-white/80 px-3 py-2">
               <span className="text-xs font-bold text-slate-500">정렬</span>
               <select
@@ -557,15 +540,7 @@ export function CommentsSection({
                 <option value="shortest">글자수 적은 순</option>
               </select>
             </div>
-            {(summaryLoading || summary) && (
-              <div className="rounded-lg border border-blue-100 bg-blue-50/60 px-4 py-3 text-sm text-[#27496D] leading-relaxed">
-                {summaryLoading ? (
-                  <p className="text-slate-400">AI 요약 생성 중...</p>
-                ) : (
-                  <p>{summary}</p>
-                )}
-              </div>
-            )}
+            {summaryBox}
             <ul className="space-y-3">
               {sortedComments.map((item, i) => (
                 <CommentItem key={`c-${i}`} item={item} />
@@ -574,52 +549,13 @@ export function CommentsSection({
           </div>
         ) : (
           <div className="space-y-3">
-            {(() => {
-              const collapsedLoading = hasPrevRound ? prevSummaryLoading : summaryLoading;
-              const collapsedSummary = hasPrevRound ? prevSummary : summary;
-              if (!collapsedLoading && !collapsedSummary) return null;
-              return (
-                <div className="rounded-lg border border-blue-100 bg-blue-50/60 px-4 py-3 text-sm leading-relaxed text-[#27496D]">
-                  <p className="mb-1 text-xs font-bold text-slate-400">
-                    {hasPrevRound ? `${prevRoundLabel} 의견 요약` : "전체 의견 요약"}
-                  </p>
-                  {collapsedLoading ? (
-                    <p className="text-slate-400">AI 요약 생성 중...</p>
-                  ) : (
-                    <p>{collapsedSummary}</p>
-                  )}
-                </div>
-              );
-            })()}
-            <div className="space-y-3">
-              {previewComments.map((item, index) => (
-                <div
-                  key={`preview-${index}`}
-                  className="rounded-[17px] border border-blue-100/70 bg-white/75 p-3.5"
-                >
-                  <p className="text-sm font-semibold leading-relaxed text-[#27496D]">
-                    {item.filteredComment ?? item.comment}
-                  </p>
-                  <p className="mt-2 text-xs font-bold text-slate-400">
-                    {hasPrevRound ? prevRoundLabel : "현재 라운드"} 의견
-                  </p>
-                </div>
-              ))}
-            </div>
+            {summaryBox}
             <button
               onClick={() => setOpen(true)}
               className="flex min-h-10 w-full items-center justify-center rounded-[13px] border border-blue-100 bg-white/90 px-3 text-sm font-bold text-[#27496D] shadow-[0_7px_18px_rgba(15,35,63,0.04)] hover:bg-blue-50 hover:text-[#0F5FD7]"
             >
               전체 의견 보기
             </button>
-            {(summaryLoading || summary || prevSummaryLoading || prevSummary) && (
-              <button
-                onClick={hasPrevRound ? runPrevSummarize : runSummarize}
-                className="text-xs font-medium text-[#1677FF] hover:text-[#0F5FD7]"
-              >
-                ↻ 의견 요약 다시 보기
-              </button>
-            )}
           </div>
         )}
       </CardContent>
