@@ -4,6 +4,9 @@ const userAvatar = document.getElementById("user-avatar");
 const userName = document.getElementById("user-name");
 const userDept = document.getElementById("user-dept");
 const serverUrlInput = document.getElementById("server-url");
+const serverConfig = document.getElementById("server-config");
+const refreshBtn = document.getElementById("refresh-btn");
+const settingsBtn = document.getElementById("settings-btn");
 
 // 저장된 서버 URL 불러오기
 chrome.storage?.local?.get("serverUrl", (data) => {
@@ -12,6 +15,17 @@ chrome.storage?.local?.get("serverUrl", (data) => {
 
 serverUrlInput.addEventListener("change", () => {
   chrome.storage?.local?.set({ serverUrl: serverUrlInput.value });
+});
+
+// 설정(서버 주소) 패널 토글 — 평소엔 숨겨두고 고급 사용자만 노출
+settingsBtn.addEventListener("click", () => {
+  serverConfig.classList.toggle("hidden");
+});
+
+// 새로고침 — 패널 재시작 없이 강의 목록 갱신
+let isLoading = false;
+refreshBtn.addEventListener("click", () => {
+  if (!isLoading) loadData();
 });
 
 function getServerUrl() {
@@ -36,17 +50,26 @@ async function getEclassTab() {
 function showLoading() {
   contentEl.innerHTML = `
     <div class="status loading">
-      <div class="icon">...</div>
+      <div class="spinner"></div>
       <div class="message">e-class에서 정보를 불러오는 중</div>
     </div>
   `;
 }
 
-function showError(message) {
+// message: 학생에게 보여줄 친화적 안내 / detail: 접어둔 기술적 원인(선택)
+function showError(message, detail = "") {
+  const detailHtml = detail
+    ? `<details class="error-detail">
+         <summary>자세한 오류 정보</summary>
+         <pre>${escapeHtml(detail)}</pre>
+       </details>`
+    : "";
+
   contentEl.innerHTML = `
     <div class="status error">
       <div class="icon">!</div>
       <div class="message">${message}</div>
+      ${detailHtml}
       <button class="retry-btn" id="retry-btn">다시 시도</button>
     </div>
   `;
@@ -69,11 +92,11 @@ function renderUnmatchedWarning(unmatched) {
 
   return `
     <div class="sync-warning">
-      <strong>일부 과목을 찾지 못했습니다</strong>
-      <p>e-class 과목 ID가 서버 DB의 Course.eclassId와 매칭되지 않았습니다.</p>
+      <strong>아직 연동되지 않은 과목이 있어요</strong>
+      <p>아래 과목은 담당 교수님이 평가를 등록하면 자동으로 표시됩니다.</p>
       <ul>
         ${visible.map((c) => `
-          <li>${escapeHtml(c.title || "제목 없음")} (${escapeHtml(c.eclassId)})</li>
+          <li>${escapeHtml(c.title || "제목 없음")}</li>
         `).join("")}
         ${remaining > 0 ? `<li>외 ${remaining}개</li>` : ""}
       </ul>
@@ -138,16 +161,26 @@ function showCourses(courses, tokenMap, unmatched = []) {
   }
 }
 
+function setLoadingState(loading) {
+  isLoading = loading;
+  refreshBtn.classList.toggle("spinning", loading);
+  refreshBtn.disabled = loading;
+}
+
 async function loadData() {
+  setLoadingState(true);
   showLoading();
 
-  const tab = await getEclassTab();
-  if (!tab) {
-    showError("e-class 탭을 찾을 수 없습니다.<br/>learn.hansung.ac.kr에 로그인해주세요.");
-    return;
-  }
-
   try {
+    const tab = await getEclassTab();
+    if (!tab) {
+      showError(
+        "e-class에 로그인되어 있는지 확인해주세요.<br/>learn.hansung.ac.kr 탭을 연 뒤 다시 시도해주세요.",
+        "열려 있는 learn.hansung.ac.kr 탭을 찾지 못했습니다."
+      );
+      return;
+    }
+
     // 1. e-class에서 학생 정보 수집
     let eclassData;
     try {
@@ -160,22 +193,34 @@ async function loadData() {
           await new Promise((r) => setTimeout(r, 500));
           eclassData = await chrome.tabs.sendMessage(tab.id, { type: "GET_ALL" });
         } catch (retryErr) {
-          showError(`[1단계 실패] content script 주입 실패<br/>${retryErr.message}`);
+          showError(
+            "e-class 정보를 불러오지 못했습니다.<br/>e-class 페이지를 새로고침한 뒤 다시 시도해주세요.",
+            `content script 주입 실패: ${retryErr.message}`
+          );
           return;
         }
       } else {
-        showError(`[1단계 실패] content script 연결 오류<br/>${err.message}`);
+        showError(
+          "e-class 정보를 불러오지 못했습니다.<br/>e-class 페이지를 새로고침한 뒤 다시 시도해주세요.",
+          `content script 연결 오류: ${err.message}`
+        );
         return;
       }
     }
 
     if (!eclassData) {
-      showError("[1단계 실패] e-class에서 정보를 가져올 수 없습니다.<br/>로그인 상태를 확인해주세요.");
+      showError(
+        "e-class 로그인 상태를 확인해주세요.<br/>로그인 후 다시 시도해주세요.",
+        "e-class에서 응답을 받지 못했습니다 (null)."
+      );
       return;
     }
 
     if (!eclassData.userInfo?.studentId) {
-      showError(`[1단계 실패] 학번을 읽지 못했습니다.<br/>학번: "${eclassData.userInfo?.studentId}"<br/>e-class 프로필 페이지 DOM이 변경되었을 수 있습니다.`);
+      showError(
+        "학생 정보를 읽지 못했습니다.<br/>e-class에 로그인되어 있는지 확인해주세요.",
+        `학번을 찾지 못했습니다. 받은 값: "${eclassData.userInfo?.studentId}". e-class 프로필 페이지 구조가 변경되었을 수 있습니다.`
+      );
       return;
     }
 
@@ -190,13 +235,19 @@ async function loadData() {
         body: JSON.stringify(eclassData),
       });
     } catch (err) {
-      showError(`[2단계 실패] 서버 연결 오류<br/>${err.message}<br/>localhost:3000 서버가 실행 중인지 확인해주세요.`);
+      showError(
+        "서버에 연결하지 못했습니다.<br/>인터넷 연결을 확인한 뒤 다시 시도해주세요.",
+        `서버 연결 오류 (${serverUrl}): ${err.message}`
+      );
       return;
     }
 
     if (!syncRes.ok) {
       const text = await syncRes.text();
-      showError(`[2단계 실패] 서버 동기화 오류 (${syncRes.status})<br/>${text}`);
+      showError(
+        "정보 동기화에 실패했습니다.<br/>잠시 후 다시 시도해주세요.",
+        `eclass-sync 오류 (${syncRes.status}): ${text}`
+      );
       return;
     }
 
@@ -214,7 +265,10 @@ async function loadData() {
     );
 
     if (!coursesRes.ok) {
-      showError(`[3단계 실패] 강의 정보 조회 오류 (${coursesRes.status})`);
+      showError(
+        "강의 정보를 불러오지 못했습니다.<br/>잠시 후 다시 시도해주세요.",
+        `student-courses 오류 (${coursesRes.status})`
+      );
       return;
     }
 
@@ -222,7 +276,12 @@ async function loadData() {
     showUserInfo(data.student);
     showCourses(data.courses, tokenMap, syncData.unmatched);
   } catch (err) {
-    showError(`[알 수 없는 오류]<br/>${err.message}`);
+    showError(
+      "문제가 발생했습니다.<br/>잠시 후 다시 시도해주세요.",
+      err?.message || String(err)
+    );
+  } finally {
+    setLoadingState(false);
   }
 }
 
