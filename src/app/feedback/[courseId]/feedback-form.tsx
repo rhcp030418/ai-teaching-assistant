@@ -235,7 +235,7 @@ export function FeedbackForm({
           <div className="flex flex-wrap gap-2">
             <span className="rounded-full bg-sky-50 px-3 py-1.5 text-xs font-bold text-sky-700">약 2분</span>
             <span className="rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-bold text-emerald-700">익명 제출</span>
-            <span className="rounded-full bg-blue-50 px-3 py-1.5 text-xs font-bold text-[#0F5FD7]">최대 3P</span>
+            <span className="rounded-full bg-amber-50 px-3 py-1.5 text-xs font-bold text-amber-700">최대 3P</span>
           </div>
         </CardContent>
       </Card>

@@ -3,6 +3,7 @@
 import { prisma } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import { getRoundStatus } from "@/lib/round-utils";
+import { comprehensionScore } from "@/lib/feedback-stats";
 import { isDemoUser, DEMO_READ_ONLY } from "@/lib/auth-utils";
 
 type RoundStatusForUi = "pending" | "active" | "closed" | "overlap";
@@ -20,6 +21,23 @@ export async function getRounds(courseId: string) {
     where: { courseId },
     include: {
       _count: { select: { feedbacks: true, submissions: true } },
+      feedbacks: {
+        orderBy: { createdAt: "desc" },
+        select: {
+          speed: true,
+          comprehension: true,
+          communication: true,
+          materialHelp: true,
+          interest: true,
+          assignment: true,
+          practice: true,
+          positiveComment: true,
+          difficultyComment: true,
+          comment: true,
+          filteredComment: true,
+          createdAt: true,
+        },
+      },
     },
     orderBy: { week: "asc" },
   });
@@ -42,6 +60,21 @@ export async function getRounds(courseId: string) {
         ? "active"
         : getRoundStatus(r, now);
 
+    const totalFeedbacks = r.feedbacks.length;
+    const speedModerate = totalFeedbacks > 0
+      ? Math.round((r.feedbacks.filter((fb) => fb.speed === "moderate").length / totalFeedbacks) * 100)
+      : 0;
+    const comprehensionHigh = totalFeedbacks > 0
+      ? Math.round((r.feedbacks.filter((fb) => comprehensionScore(fb.comprehension) >= 4).length / totalFeedbacks) * 100)
+      : 0;
+    const communicationAvg = totalFeedbacks > 0
+      ? Math.round((r.feedbacks.reduce((sum, fb) => sum + fb.communication, 0) / totalFeedbacks) * 10) / 10
+      : 0;
+    const comments = r.feedbacks
+      .map((fb) => fb.filteredComment ?? fb.comment ?? fb.positiveComment ?? fb.difficultyComment)
+      .filter((text): text is string => Boolean(text?.trim()))
+      .slice(0, 4);
+
     return {
       id: r.id,
       week: r.week,
@@ -51,6 +84,12 @@ export async function getRounds(courseId: string) {
       status,
       feedbackCount: r._count.feedbacks,
       submissionCount: r._count.submissions,
+      summary: {
+        speedModerate,
+        comprehensionHigh,
+        communicationAvg,
+      },
+      comments,
     };
   });
 }

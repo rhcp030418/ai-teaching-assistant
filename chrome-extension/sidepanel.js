@@ -41,6 +41,12 @@ function escapeHtml(value) {
     .replace(/'/g, "&#039;");
 }
 
+function formatRoundStatus(round) {
+  if (!round) return null;
+  const label = round.label || `${round.week}주차`;
+  return /평가$/.test(label) ? `${label} 진행 중` : `${label} 평가 진행 중`;
+}
+
 // e-class 탭을 찾아서 Content Script에 메시지 전송
 async function getEclassTab() {
   const tabs = await chrome.tabs.query({ url: "https://learn.hansung.ac.kr/*" });
@@ -123,15 +129,13 @@ function showCourses(courses, tokenMap, unmatched = []) {
     <div class="section-title">수강 강의 (${courses.length})</div>
     <div class="course-list">
       ${courses.map((c) => {
-        const roundLabel = c.activeRound
-          ? c.activeRound.label || `${c.activeRound.week}주차`
-          : null;
-        const safeRoundLabel = escapeHtml(roundLabel);
+        const roundStatus = formatRoundStatus(c.activeRound);
+        const safeRoundStatus = escapeHtml(roundStatus);
 
         const statusHtml = c.submitted
           ? `<div class="course-status submitted">제출 완료</div>`
-          : roundLabel
-            ? `<div class="course-status active">${safeRoundLabel} 평가 진행 중</div>`
+          : roundStatus
+            ? `<div class="course-status active">${safeRoundStatus}</div>`
             : `<div class="course-status inactive">평가 기간 아님</div>`;
 
         const token = tokenMap[c.courseId] || "";
