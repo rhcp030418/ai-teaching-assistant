@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import crypto from "node:crypto";
+import { hashPassword } from "@/lib/auth-utils";
 
 type ValidEclassCourse = { id: number; title: string };
 type MatchResult = {
   course: { id: string; name: string; eclassId: number | null };
-  matchedBy: "eclassId" | "title";
+  matchedBy: "eclassId" | "title" | "autoCreated";
 };
 
 function normalizeCourseTitle(title: string) {
@@ -22,6 +23,61 @@ function isTitleMatch(eclassTitle: string, courseName: string) {
   const registered = normalizeCourseTitle(courseName);
   if (!incoming || registered.length < 4) return false;
   return incoming === registered || incoming.startsWith(registered);
+}
+
+function autoProvisionEnabled() {
+  return process.env.ECLASS_AUTO_PROVISION !== "0";
+}
+
+async function getAutoProvisionProfessorId() {
+  const email = "eclass-sync@hansung.ac.kr";
+  const professor = await prisma.professor.upsert({
+    where: { email },
+    update: {},
+    create: {
+      name: "한성대학교 e-class",
+      email,
+      password: await hashPassword(crypto.randomBytes(18).toString("hex")),
+    },
+    select: { id: true },
+  });
+  return professor.id;
+}
+
+async function createCourseForEclass(eclassCourse: ValidEclassCourse): Promise<MatchResult | null> {
+  if (!autoProvisionEnabled()) return null;
+
+  const professorId = await getAutoProvisionProfessorId();
+  const course = await prisma.course.create({
+    data: {
+      name: eclassCourse.title.trim() || `e-class 과목 ${eclassCourse.id}`,
+      semester: "2026-1",
+      category: "e-class 동기화",
+      eclassId: eclassCourse.id,
+      professorId,
+      hasAssignment: true,
+      hasPractice: true,
+    },
+    select: { id: true, name: true, eclassId: true },
+  });
+
+  const now = new Date();
+  const startDate = new Date(now);
+  startDate.setDate(startDate.getDate() - 1);
+  const endDate = new Date(now);
+  endDate.setDate(endDate.getDate() + 14);
+
+  await prisma.feedbackRound.create({
+    data: {
+      courseId: course.id,
+      week: 1,
+      label: "상시 평가",
+      startDate,
+      endDate,
+    },
+  });
+
+  return { course, matchedBy: "autoCreated" };
 }
 
 async function findCourseForEclass(eclassCourse: ValidEclassCourse): Promise<MatchResult | null> {
@@ -105,12 +161,12 @@ export async function POST(req: NextRequest) {
       courseName: string;
       token: string;
       sourceEclassId: number;
-      matchedBy: "eclassId" | "title";
+      matchedBy: "eclassId" | "title" | "autoCreated";
     }[] = [];
     const unmatched: { eclassId: number; title: string }[] = [];
 
     for (const eclassCourse of validCourses) {
-      const match = await findCourseForEclass(eclassCourse);
+      const match = await findCourseForEclass(eclassCourse) ?? await createCourseForEclass(eclassCourse);
 
       if (!match) {
         unmatched.push({ eclassId: eclassCourse.id, title: eclassCourse.title });

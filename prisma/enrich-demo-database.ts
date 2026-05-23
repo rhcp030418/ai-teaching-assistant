@@ -161,7 +161,8 @@ async function main() {
   });
 
   if (!course) {
-    throw new Error(`${COURSE_NAME} ${SEMESTER} course not found. Run prisma/seed.ts first.`);
+    console.log(`${COURSE_NAME} ${SEMESTER} course not found. Demo enrichment skipped.`);
+    return;
   }
 
   await prisma.course.update({
