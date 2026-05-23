@@ -714,3 +714,34 @@ Reason: User found several polish issues after deployment: duplicated prediction
 - **Material-analysis pedagogy color fixed**: `교수법` detail block now uses purple border/text.
 - **Guide copy updated**: additional feedback link is described as a course-wide anonymous written feedback path, not a regular weekly evaluation.
 - Verification: `npm run lint`, `npx tsc --noEmit`, `npm run build` passed.
+
+### V2.12 — Material Labels + Management Defaults (Codex)
+
+Status: Complete
+
+Reason: User found that management opened 1주차 by default, material-analysis labels were unclear, and recent comments looked repetitive in multiple screens.
+
+#### Files Changed
+
+- `src/app/dashboard/course/[courseId]/round-manager.tsx`
+- `src/app/dashboard/course/[courseId]/materials/materials-client.tsx`
+- `src/app/dashboard/course/[courseId]/round-reports.tsx`
+- `src/app/dashboard/course/[courseId]/token-manager.tsx`
+- `src/app/dashboard/course/[courseId]/management/page.tsx`
+- `src/app/actions/analyze-material.ts`
+- `src/app/actions/tokens.ts`
+- `src/app/page.tsx`
+- `src/app/dashboard/guide/page.tsx`
+- `src/lib/demo-ai-fixtures.ts`
+- `prisma/enrich-demo-database.ts`
+- `V3_VISUAL_REFRESH_LOG.md`
+
+#### Changes
+
+- **Round manager default detail**: opens the active/current round first, then overlapping/pending/recent rounds, instead of always opening the first week.
+- **Material metric clarity**: `용어 밀도` renamed/explained as `전문 용어 밀도`; added criteria text explaining that high density means many new terms/abbreviations appear close together and may need a glossary or midpoint summary.
+- **Material metric colors**: difficulty, professional-term density, and example sufficiency now use differentiated semantic color cards instead of all-gray/default badges.
+- **Example sufficiency copy**: normalized `보완 가능/부족` into `보완 필요` where appropriate, so the label reads as an actionable support cue.
+- **Additional feedback visibility**: management's additional-feedback link card now shows recently submitted course-wide additional feedbacks from `roundId: null`.
+- **Demo comment diversity**: database demo seeding now uses week-specific positive/difficulty comment pools so Overview comments, Management recent comments, round reports, and AI context sample different student voices.
+- **Demo additional feedback data**: seed enrichment creates course-wide additional-feedback rows so the additional feedback area has visible demo data.

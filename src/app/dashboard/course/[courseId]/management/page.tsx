@@ -2,7 +2,7 @@ export const dynamic = "force-dynamic";
 
 import { getOwnedCourse } from "@/lib/course-access";
 import { getRounds } from "@/app/actions/rounds";
-import { getTokenStats } from "@/app/actions/tokens";
+import { getAdditionalFeedbacks, getTokenStats } from "@/app/actions/tokens";
 import { getRoundReports } from "@/app/actions/round-reports";
 import { isDemoUser } from "@/lib/auth-utils";
 import { RoundManager } from "../round-manager";
@@ -23,9 +23,10 @@ export default async function ManagementPage({
   const course = await getOwnedCourse(courseId); // 소유권/데모 가드
   const demoMode = isDemoUser(course.professor.email);
 
-  const [rounds, tokenStats, roundReports] = await Promise.all([
+  const [rounds, tokenStats, additionalFeedbacks, roundReports] = await Promise.all([
     getRounds(courseId),
     getTokenStats(courseId),
+    getAdditionalFeedbacks(courseId),
     getRoundReports(courseId),
   ]);
 
@@ -49,7 +50,7 @@ export default async function ManagementPage({
         </div>
         <div className="space-y-6">
           <RoundManager courseId={courseId} initialRounds={rounds} />
-          <TokenManager courseId={courseId} initialStats={tokenStats} />
+          <TokenManager courseId={courseId} initialStats={tokenStats} initialFeedbacks={additionalFeedbacks} />
         </div>
       </section>
 

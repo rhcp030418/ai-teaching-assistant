@@ -51,3 +51,33 @@ export async function getTokenStats(courseId: string) {
   });
   return { total, used, unused: total - used };
 }
+
+export async function getAdditionalFeedbacks(courseId: string) {
+  const session = await auth();
+  if (!session?.user?.id) return [];
+
+  const course = await prisma.course.findUnique({ where: { id: courseId } });
+  if (!course || course.professorId !== session.user.id) return [];
+
+  const feedbacks = await prisma.feedback.findMany({
+    where: {
+      courseId,
+      roundId: null,
+      comment: { not: null },
+    },
+    orderBy: { createdAt: "desc" },
+    take: 6,
+    select: {
+      id: true,
+      comment: true,
+      filteredComment: true,
+      createdAt: true,
+    },
+  });
+
+  return feedbacks.map((feedback) => ({
+    id: feedback.id,
+    text: feedback.filteredComment ?? feedback.comment ?? "",
+    createdAt: feedback.createdAt.toISOString(),
+  }));
+}

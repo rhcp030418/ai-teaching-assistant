@@ -28,7 +28,7 @@ export const DEMO_CAUSE_ANALYSIS: CauseAnalysisResult = {
       possibleCause:
         "학생들은 전체 설명보다 용어가 처음 등장하는 구간에서 부담을 느끼는 것으로 보입니다. 강의자료 분석에서도 정규화, 인덱스, 트랜잭션 같은 핵심 용어가 한 슬라이드에 밀집된 구간이 확인됩니다.",
       materialEvidence:
-        "6주차 강의자료의 용어 밀도는 '중상'으로 분석되었고, 핵심 개념 4개가 연속 슬라이드에 배치되어 있습니다.",
+        "6주차 강의자료의 전문 용어 밀도는 '중상'으로 분석되었고, 핵심 개념 4개가 연속 슬라이드에 배치되어 있습니다.",
     },
     {
       axis: "수업 속도",
@@ -173,7 +173,7 @@ export const DEMO_MATERIAL_ANALYSIS: MaterialAnalysis = {
     "트랜잭션, 격리 수준, 인덱스 같은 개념이 한 회차에 함께 등장합니다. 최근 피드백에서 이해도는 높아졌지만 새 용어 부담이 언급되어 난이도는 중간 이상으로 판단됩니다.",
   termDensity: "높음",
   termExamples: ["트랜잭션", "ACID", "격리 수준", "인덱스", "정규화"],
-  exampleSufficiency: "보통",
+  exampleSufficiency: "보완 필요",
   exampleFeedback:
     "SQL 예시는 포함되어 있으나 각 개념별로 결과를 예측하거나 비교하는 예시는 더 보강할 수 있습니다.",
   improvements: {
