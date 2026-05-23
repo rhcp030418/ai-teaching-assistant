@@ -81,6 +81,21 @@ export default async function CourseDashboardPage(
     }
   }
 
+  // 하단 "대표 학생 의견" 카드는 학기 전체 코멘트 기준 (이전 라운드 요약 + 학기 전체 요약용)
+  const allCommentFeedbacks: typeof commentFeedbacks = [];
+  for (const fb of course.feedbacks) {
+    if (!fb.comment) continue;
+    allCommentFeedbacks.push({
+      comment: fb.comment,
+      filteredComment: fb.filteredComment,
+      commentCategory: fb.commentCategory,
+      commentFilterReason: fb.commentFilterReason,
+      commentHasProfanity: fb.commentHasProfanity,
+      roundId: fb.roundId,
+      createdAt: fb.createdAt.toISOString(),
+    });
+  }
+
   const communicationAvg =
     totalFeedbacks > 0
       ? Math.round((communicationSum / totalFeedbacks) * 10) / 10
@@ -119,7 +134,7 @@ export default async function CourseDashboardPage(
             demoMode={demoMode}
           />
           <TrendAnalysis courseId={courseId} rounds={roundReports.rounds} demoMode={demoMode} />
-          <CommentsSection commentFeedbacks={commentFeedbacks} rounds={rounds} demoMode={demoMode} />
+          <CommentsSection commentFeedbacks={allCommentFeedbacks} rounds={rounds} demoMode={demoMode} />
         </div>
 
         {/* RIGHT: slim 상태 사이드바 */}

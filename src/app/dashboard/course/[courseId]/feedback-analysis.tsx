@@ -574,6 +574,23 @@ export function CommentsSection({
           </div>
         ) : (
           <div className="space-y-3">
+            {(() => {
+              const collapsedLoading = hasPrevRound ? prevSummaryLoading : summaryLoading;
+              const collapsedSummary = hasPrevRound ? prevSummary : summary;
+              if (!collapsedLoading && !collapsedSummary) return null;
+              return (
+                <div className="rounded-lg border border-blue-100 bg-blue-50/60 px-4 py-3 text-sm leading-relaxed text-[#27496D]">
+                  <p className="mb-1 text-xs font-bold text-slate-400">
+                    {hasPrevRound ? `${prevRoundLabel} 의견 요약` : "전체 의견 요약"}
+                  </p>
+                  {collapsedLoading ? (
+                    <p className="text-slate-400">AI 요약 생성 중...</p>
+                  ) : (
+                    <p>{collapsedSummary}</p>
+                  )}
+                </div>
+              );
+            })()}
             <div className="space-y-3">
               {previewComments.map((item, index) => (
                 <div
