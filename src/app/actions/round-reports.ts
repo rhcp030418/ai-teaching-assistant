@@ -14,7 +14,7 @@ function detectChanges(
   const compDelta = curr.comprehensionHigh - prev.comprehensionHigh;
   if (compDelta >= 15) changes.push({ axis: "comprehension", label: "내용 이해", delta: compDelta });
   const speedDelta = curr.speedModerate - prev.speedModerate;
-  if (speedDelta >= 15) changes.push({ axis: "speed", label: "수업 속도 적절성", delta: speedDelta });
+  if (speedDelta >= 15) changes.push({ axis: "speed", label: "적정 속도 응답", delta: speedDelta });
   return changes;
 }
 

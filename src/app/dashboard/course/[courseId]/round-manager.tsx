@@ -132,38 +132,54 @@ export function RoundManager({ courseId, initialRounds }: Props) {
         )}
 
         {rounds.length > 0 && (
-          <div className="space-y-2">
+          <div className="space-y-3">
             {rounds.map((round) => (
               <div
                 key={round.id}
-                className={`flex items-center justify-between p-3 rounded-lg border ${
-                  round.status === "active" ? "border-blue-300 bg-blue-50" : "border-blue-100 bg-white/70"
+                className={`rounded-2xl border p-4 ${
+                  round.status === "active"
+                    ? "border-blue-300 bg-blue-50/80 shadow-[0_12px_28px_-22px_rgba(22,119,255,0.8)]"
+                    : "border-blue-100 bg-white/75"
                 }`}
               >
-                <div className="flex items-center gap-3 flex-wrap">
-                  <span className="font-medium text-sm">
-                    {round.label ?? `${round.week}주차`}
-                  </span>
-                  {statusBadge(round.status)}
-                  <span className="text-xs text-gray-500">
-                    {formatDate(round.startDate)} ~ {formatDate(round.endDate)}
-                  </span>
-                  {round.status === "closed" && (
-                    <span className="text-xs text-gray-400">
-                      제출 {round.submissionCount}명
-                    </span>
+                <div className="flex items-start justify-between gap-4">
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="text-sm font-extrabold text-[#10233F]">
+                        {round.label ?? `${round.week}주차`}
+                      </span>
+                      {statusBadge(round.status)}
+                    </div>
+                    <p className="mt-1 text-xs font-medium text-slate-500">
+                      운영 기간 {formatDate(round.startDate)} ~ {formatDate(round.endDate)}
+                    </p>
+                  </div>
+                  {round.feedbackCount === 0 && round.status !== "active" && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleDelete(round.id)}
+                      disabled={deletingId === round.id}
+                      className="shrink-0 border-blue-100 text-slate-600 hover:bg-blue-50"
+                    >
+                      {deletingId === round.id ? "삭제 중..." : "삭제"}
+                    </Button>
                   )}
                 </div>
-                {round.feedbackCount === 0 && round.status !== "active" && (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => handleDelete(round.id)}
-                    disabled={deletingId === round.id}
-                  >
-                    {deletingId === round.id ? "삭제 중..." : "삭제"}
-                  </Button>
-                )}
+                <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
+                  <div className="rounded-xl bg-white/80 px-3 py-2">
+                    <p className="text-[11px] font-bold text-slate-400">피드백</p>
+                    <p className="mt-0.5 text-sm font-extrabold text-[#10233F]">{round.feedbackCount}건</p>
+                  </div>
+                  <div className="rounded-xl bg-white/80 px-3 py-2">
+                    <p className="text-[11px] font-bold text-slate-400">제출자</p>
+                    <p className="mt-0.5 text-sm font-extrabold text-[#10233F]">{round.submissionCount}명</p>
+                  </div>
+                  <div className="col-span-2 rounded-xl bg-white/80 px-3 py-2 sm:col-span-1">
+                    <p className="text-[11px] font-bold text-slate-400">주차</p>
+                    <p className="mt-0.5 text-sm font-extrabold text-[#10233F]">{round.week}주차</p>
+                  </div>
+                </div>
               </div>
             ))}
           </div>
