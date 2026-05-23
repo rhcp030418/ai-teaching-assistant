@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import { chatWithAI } from "@/lib/ai";
 import { getPrevSemester, getStatsPerCourse, type FeedbackStats } from "@/lib/feedback-stats";
+import { TEACHING_TOOLBOX } from "@/lib/teaching-methods";
 
 export interface ImprovementNoteItem {
   note: string;
@@ -198,8 +199,10 @@ export async function getAIInsightForCase(
         content: `당신은 대학 강의 개선 컨설턴트입니다. 실제로 개선에 성공한 익명 교수의 사례를 분석하여, 현재 교수가 다음 수업에서 즉시 실천할 수 있는 맞춤형 제안을 3문장으로 작성하세요.
 1문장: 이 사례에서 가장 주목할 변화 — 수치와 함께, 교수가 실제 바꾼 점 중 핵심 한 가지를 반드시 언급하세요.
 2문장: 현재 내 강의와 이 성공 사례 사이의 가장 좁힐 수 있는 격차 한 가지를 짚어주세요 (현재 내 강의 수치 포함).
-3문장: "~해보시면 어떨까요" 또는 "~을 시도해보시길 추천합니다" 형식으로, 다음 수업에서 바로 할 수 있는 구체적 행동 한 가지를 제안하세요.
-마크다운 문법(**, *, -, #, \`\`\` 등) 절대 사용 금지. 자연스러운 한국어 문장으로만 작성하세요.`,
+3문장: "~해보시면 어떨까요" 또는 "~을 시도해보시길 추천합니다" 형식으로, 다음 수업에서 바로 할 수 있는 구체적 행동 한 가지를 제안하세요. 이때 아래 도구상자에서 이 사례의 개선 축에 맞는 기법을 골라 구체적 실천 행동으로 풀고, 기법 이름을 괄호로 표기하세요.
+마크다운 문법(**, *, -, #, \`\`\` 등) 절대 사용 금지. 자연스러운 한국어 문장으로만 작성하세요.
+
+${TEACHING_TOOLBOX}`,
       },
       {
         role: "user",
