@@ -15,21 +15,31 @@ import {
   analyzeCauses,
   CauseAnalysisResult,
 } from "@/app/actions/cause-analysis";
+import { DEMO_CAUSE_ANALYSIS } from "@/lib/demo-ai-fixtures";
 
 const axisColors: Record<string, string> = {
   "수업 속도": "bg-orange-100 text-orange-700",
-  "자료 이해도": "bg-purple-100 text-purple-700",
-  "소통 만족도": "bg-blue-100 text-blue-700",
+  "내용 이해": "bg-emerald-100 text-emerald-700",
+  "자료·예시 도움": "bg-sky-100 text-sky-700",
+  "질문·소통 편의": "bg-blue-100 text-blue-700",
+  "학습 몰입": "bg-violet-100 text-violet-700",
 };
+
+const V3_CARD =
+  "ring-0 border-blue-100 bg-white/90 shadow-[0_10px_30px_-15px_rgba(23,87,168,0.25)]";
 
 export function CauseAnalysis({
   courseId,
   hasMaterials,
+  demoMode = false,
 }: {
   courseId: string;
   hasMaterials: boolean;
+  demoMode?: boolean;
 }) {
-  const [result, setResult] = useState<CauseAnalysisResult | null>(null);
+  const [result, setResult] = useState<CauseAnalysisResult | null>(
+    demoMode ? DEMO_CAUSE_ANALYSIS : null
+  );
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
 
@@ -37,6 +47,11 @@ export function CauseAnalysis({
     setPending(true);
     setError(null);
     setResult(null);
+    if (demoMode) {
+      setResult(DEMO_CAUSE_ANALYSIS);
+      setPending(false);
+      return;
+    }
     try {
       const res = await analyzeCauses(courseId);
       if (res.success && res.result) {
@@ -52,10 +67,10 @@ export function CauseAnalysis({
   }
 
   return (
-    <Card>
+    <Card className={V3_CARD}>
       <CardHeader>
-        <CardTitle className="text-base">원인 연결 분석</CardTitle>
-        <CardDescription>
+        <CardTitle className="text-base text-[#10233F]">원인 연결 분석</CardTitle>
+        <CardDescription className="text-slate-500">
           학생 피드백과 강의자료를 교차 분석하여 가능한 원인을 추정합니다
         </CardDescription>
       </CardHeader>
@@ -96,7 +111,7 @@ export function CauseAnalysis({
                 {result.causes.map((cause, i) => (
                   <div
                     key={i}
-                    className="border rounded-lg p-4 space-y-2"
+                    className="border border-blue-100 rounded-[18px] bg-white/75 p-4 space-y-2"
                   >
                     <div className="flex items-center gap-2">
                       <Badge
@@ -116,7 +131,7 @@ export function CauseAnalysis({
                       {cause.possibleCause}
                     </p>
                     {cause.materialEvidence && (
-                      <p className="text-sm text-gray-500 bg-gray-50 p-2 rounded">
+                      <p className="text-sm text-[#27496D] bg-blue-50/60 p-2 rounded">
                         <span className="font-medium">자료 근거: </span>
                         {cause.materialEvidence}
                       </p>

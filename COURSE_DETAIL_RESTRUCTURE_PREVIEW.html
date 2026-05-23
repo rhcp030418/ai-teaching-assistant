@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>강의 상세 개편 프리뷰</title>
+  <link rel="stylesheet" href="course-detail-preview/styles.css" />
+</head>
+<body>
+  <header class="global-nav">
+    <div class="brand">AI Teaching Assistant</div>
+    <nav class="global-links">
+      <span>강의 목록</span>
+      <span>톤 보정</span>
+      <span class="divider"></span>
+      <span>김재환 교수님</span>
+      <span>로그아웃</span>
+    </nav>
+  </header>
+
+  <main class="shell">
+    <section class="preview-hero">
+      <span class="eyebrow">Static HTML Preview</span>
+      <h1>강의 상세 화면 개편 예상안</h1>
+      <p>
+        실제 구현처럼 4개 페이지로 나누어 확인할 수 있게 만든 정적 목업입니다.
+        한 화면에 모든 기능을 넣는 것이 아니라, 아래 링크가 각각 별도 라우트를 의미합니다.
+      </p>
+    </section>
+
+    <section class="route-grid">
+      <a class="route-card" href="course-detail-preview/overview.html">
+        <span class="route-path">/dashboard/course/[courseId]</span>
+        <strong>현황 요약</strong>
+        <p>학생 의견 요약, 핵심 지표, 차트, 추가 의견을 확인하는 첫 화면입니다.</p>
+      </a>
+      <a class="route-card" href="course-detail-preview/analysis.html">
+        <span class="route-path">/dashboard/course/[courseId]/analysis</span>
+        <strong>지원 인사이트</strong>
+        <p>피드백-자료 연결, 수업 지원 계획, 참고 포인트, 질문하기를 모은 화면입니다.</p>
+      </a>
+      <a class="route-card" href="course-detail-preview/management.html">
+        <span class="route-path">/dashboard/course/[courseId]/management</span>
+        <strong>관리 및 기록</strong>
+        <p>라운드와 토큰 운영, 종료 라운드 리포트, 교수 노트를 관리합니다.</p>
+      </a>
+      <a class="route-card" href="course-detail-preview/benchmark.html">
+        <span class="route-path">/dashboard/course/[courseId]/benchmark</span>
+        <strong>비교 참고</strong>
+        <p>유사 교과목, 전년도 흐름, 익명 개선 사례를 참고합니다.</p>
+      </a>
+    </section>
+  </main>
+</body>
+</html>

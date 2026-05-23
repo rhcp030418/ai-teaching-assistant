@@ -9,6 +9,9 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 
+const V3_CARD =
+  "ring-0 border-blue-100 bg-white/90 shadow-[0_10px_30px_-15px_rgba(23,87,168,0.25)]";
+
 interface BenchmarkData {
   myCommunicationAvg: number;
   categoryCommunicationAvg: number | null;
@@ -18,6 +21,8 @@ interface BenchmarkData {
   categorySpeedModerateRatio: number | null;
   myComprehensionHighRatio: number;
   categoryComprehensionHighRatio: number | null;
+  myMaterialHelpRatio: number;
+  categoryMaterialHelpRatio: number | null;
   categoryName: string;
   semester: string;
   prevSemester: string;
@@ -51,9 +56,9 @@ function CompareRow({
 
   return (
     <div className="flex items-center justify-between py-2">
-      <span className="text-sm text-gray-600">{label}</span>
+      <span className="text-sm font-semibold text-[#27496D]">{label}</span>
       <div className="flex items-center gap-4 text-sm">
-        <span className="font-semibold">
+        <span className="font-bold text-[#10233F]">
           {myValue}
           {unit}
         </span>
@@ -82,10 +87,10 @@ export function Benchmark({ data }: { data: BenchmarkData | null }) {
   }
 
   return (
-    <Card>
+    <Card className={V3_CARD}>
       <CardHeader>
-        <CardTitle className="text-base">경향 비교</CardTitle>
-        <CardDescription>
+        <CardTitle className="text-base text-[#10233F]">경향 비교</CardTitle>
+        <CardDescription className="text-slate-500">
           {data.categoryName} 카테고리 기준 · 비교 대상{" "}
           {data.categoryCourseCount}개 강의
         </CardDescription>
@@ -93,9 +98,9 @@ export function Benchmark({ data }: { data: BenchmarkData | null }) {
       <CardContent className="space-y-1">
         {/* Percentile */}
         {data.percentileRank !== null && data.categoryCourseCount > 0 && (
-          <div className="bg-blue-50 rounded-lg p-3 mb-3 text-center">
+          <div className="bg-blue-50/70 rounded-lg p-3 mb-3 text-center">
             <p className="text-sm text-blue-600">
-              소통 만족도 기준, {data.categoryName} 카테고리 내{" "}
+              질문·소통 편의 기준, {data.categoryName} 카테고리 내{" "}
               <Badge className="bg-blue-100 text-blue-700">
                 상위 {data.percentileRank}%
               </Badge>
@@ -105,7 +110,7 @@ export function Benchmark({ data }: { data: BenchmarkData | null }) {
 
         {/* Communication */}
         <CompareRow
-          label="소통 만족도"
+          label="질문·소통 편의"
           myValue={data.myCommunicationAvg}
           compareValue={data.categoryCommunicationAvg}
           compareLabel="유사 교과목 평균"
@@ -142,9 +147,21 @@ export function Benchmark({ data }: { data: BenchmarkData | null }) {
 
         {/* Comprehension */}
         <CompareRow
-          label="자료 이해도 '높음' 비율"
+          label="내용 이해 '높음' 비율"
           myValue={data.myComprehensionHighRatio}
           compareValue={data.categoryComprehensionHighRatio}
+          compareLabel="유사 교과목"
+          unit="%"
+        />
+
+        <CompareRow
+          label="자료·예시 도움"
+          myValue={Math.round(data.myMaterialHelpRatio)}
+          compareValue={
+            data.categoryMaterialHelpRatio !== null
+              ? Math.round(data.categoryMaterialHelpRatio)
+              : null
+          }
           compareLabel="유사 교과목"
           unit="%"
         />

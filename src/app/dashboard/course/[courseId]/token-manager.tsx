@@ -13,6 +13,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 
+const V3_CARD =
+  "ring-0 border-blue-100 bg-white/90 shadow-[0_10px_30px_-15px_rgba(23,87,168,0.25)]";
+
 interface Props {
   courseId: string;
   initialStats: { total: number; used: number; unused: number };
@@ -57,10 +60,10 @@ export function TokenManager({ courseId, initialStats }: Props) {
   }
 
   return (
-    <Card>
+    <Card className={V3_CARD}>
       <CardHeader>
-        <CardTitle className="text-base">피드백 토큰 링크</CardTitle>
-        <CardDescription>
+        <CardTitle className="text-base text-[#10233F]">피드백 토큰 링크</CardTitle>
+        <CardDescription className="text-slate-500">
           학생에게 배포할 1회용 피드백 링크를 생성합니다.
         </CardDescription>
       </CardHeader>
@@ -105,9 +108,9 @@ export function TokenManager({ courseId, initialStats }: Props) {
                 전체 복사
               </Button>
             </div>
-            <div className="bg-gray-50 rounded-lg p-3 max-h-48 overflow-y-auto">
+            <div className="bg-blue-50/60 rounded-lg p-3 max-h-48 overflow-y-auto">
               {generatedLinks.map((link, i) => (
-                <p key={i} className="text-xs text-gray-600 font-mono break-all">
+                <p key={i} className="text-xs text-[#27496D] font-mono break-all">
                   {link}
                 </p>
               ))}

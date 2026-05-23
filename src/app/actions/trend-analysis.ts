@@ -9,9 +9,9 @@ export interface TrendNarrative {
   narrative: string;        // 2~3문장 한국어 분석
   trend: "improving" | "worsening" | "stable" | "mixed";
   predicted: {
-    comprehension: number;  // 다음 주차 예측 이해도 % (0~100)
-    communication: number;  // 다음 주차 예측 소통점수 (0~100, *20 정규화)
-    speed: number;          // 다음 주차 예측 속도적절 % (0~100)
+    comprehension: number;  // 다음 주차 예측 내용 이해 % (0~100)
+    communication: number;  // 다음 주차 예측 질문·소통 편의 (0~100, *20 정규화)
+    speed: number;          // 다음 주차 예측 속도 적당 % (0~100)
   } | null;
 }
 
@@ -71,11 +71,11 @@ export async function generateTrendNarrative(
 
   const deltaLines = [
     `전체 기간 변화 (${first.label ?? first.week + "주차"} → ${last.label ?? last.week + "주차"}):`,
-    `- 이해도 높음: ${first.comprehensionHigh}% → ${last.comprehensionHigh}% (${compDelta >= 0 ? "+" : ""}${compDelta}%p)`,
-    `- 소통 만족도: ${first.communicationAvg}/5 → ${last.communicationAvg}/5 (${commDelta >= 0 ? "+" : ""}${commDelta})`,
-    `- 속도 적절: ${first.speedModerate}% → ${last.speedModerate}% (${speedDelta >= 0 ? "+" : ""}${speedDelta}%p)`,
+    `- 내용 이해 높음: ${first.comprehensionHigh}% → ${last.comprehensionHigh}% (${compDelta >= 0 ? "+" : ""}${compDelta}%p)`,
+    `- 질문·소통 편의: ${first.communicationAvg}/5 → ${last.communicationAvg}/5 (${commDelta >= 0 ? "+" : ""}${commDelta})`,
+    `- 속도 적당: ${first.speedModerate}% → ${last.speedModerate}% (${speedDelta >= 0 ? "+" : ""}${speedDelta}%p)`,
     validRounds.length >= 3
-      ? `\n최근 1구간 변화 (직전 → 마지막): 이해도 ${recentCompDelta >= 0 ? "+" : ""}${recentCompDelta}%p, 소통 ${recentCommDelta >= 0 ? "+" : ""}${recentCommDelta}`
+      ? `\n최근 1구간 변화 (직전 → 마지막): 내용 이해 ${recentCompDelta >= 0 ? "+" : ""}${recentCompDelta}%p, 질문·소통 ${recentCommDelta >= 0 ? "+" : ""}${recentCommDelta}`
       : "",
     biggestChangeNote,
   ].filter(Boolean).join("\n");
@@ -83,7 +83,7 @@ export async function generateTrendNarrative(
   const roundsSummary = validRounds
     .map((r) => {
       const weekLabel = r.label ?? `${r.week}주차`;
-      return `- ${weekLabel}: 이해도 ${r.comprehensionHigh}%, 소통 ${r.communicationAvg}/5, 속도적절 ${r.speedModerate}%, 응답수 ${r.totalFeedbacks}건`;
+      return `- ${weekLabel}: 내용 이해 ${r.comprehensionHigh}%, 질문·소통 ${r.communicationAvg}/5, 속도 적당 ${r.speedModerate}%, 응답수 ${r.totalFeedbacks}건`;
     })
     .join("\n");
 
@@ -98,18 +98,18 @@ export async function generateTrendNarrative(
 
 반드시 다음 JSON 형식으로만 응답하세요:
 {
-  "narrative": "제공된 변화량 수치를 반드시 활용하여 3문장으로 작성하세요. 1) 가장 두드러진 변화를 구간과 수치 포함하여 서술 (예: '3주차에서 4주차 사이 이해도가 45%에서 62%로 17%p 상승하였습니다'), 2) 최근 1구간 추세가 가속/둔화 중인지 판단 (예: '그러나 최근 한 주간 상승세가 둔화되고 있어'), 3) 다음 주차를 위한 구체적 제언 1가지. 문어체 사용.",
+          "narrative": "제공된 변화량 수치를 반드시 활용하여 3문장으로 작성하세요. 1) 가장 두드러진 변화를 구간과 수치 포함하여 서술 (예: '3주차에서 4주차 사이 내용 이해가 45%에서 62%로 17%p 상승하였습니다'), 2) 최근 1구간 추세가 가속/둔화 중인지 판단 (예: '그러나 최근 한 주간 상승세가 둔화되고 있어'), 3) 다음 주차를 위한 구체적 참고 지점 1가지. 문어체 사용.",
   "trend": "improving | worsening | stable | mixed",
   "predicted": ${canPredict ? `{
-    "comprehension": 다음 주차 예측 이해도% (정수, 0~100),
-    "communication": 다음 주차 예측 소통점수를 0~100으로 정규화 (소통점수/5*100, 정수),
-    "speed": 다음 주차 예측 속도적절% (정수, 0~100)
+    "comprehension": 다음 주차 예측 내용 이해% (정수, 0~100),
+    "communication": 다음 주차 예측 질문·소통 편의를 0~100으로 정규화 (점수/5*100, 정수),
+    "speed": 다음 주차 예측 속도 적당% (정수, 0~100)
   }` : "null"}
 }
 
 trend 판단 기준:
-- improving: 이해도·소통 모두 상승
-- worsening: 이해도·소통 모두 하락
+- improving: 내용 이해·질문 소통 모두 상승
+- worsening: 내용 이해·질문 소통 모두 하락
 - stable: 모든 지표 ±5%p 이내
 - mixed: 지표별로 방향이 다름${canPredict ? "\n\n예측은 최근 2회차 추세(가속도 반영)를 기반으로 추정하되, 0~100 범위를 벗어나지 마세요." : ""}`,
       },

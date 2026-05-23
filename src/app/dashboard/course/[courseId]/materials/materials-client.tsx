@@ -12,6 +12,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { DEMO_MATERIAL_ANALYSIS } from "@/lib/demo-ai-fixtures";
 
 interface RoundStats {
   total: number;
@@ -46,9 +47,54 @@ interface Props {
   courseId: string;
   initialMaterials: Material[];
   rounds: Round[];
+  demoMode?: boolean;
 }
 
 const MAX_UPLOAD_SIZE = 10 * 1024 * 1024; // 10MB
+const V3_CARD =
+  "ring-0 border-blue-100 bg-white/90 shadow-[0_10px_30px_-15px_rgba(23,87,168,0.25)]";
+
+function withDemoMaterialData(materials: Material[], rounds: Round[]): Material[] {
+  const fallbackRound = rounds[rounds.length - 1] ?? null;
+  if (materials.length === 0) {
+    return [
+      {
+        id: "demo-material-transaction-index",
+        fileName: "06_트랜잭션과_인덱스.pdf",
+        hasAnalysis: true,
+        analysis: DEMO_MATERIAL_ANALYSIS,
+        createdAt: new Date().toISOString(),
+        roundId: fallbackRound?.id ?? null,
+        roundLabel: fallbackRound ? (fallbackRound.label ?? `${fallbackRound.week}주차`) : "6주차",
+        roundWeek: fallbackRound?.week ?? 6,
+        roundStats: {
+          total: 28,
+          comprehensionHigh: 71,
+          communicationAvg: 4.4,
+          speedModerate: 68,
+          practiceAvg: 4.1,
+        },
+        analysisUpdatedAt: new Date().toISOString(),
+        roundEndDate: null,
+        isStale: true,
+      },
+    ];
+  }
+
+  return materials.map((material, index) => ({
+    ...material,
+    hasAnalysis: true,
+    analysis: material.analysis ?? DEMO_MATERIAL_ANALYSIS,
+    roundStats: material.roundStats ?? {
+      total: 28,
+      comprehensionHigh: 71,
+      communicationAvg: 4.4,
+      speedModerate: 68,
+      practiceAvg: 4.1,
+    },
+    isStale: index === 0 ? true : material.isStale,
+  }));
+}
 
 function AnalysisResult({ analysis }: { analysis: MaterialAnalysis }) {
   const diffColor =
@@ -61,35 +107,53 @@ function AnalysisResult({ analysis }: { analysis: MaterialAnalysis }) {
   return (
     <div className="space-y-4 mt-4">
       <div>
-        <h4 className="text-sm font-semibold text-gray-700 mb-1">핵심 요약</h4>
-        <p className="text-sm text-gray-600">{analysis.summary}</p>
+        <h4 className="text-sm font-semibold text-[#10233F] mb-1">핵심 요약</h4>
+        <p className="text-sm text-[#27496D]">{analysis.summary}</p>
       </div>
 
       <div className="grid grid-cols-3 gap-3">
-        <div className="text-center p-3 bg-gray-50 rounded-lg">
+        <div className="text-center p-3 bg-blue-50/60 rounded-lg">
           <p className="text-xs text-gray-400 mb-1">난이도</p>
           <Badge className={diffColor}>{analysis.difficulty}</Badge>
         </div>
-        <div className="text-center p-3 bg-gray-50 rounded-lg">
+        <div className="text-center p-3 bg-blue-50/60 rounded-lg">
           <p className="text-xs text-gray-400 mb-1">용어 밀도</p>
           <Badge variant="secondary">{analysis.termDensity}</Badge>
         </div>
-        <div className="text-center p-3 bg-gray-50 rounded-lg">
+        <div className="text-center p-3 bg-blue-50/60 rounded-lg">
           <p className="text-xs text-gray-400 mb-1">예시 충분도</p>
           <Badge variant="secondary">{analysis.exampleSufficiency}</Badge>
         </div>
       </div>
 
+      <div className="rounded-[16px] border border-blue-100 bg-white/80 p-3">
+        <h4 className="text-xs font-bold text-[#0F5FD7]">판단 기준</h4>
+        <dl className="mt-2 grid gap-2 text-xs leading-5 text-slate-500">
+          <div>
+            <dt className="font-bold text-[#27496D]">난이도</dt>
+            <dd>개념 복잡도, 선수지식 필요 정도, 학생 이해도 반응을 함께 참고합니다.</dd>
+          </div>
+          <div>
+            <dt className="font-bold text-[#27496D]">용어 밀도</dt>
+            <dd>전문 용어가 얼마나 자주, 압축적으로 등장하는지 확인합니다.</dd>
+          </div>
+          <div>
+            <dt className="font-bold text-[#27496D]">예시 충분도</dt>
+            <dd>개념별 예시, 실습, 비교 설명이 학습 흐름을 돕는지 확인합니다.</dd>
+          </div>
+        </dl>
+      </div>
+
       <div>
-        <h4 className="text-sm font-semibold text-gray-700 mb-1">
+          <h4 className="text-sm font-semibold text-[#10233F] mb-1">
           난이도 판단 근거
         </h4>
-        <p className="text-sm text-gray-600">{analysis.difficultyReason}</p>
+        <p className="text-sm text-[#27496D]">{analysis.difficultyReason}</p>
       </div>
 
       {(analysis.termExamples ?? []).length > 0 && (
         <div>
-          <h4 className="text-sm font-semibold text-gray-700 mb-1">
+          <h4 className="text-sm font-semibold text-[#10233F] mb-1">
             주요 전문 용어
           </h4>
           <div className="flex flex-wrap gap-2">
@@ -103,33 +167,33 @@ function AnalysisResult({ analysis }: { analysis: MaterialAnalysis }) {
       )}
 
       <div>
-        <h4 className="text-sm font-semibold text-gray-700 mb-1">
+        <h4 className="text-sm font-semibold text-[#10233F] mb-1">
           예시 관련 피드백
         </h4>
-        <p className="text-sm text-gray-600">{analysis.exampleFeedback}</p>
+        <p className="text-sm text-[#27496D]">{analysis.exampleFeedback}</p>
       </div>
 
       {analysis.improvements && (analysis.improvements.structure || analysis.improvements.examples || analysis.improvements.pedagogy) && (
         <div>
-          <h4 className="text-sm font-semibold text-gray-700 mb-2">개선 제안</h4>
+          <h4 className="text-sm font-semibold text-[#10233F] mb-2">개선 제안</h4>
           <div className="space-y-2">
             {analysis.improvements.structure && (
-              <div className="flex gap-2 text-sm">
-                <span className="shrink-0 font-medium text-blue-600">구조</span>
-                <span className="text-gray-600">{analysis.improvements.structure}</span>
-              </div>
+              <details className="rounded-[14px] border border-blue-100 bg-white/80 p-3 text-sm">
+                <summary className="cursor-pointer font-bold text-blue-600">구조</summary>
+                <p className="mt-2 leading-6 text-[#27496D]">{analysis.improvements.structure}</p>
+              </details>
             )}
             {analysis.improvements.examples && (
-              <div className="flex gap-2 text-sm">
-                <span className="shrink-0 font-medium text-green-600">예시</span>
-                <span className="text-gray-600">{analysis.improvements.examples}</span>
-              </div>
+              <details className="rounded-[14px] border border-emerald-100 bg-white/80 p-3 text-sm">
+                <summary className="cursor-pointer font-bold text-green-600">예시</summary>
+                <p className="mt-2 leading-6 text-[#27496D]">{analysis.improvements.examples}</p>
+              </details>
             )}
             {analysis.improvements.pedagogy && (
-              <div className="flex gap-2 text-sm">
-                <span className="shrink-0 font-medium text-purple-600">교수법</span>
-                <span className="text-gray-600">{analysis.improvements.pedagogy}</span>
-              </div>
+              <details className="rounded-[14px] border border-sky-100 bg-white/80 p-3 text-sm">
+                <summary className="cursor-pointer font-bold text-sky-600">교수법</summary>
+                <p className="mt-2 leading-6 text-[#27496D]">{analysis.improvements.pedagogy}</p>
+              </details>
             )}
           </div>
         </div>
@@ -142,34 +206,35 @@ function RoundFeedbackPanel({ label, stats }: { label: string; stats: RoundStats
   return (
     <div className="bg-blue-50 border border-blue-100 rounded-lg p-3 mb-4">
       <p className="text-xs font-semibold text-blue-700 mb-2">
-        {label} 학생 피드백 {stats.total}건 — AI 분석에 반영됨
+        {label} 자료 관련 피드백 참고 지표 · 응답 {stats.total}건
       </p>
-      <div className={`grid gap-2 text-center ${stats.practiceAvg !== null ? "grid-cols-4" : "grid-cols-3"}`}>
+      <div className={`grid gap-2 text-center ${stats.practiceAvg !== null ? "grid-cols-3" : "grid-cols-2"}`}>
         <div>
-          <p className="text-xs text-blue-500">이해도 높음</p>
+          <p className="text-xs text-blue-500">응답 수</p>
+          <p className="text-sm font-medium text-blue-800">{stats.total}건</p>
+        </div>
+        <div>
+          <p className="text-xs text-blue-500">내용 이해 높음</p>
           <p className="text-sm font-medium text-blue-800">{stats.comprehensionHigh}%</p>
-        </div>
-        <div>
-          <p className="text-xs text-blue-500">소통 만족도</p>
-          <p className="text-sm font-medium text-blue-800">{stats.communicationAvg}/5</p>
-        </div>
-        <div>
-          <p className="text-xs text-blue-500">속도 적절</p>
-          <p className="text-sm font-medium text-blue-800">{stats.speedModerate}%</p>
         </div>
         {stats.practiceAvg !== null && (
           <div>
-            <p className="text-xs text-blue-500">실습 충분도</p>
+            <p className="text-xs text-blue-500">실습·예시</p>
             <p className="text-sm font-medium text-blue-800">{stats.practiceAvg}/5</p>
           </div>
         )}
       </div>
+      <p className="mt-2 text-[11px] leading-4 text-blue-500/80">
+        질문·소통 편의와 수업 속도는 자료 자체 지표가 아니므로 이 카드에서는 제외했습니다.
+      </p>
     </div>
   );
 }
 
-export function MaterialsClient({ courseId, initialMaterials, rounds }: Props) {
-  const [materials, setMaterials] = useState(initialMaterials);
+export function MaterialsClient({ courseId, initialMaterials, rounds, demoMode = false }: Props) {
+  const [materials, setMaterials] = useState(
+    demoMode ? withDemoMaterialData(initialMaterials, rounds) : initialMaterials
+  );
   const [uploading, setUploading] = useState(false);
   const [analyzingId, setAnalyzingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -233,6 +298,23 @@ export function MaterialsClient({ courseId, initialMaterials, rounds }: Props) {
   async function handleAnalyze(materialId: string, force = false) {
     setAnalyzingId(materialId);
     setError(null);
+    if (demoMode) {
+      setMaterials((prev) =>
+        prev.map((m) =>
+          m.id === materialId
+            ? {
+                ...m,
+                hasAnalysis: true,
+                analysis: DEMO_MATERIAL_ANALYSIS,
+                isStale: false,
+                analysisUpdatedAt: new Date().toISOString(),
+              }
+            : m
+        )
+      );
+      setAnalyzingId(null);
+      return;
+    }
     try {
       const result = await analyzeMaterial(materialId, force);
       if (result.success) {
@@ -286,15 +368,15 @@ export function MaterialsClient({ courseId, initialMaterials, rounds }: Props) {
       )}
 
       {/* Upload */}
-      <Card>
+      <Card className={V3_CARD}>
         <CardContent className="py-6 space-y-3">
           {rounds.length > 0 && (
             <div className="flex items-center gap-3">
-              <label className="text-sm text-gray-600 shrink-0">주차 연결</label>
+              <label className="text-sm font-semibold text-[#27496D] shrink-0">주차 연결</label>
               <select
                 value={selectedRoundId}
                 onChange={(e) => setSelectedRoundId(e.target.value)}
-                className="text-sm border border-gray-200 rounded-md px-2 py-1.5 bg-white focus:outline-none focus:ring-1 focus:ring-blue-400"
+                className="text-sm border border-blue-100 rounded-md px-2 py-1.5 bg-white focus:outline-none focus:ring-1 focus:ring-blue-400"
               >
                 <option value="">주차 미지정 (전체 자료)</option>
                 {rounds.map((r) => (
@@ -310,8 +392,8 @@ export function MaterialsClient({ courseId, initialMaterials, rounds }: Props) {
               )}
             </div>
           )}
-          <label className="flex flex-col items-center justify-center gap-2 cursor-pointer border-2 border-dashed border-gray-200 rounded-lg p-8 hover:border-blue-300 transition-colors">
-            <p className="text-sm text-gray-500">
+          <label className="flex flex-col items-center justify-center gap-2 cursor-pointer border-2 border-dashed border-blue-200 bg-blue-50/40 rounded-[18px] p-8 hover:border-blue-300 transition-colors">
+            <p className="text-sm font-medium text-slate-500">
               {uploading
                 ? "업로드 중..."
                 : "PDF, PPT, TXT 파일을 클릭하여 업로드 (10MB 이하)"}
@@ -329,18 +411,18 @@ export function MaterialsClient({ courseId, initialMaterials, rounds }: Props) {
 
       {/* Material list */}
       {materials.length === 0 ? (
-        <Card>
-          <CardContent className="py-12 text-center text-gray-400">
+        <Card className={V3_CARD}>
+          <CardContent className="py-12 text-center text-slate-400">
             업로드된 강의자료가 없습니다.
           </CardContent>
         </Card>
       ) : (
         materials.map((m) => (
-          <Card key={m.id}>
+          <Card key={m.id} className={V3_CARD}>
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2 min-w-0">
-                  <CardTitle className="text-base truncate">{m.fileName}</CardTitle>
+                  <CardTitle className="text-base truncate text-[#10233F]">{m.fileName}</CardTitle>
                   {m.roundLabel ? (
                     <Badge className="shrink-0 bg-blue-100 text-blue-700 border-blue-200">
                       {m.roundLabel}

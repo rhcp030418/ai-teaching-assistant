@@ -6,19 +6,20 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { generateTrendNarrative, type TrendNarrative } from "@/app/actions/trend-analysis";
 import type { RoundReport } from "@/app/actions/round-reports";
+import { DEMO_TREND_NARRATIVE } from "@/lib/demo-ai-fixtures";
 
 // ─── SVG 라인 차트 ───────────────────────────────────────────────────────────
 
-const W = 600;
-const H = 180;
-const PAD = { top: 16, right: 24, bottom: 40, left: 40 };
+const W = 720;
+const H = 260;
+const PAD = { top: 22, right: 32, bottom: 48, left: 48 };
 const CW = W - PAD.left - PAD.right;
 const CH = H - PAD.top - PAD.bottom;
 
 const SERIES = [
-  { key: "comprehensionHigh" as const, label: "이해도", color: "#22c55e", strokeDash: "" },
-  { key: "speedModerate" as const, label: "속도 적절", color: "#f97316", strokeDash: "" },
-  { key: "commNorm" as const, label: "소통 만족도", color: "#3b82f6", strokeDash: "" },
+  { key: "comprehensionHigh" as const, label: "내용 이해", color: "#10B981", strokeDash: "" },
+  { key: "speedModerate" as const, label: "속도 적당", color: "#F5B544", strokeDash: "" },
+  { key: "commNorm" as const, label: "질문·소통", color: "#1677FF", strokeDash: "" },
 ];
 
 function xOf(i: number, n: number) {
@@ -63,9 +64,26 @@ function TrendChart({
       <svg
         viewBox={`0 0 ${W} ${H}`}
         width="100%"
-        style={{ minWidth: "320px" }}
+        style={{ minWidth: "560px" }}
         className="select-none"
       >
+        <defs>
+          <linearGradient id="trendArea" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0%" stopColor="#dbeafe" stopOpacity="0.55" />
+            <stop offset="100%" stopColor="#eff6ff" stopOpacity="0.15" />
+          </linearGradient>
+        </defs>
+
+        {/* Plot area soft blue background */}
+        <rect
+          x={PAD.left}
+          y={PAD.top}
+          width={CW}
+          height={CH}
+          rx="10"
+          fill="url(#trendArea)"
+        />
+
         {/* Y grid lines */}
         {[0, 25, 50, 75, 100].map((v) => (
           <g key={v}>
@@ -74,7 +92,7 @@ function TrendChart({
               x2={W - PAD.right}
               y1={yOf(v)}
               y2={yOf(v)}
-              stroke="#f0f0f0"
+              stroke="#DBEAFE"
               strokeWidth="1"
             />
             <text
@@ -83,7 +101,7 @@ function TrendChart({
               textAnchor="end"
               dominantBaseline="middle"
               fontSize="10"
-              fill="#9ca3af"
+              fill="#9aa9bc"
             >
               {v}
             </text>
@@ -98,7 +116,7 @@ function TrendChart({
               x2={xOf(n - 1, total)}
               y1={PAD.top}
               y2={PAD.top + CH}
-              stroke="#d1d5db"
+              stroke="#bfdbfe"
               strokeWidth="1"
               strokeDasharray="4 3"
             />
@@ -106,7 +124,7 @@ function TrendChart({
               x={xOf(n - 1, total) + 4}
               y={PAD.top + 8}
               fontSize="9"
-              fill="#9ca3af"
+              fill="#9aa9bc"
             >
               예측
             </text>
@@ -128,7 +146,7 @@ function TrendChart({
                 points={histPts}
                 fill="none"
                 stroke={color}
-                strokeWidth="2.5"
+                strokeWidth="3"
                 strokeLinejoin="round"
                 strokeLinecap="round"
               />
@@ -151,10 +169,10 @@ function TrendChart({
                   key={i}
                   cx={xOf(i, total)}
                   cy={yOf(p[key])}
-                  r="4"
+                  r="5.5"
                   fill="white"
                   stroke={color}
-                  strokeWidth="2"
+                  strokeWidth="2.75"
                 />
               ))}
               {/* Predicted point */}
@@ -162,7 +180,7 @@ function TrendChart({
                 <circle
                   cx={xOf(n, total)}
                   cy={yOf(allPoints[n][key])}
-                  r="4"
+                  r="5"
                   fill={color}
                   opacity="0.4"
                   stroke={color}
@@ -181,7 +199,7 @@ function TrendChart({
             y={H - 6}
             textAnchor="middle"
             fontSize="11"
-            fill={i === n && predicted ? "#9ca3af" : "#6b7280"}
+            fill={i === n && predicted ? "#9aa9bc" : "#27496D"}
           >
             {p.label ?? `${p.week}주`}
           </text>
@@ -191,7 +209,7 @@ function TrendChart({
       {/* Legend */}
       <div className="flex gap-5 justify-center mt-2 flex-wrap">
         {SERIES.map(({ key, label, color }) => (
-          <div key={key} className="flex items-center gap-1.5 text-xs text-gray-500">
+          <div key={key} className="flex items-center gap-1.5 text-xs text-slate-500">
             <span
               className="inline-block w-5 h-0.5 rounded"
               style={{ backgroundColor: color }}
@@ -200,8 +218,8 @@ function TrendChart({
           </div>
         ))}
         {predicted && (
-          <div className="flex items-center gap-1.5 text-xs text-gray-400">
-            <span className="inline-block w-5 h-0.5 border-t border-dashed border-gray-400" />
+          <div className="flex items-center gap-1.5 text-xs text-slate-400">
+            <span className="inline-block w-5 h-0.5 border-t border-dashed border-slate-300" />
             다음 주차 예측
           </div>
         )}
@@ -218,8 +236,8 @@ const TREND_META: Record<
 > = {
   improving: { label: "개선 추세", className: "bg-green-100 text-green-700" },
   worsening: { label: "하락 추세", className: "bg-red-100 text-red-700" },
-  stable: { label: "안정적", className: "bg-gray-100 text-gray-600" },
-  mixed: { label: "혼재", className: "bg-yellow-100 text-yellow-700" },
+  stable: { label: "안정적", className: "bg-blue-50 text-[#27496D] border border-blue-100" },
+  mixed: { label: "혼재", className: "bg-amber-100 text-amber-700" },
 };
 
 // ─── 메인 컴포넌트 ────────────────────────────────────────────────────────────
@@ -228,24 +246,27 @@ interface Props {
   courseId: string;
   // roundReports.rounds는 최신순(reverse). 여기서 chronological로 변환해서 넘김.
   rounds: RoundReport[];
+  demoMode?: boolean;
 }
 
-export function TrendAnalysis({ courseId, rounds }: Props) {
+export function TrendAnalysis({ courseId, rounds, demoMode = false }: Props) {
   // 시간순 정렬 (week 오름차순)
   const sorted = [...rounds].sort((a, b) => a.week - b.week);
   const validRounds = sorted.filter((r) => r.totalFeedbacks > 0);
 
-  const [narrative, setNarrative] = useState<TrendNarrative | null>(null);
+  const [narrative, setNarrative] = useState<TrendNarrative | null>(
+    demoMode ? DEMO_TREND_NARRATIVE : null
+  );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   if (validRounds.length < 2) {
     return (
-      <Card>
+      <Card className="ring-0 border-blue-100 bg-white/90 shadow-[0_10px_30px_-15px_rgba(23,87,168,0.25)]">
         <CardHeader>
-          <CardTitle className="text-base">주차별 트렌드</CardTitle>
-          <CardDescription>
-            응답이 있는 라운드가 2개 이상 종료되면 트렌드 차트가 표시됩니다.
+          <CardTitle className="text-base text-[#10233F]">주차별 평가 추이</CardTitle>
+          <CardDescription className="text-slate-500">
+            응답이 있는 라운드가 2개 이상 종료되면 주차별 평가 추이가 표시됩니다.
           </CardDescription>
         </CardHeader>
       </Card>
@@ -263,6 +284,11 @@ export function TrendAnalysis({ courseId, rounds }: Props) {
   async function handleAnalyze() {
     setLoading(true);
     setError(null);
+    if (demoMode) {
+      setNarrative(DEMO_TREND_NARRATIVE);
+      setLoading(false);
+      return;
+    }
     try {
       const res = await generateTrendNarrative(courseId, validRounds);
       if (res.success && res.result) {
@@ -281,12 +307,14 @@ export function TrendAnalysis({ courseId, rounds }: Props) {
   const canPredict = validRounds.length >= 3;
 
   return (
-    <Card>
+    <Card className="ring-0 border-blue-100 bg-white/90 shadow-[0_10px_30px_-15px_rgba(23,87,168,0.25)]">
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
-            <CardTitle className="text-base">주차별 트렌드</CardTitle>
-            <CardDescription>종료된 {validRounds.length}개 라운드 기반</CardDescription>
+            <CardTitle className="text-base text-[#10233F]">주차별 평가 추이</CardTitle>
+            <CardDescription className="text-slate-500">
+              종료된 {validRounds.length}개 라운드에서 내용 이해·속도·질문 소통 반응이 어떻게 달라졌는지 보여줍니다.
+            </CardDescription>
           </div>
           <div className="flex items-center gap-2">
             {trendMeta && (
@@ -296,6 +324,7 @@ export function TrendAnalysis({ courseId, rounds }: Props) {
               <Button
                 size="sm"
                 variant="outline"
+                className="border-blue-200 text-[#0F5FD7] hover:bg-blue-50 hover:text-[#0F5FD7]"
                 onClick={handleAnalyze}
                 disabled={loading}
               >
@@ -316,24 +345,24 @@ export function TrendAnalysis({ courseId, rounds }: Props) {
         )}
 
         {narrative && (
-          <div className="bg-blue-50 border border-blue-100 rounded-lg p-4">
-            <p className="text-xs font-semibold text-blue-600 mb-2 flex items-center gap-1.5">
-              <span className="bg-blue-200 text-blue-700 px-1.5 py-0.5 rounded">AI</span>
+          <div className="rounded-lg border border-blue-100 bg-blue-50/60 p-4">
+            <p className="text-xs font-semibold text-[#0F5FD7] mb-2 flex items-center gap-1.5">
+              <span className="rounded border border-blue-100 bg-blue-50 px-1.5 py-0.5 text-slate-400">AI</span>
               AI 분석
             </p>
-            <p className="text-sm text-gray-700 leading-relaxed">{narrative.narrative}</p>
+            <p className="text-sm text-[#27496D] leading-relaxed">{narrative.narrative}</p>
             {narrative.predicted && (
               <div className="mt-3 pt-3 border-t border-blue-200">
-                <p className="text-xs text-blue-500 font-medium mb-2">다음 주차 예측</p>
+                <p className="text-xs text-[#0F5FD7] font-medium mb-2">다음 주차 예측</p>
                 <div className="flex gap-4 text-sm">
-                  <span className="text-green-600">이해도 {narrative.predicted.comprehension}%</span>
-                  <span className="text-blue-600">소통 {(narrative.predicted.communication / 20).toFixed(1)}/5</span>
-                  <span className="text-orange-500">속도적절 {narrative.predicted.speed}%</span>
+                  <span className="text-emerald-600">이해도 {narrative.predicted.comprehension}%</span>
+                  <span className="text-[#1677FF]">질문·소통 {(narrative.predicted.communication / 20).toFixed(1)}/5</span>
+                  <span className="text-amber-500">속도 적당 {narrative.predicted.speed}%</span>
                 </div>
               </div>
             )}
             {!canPredict && (
-              <p className="text-xs text-gray-400 mt-2">* 라운드가 1개 더 종료되면 다음 주차 예측이 활성화됩니다.</p>
+              <p className="text-xs text-slate-400 mt-2">* 라운드가 1개 더 종료되면 다음 주차 예측이 활성화됩니다.</p>
             )}
           </div>
         )}

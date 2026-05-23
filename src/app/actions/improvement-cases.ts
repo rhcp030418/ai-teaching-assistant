@@ -175,8 +175,8 @@ export async function getAIInsightForCase(
     const speedGap = improvementCase.changes.speedModerate.after - myStats.speedModerateRatio;
 
     const axisLabel = {
-      communication: "소통 만족도",
-      comprehension: "자료 이해도",
+      communication: "질문·소통 편의",
+      comprehension: "내용 이해",
       speed: "수업 속도",
     }[improvementCase.primaryAxis];
 
@@ -187,8 +187,8 @@ export async function getAIInsightForCase(
       : "  (기록된 변화 없음)";
 
     const gapLines = [
-      commGap > 0 ? `- 소통 만족도: 현재 ${myStats.communicationAvg}점 vs 성공 사례 ${improvementCase.afterAvg}점 (격차 +${commGap})` : null,
-      compGap > 5 ? `- 이해도 높음: 현재 ${myStats.comprehensionHighRatio}% vs 성공 사례 ${improvementCase.changes.comprehensionHigh.after}% (격차 +${compGap}%p)` : null,
+      commGap > 0 ? `- 질문·소통 편의: 현재 ${myStats.communicationAvg}점 vs 성공 사례 ${improvementCase.afterAvg}점 (격차 +${commGap})` : null,
+      compGap > 5 ? `- 내용 이해 높음: 현재 ${myStats.comprehensionHighRatio}% vs 성공 사례 ${improvementCase.changes.comprehensionHigh.after}% (격차 +${compGap}%p)` : null,
       speedGap > 5 ? `- 속도 적절: 현재 ${myStats.speedModerateRatio}% vs 성공 사례 ${improvementCase.changes.speedModerate.after}% (격차 +${speedGap}%p)` : null,
     ].filter(Boolean).join("\n");
 
@@ -205,17 +205,17 @@ export async function getAIInsightForCase(
         role: "user",
         content: `[성공 사례: ${improvementCase.label} / 주요 개선 축: ${axisLabel}]
 학기 변화: ${improvementCase.beforeSemester} → ${improvementCase.afterSemester}
-- 소통 만족도: ${improvementCase.beforeAvg}점 → ${improvementCase.afterAvg}점 (+${improvementCase.change})
+- 질문·소통 편의: ${improvementCase.beforeAvg}점 → ${improvementCase.afterAvg}점 (+${improvementCase.change})
 - 수업 속도 '적당' 비율: ${improvementCase.changes.speedModerate.before}% → ${improvementCase.changes.speedModerate.after}%
-- 자료 이해도 '높음' 비율: ${improvementCase.changes.comprehensionHigh.before}% → ${improvementCase.changes.comprehensionHigh.after}%
+- 내용 이해 '높음' 비율: ${improvementCase.changes.comprehensionHigh.before}% → ${improvementCase.changes.comprehensionHigh.after}%
 
 [이 교수가 학기 사이에 바꾼 점 (교수 직접 기록)]
 ${notesText}
 
 [현재 내 강의 통계]
-- 소통 만족도: ${myStats.communicationAvg}점
+- 질문·소통 편의: ${myStats.communicationAvg}점
 - 수업 속도 '적당' 비율: ${myStats.speedModerateRatio}%
-- 자료 이해도 '높음' 비율: ${myStats.comprehensionHighRatio}%
+- 내용 이해 '높음' 비율: ${myStats.comprehensionHighRatio}%
 
 [성공 사례 대비 격차]
 ${gapLines || "- 현재 모든 지표가 성공 사례 수준에 근접함"}

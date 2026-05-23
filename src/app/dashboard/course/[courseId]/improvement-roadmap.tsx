@@ -3,15 +3,16 @@
 import { useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { generateRoadmap, ImprovementRoadmapData } from "@/app/actions/improvement-roadmap";
+import { DEMO_IMPROVEMENT_ROADMAP } from "@/lib/demo-ai-fixtures";
 
 const IMPACT_CONFIG: Record<string, { label: string; badgeClass: string; borderClass: string }> = {
   high: {
-    label: "즉시 개선 필요",
-    badgeClass: "bg-red-100 text-red-700",
-    borderClass: "border-red-200",
+    label: "우선 확인",
+    badgeClass: "bg-amber-100 text-amber-700",
+    borderClass: "border-amber-200",
   },
   medium: {
-    label: "개선 권장",
+    label: "참고 권장",
     badgeClass: "bg-amber-100 text-amber-700",
     borderClass: "border-amber-200",
   },
@@ -22,13 +23,25 @@ const IMPACT_CONFIG: Record<string, { label: string; badgeClass: string; borderC
   },
 };
 
-export function ImprovementRoadmapPanel({ courseId }: { courseId: string }) {
-  const [result, setResult] = useState<ImprovementRoadmapData | null>(null);
+export function ImprovementRoadmapPanel({
+  courseId,
+  demoMode = false,
+}: {
+  courseId: string;
+  demoMode?: boolean;
+}) {
+  const [result, setResult] = useState<ImprovementRoadmapData | null>(
+    demoMode ? DEMO_IMPROVEMENT_ROADMAP : null
+  );
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
   function handleGenerate() {
     setError(null);
+    if (demoMode) {
+      setResult(DEMO_IMPROVEMENT_ROADMAP);
+      return;
+    }
     startTransition(async () => {
       try {
         const res = await generateRoadmap(courseId);
@@ -44,12 +57,12 @@ export function ImprovementRoadmapPanel({ courseId }: { courseId: string }) {
   }
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
+    <div className="rounded-[22px] border border-blue-100 bg-white/90 shadow-[0_10px_30px_-15px_rgba(23,87,168,0.25)]">
       {/* 헤더 */}
-      <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+      <div className="px-6 py-4 border-b border-blue-100 flex items-center justify-between">
         <div>
-          <h3 className="text-sm font-semibold text-gray-700">AI 강의 개선 로드맵</h3>
-          <p className="text-xs text-gray-400 mt-0.5">
+          <h3 className="text-sm font-extrabold text-[#10233F]">AI 강의 개선 로드맵</h3>
+          <p className="text-xs font-medium text-slate-500 mt-0.5">
             피드백 기반 다음 회차 우선순위 행동 계획
           </p>
         </div>
@@ -69,7 +82,7 @@ export function ImprovementRoadmapPanel({ courseId }: { courseId: string }) {
       {result && (
         <div className="px-6 py-5 space-y-5">
           {/* 전체 평가 요약 */}
-          <p className="text-sm text-gray-600 leading-relaxed">{result.summary}</p>
+          <p className="text-sm text-[#27496D] leading-relaxed">{result.summary}</p>
 
           {/* 다음 회차 목표 */}
           <div className="bg-blue-50 border border-blue-100 rounded-lg px-4 py-3">
@@ -84,15 +97,15 @@ export function ImprovementRoadmapPanel({ courseId }: { courseId: string }) {
               return (
                 <div
                   key={typeof p.rank === "number" ? p.rank : idx}
-                  className={`border rounded-xl p-4 space-y-2.5 ${cfg.borderClass}`}
+                  className={`border rounded-xl bg-white/75 p-4 space-y-2.5 ${cfg.borderClass}`}
                 >
                   {/* 제목 행 */}
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2.5">
-                      <span className="flex-shrink-0 w-6 h-6 rounded-full bg-gray-800 text-white text-xs flex items-center justify-center font-bold">
+                      <span className="flex-shrink-0 w-6 h-6 rounded-full bg-gradient-to-br from-[#1677FF] to-[#38BDF8] text-white text-xs flex items-center justify-center font-bold shadow-[0_8px_16px_-10px_rgba(22,119,255,0.7)]">
                         {p.rank}
                       </span>
-                      <span className="text-sm font-semibold text-gray-800">{p.area}</span>
+                      <span className="text-sm font-semibold text-[#10233F]">{p.area}</span>
                     </div>
                     <span
                       className={`text-xs px-2 py-0.5 rounded-full font-medium flex-shrink-0 ${cfg.badgeClass}`}
@@ -102,14 +115,14 @@ export function ImprovementRoadmapPanel({ courseId }: { courseId: string }) {
                   </div>
 
                   {/* 문제 설명 */}
-                  <p className="text-sm text-gray-700 pl-8">{p.problem}</p>
+                  <p className="text-sm text-[#27496D] pl-8">{p.problem}</p>
 
                   {/* 근거 + 행동 계획 */}
                   <div className="pl-8 space-y-2">
                     <p className="text-xs text-gray-400">근거: {p.evidence}</p>
-                    <div className="bg-gray-50 rounded-lg px-3 py-2.5">
-                      <p className="text-xs font-medium text-gray-500 mb-1">행동 계획</p>
-                      <p className="text-sm text-gray-700">{p.action}</p>
+                    <div className="bg-blue-50/60 rounded-lg px-3 py-2.5">
+                      <p className="text-xs font-medium text-[#0F5FD7] mb-1">행동 계획</p>
+                      <p className="text-sm text-[#27496D]">{p.action}</p>
                     </div>
                   </div>
                 </div>

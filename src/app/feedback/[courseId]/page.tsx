@@ -5,14 +5,19 @@ import { notFound } from "next/navigation";
 import { FeedbackForm } from "./feedback-form";
 import { Card, CardContent } from "@/components/ui/card";
 
+const PAGE_BG =
+  "min-h-screen bg-[radial-gradient(circle_at_12%_-8%,rgba(56,189,248,0.24),transparent_32%),radial-gradient(circle_at_88%_8%,rgba(22,119,255,0.13),transparent_30%),linear-gradient(180deg,#f8fbff_0%,#f5f8ff_48%,#f7fbff_100%)] py-8 px-4";
+const INFO_CARD =
+  "rounded-[24px] border border-blue-100 bg-white/90 shadow-[0_18px_48px_-30px_rgba(23,87,168,0.42)]";
+
 function ErrorCard({ title, description }: { title: string; description: string }) {
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4">
+    <div className={PAGE_BG}>
       <div className="max-w-lg mx-auto">
-        <Card>
+        <Card className={INFO_CARD}>
           <CardContent className="py-12 text-center">
             <p className="text-lg font-semibold text-red-600">{title}</p>
-            <p className="text-gray-500 mt-2">{description}</p>
+            <p className="text-slate-500 mt-2">{description}</p>
           </CardContent>
         </Card>
       </div>
@@ -22,12 +27,12 @@ function ErrorCard({ title, description }: { title: string; description: string 
 
 function InfoCard({ title, description }: { title: string; description: string }) {
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4">
+    <div className={PAGE_BG}>
       <div className="max-w-lg mx-auto">
-        <Card>
+        <Card className={INFO_CARD}>
           <CardContent className="py-12 text-center">
-            <p className="text-lg font-semibold text-blue-600">{title}</p>
-            <p className="text-gray-500 mt-2">{description}</p>
+            <p className="text-lg font-semibold text-[#0F5FD7]">{title}</p>
+            <p className="text-slate-500 mt-2">{description}</p>
           </CardContent>
         </Card>
       </div>
@@ -94,17 +99,17 @@ export default async function FeedbackPage(
     if (!course) notFound();
 
     return (
-      <div className="min-h-screen bg-gray-50 py-8 px-4">
-        <div className="max-w-lg mx-auto">
-          <div className="text-center mb-8">
-            <h1 className="text-2xl font-bold text-gray-900">{course.name}</h1>
-            <p className="text-gray-500 mt-1">
+      <div className={PAGE_BG}>
+        <div className="max-w-3xl mx-auto">
+          <div className="mb-8 rounded-[24px] border border-blue-100 bg-white/90 p-6 text-center shadow-[0_18px_48px_-30px_rgba(23,87,168,0.42)]">
+            <span className="inline-flex rounded-full bg-blue-100/80 px-3 py-1.5 text-xs font-bold text-[#0F5FD7]">
+              {activeRound.label ?? `${activeRound.week}주차`} 평가
+            </span>
+            <h1 className="mt-3 text-2xl font-extrabold text-[#10233F]">{course.name}</h1>
+            <p className="text-slate-500 mt-1">
               {course.professor.name} 교수님 · {course.semester}
             </p>
-            <p className="text-sm text-blue-500 mt-2 font-medium">
-              {activeRound.label ?? `${activeRound.week}주차`} 평가
-            </p>
-            <p className="text-sm text-gray-400 mt-1">
+            <p className="text-sm text-slate-400 mt-2">
               익명으로 제출되며, 수업 개선에 활용됩니다.
             </p>
           </div>
@@ -135,14 +140,17 @@ export default async function FeedbackPage(
   if (!course) notFound();
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4">
-      <div className="max-w-lg mx-auto">
-        <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold text-gray-900">{course.name}</h1>
-          <p className="text-gray-500 mt-1">
+    <div className={PAGE_BG}>
+      <div className="max-w-3xl mx-auto">
+        <div className="mb-8 rounded-[24px] border border-blue-100 bg-white/90 p-6 text-center shadow-[0_18px_48px_-30px_rgba(23,87,168,0.42)]">
+          <span className="inline-flex rounded-full bg-blue-100/80 px-3 py-1.5 text-xs font-bold text-[#0F5FD7]">
+            익명 강의 피드백
+          </span>
+          <h1 className="mt-3 text-2xl font-extrabold text-[#10233F]">{course.name}</h1>
+          <p className="text-slate-500 mt-1">
             {course.professor.name} 교수님 · {course.semester}
           </p>
-          <p className="text-sm text-gray-400 mt-2">
+          <p className="text-sm text-slate-400 mt-2">
             익명으로 제출되며, 수업 개선에 활용됩니다.
           </p>
         </div>

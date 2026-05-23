@@ -4,7 +4,7 @@ import { prisma } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import { chatWithAI } from "@/lib/ai";
 import { parseAIJson } from "@/lib/parse-ai-json";
-import { computeFeedbackCounts } from "@/lib/feedback-stats";
+import { computeFeedbackCounts, scoreToRatio } from "@/lib/feedback-stats";
 import { TEACHING_TOOLBOX } from "@/lib/teaching-methods";
 import {
   FEEDBACK_MIN_COUNT,
@@ -67,6 +67,7 @@ export async function generateRoadmap(
         select: {
           speed: true,
           comprehension: true,
+          materialHelp: true,
           communication: true,
           interest: true,
           assignment: true,
@@ -82,7 +83,7 @@ export async function generateRoadmap(
         orderBy: { week: "asc" },
         include: {
           feedbacks: {
-            select: { speed: true, comprehension: true, communication: true },
+            select: { speed: true, comprehension: true, materialHelp: true, communication: true, interest: true },
           },
         },
       },
@@ -96,6 +97,8 @@ export async function generateRoadmap(
 
   const {
     total, speedCounts, compCounts, commSum,
+    comprehensionSum, comprehensionCount,
+    materialHelpSum, materialHelpCount,
     interestSum, interestCount,
     assignmentSum, assignmentCount,
     practiceSum, practiceCount,
@@ -109,23 +112,31 @@ export async function generateRoadmap(
     .filter((r) => r.feedbacks.length > 0)
     .map((r) => {
       const fbs = r.feedbacks;
-      const commAvg = (fbs.reduce((s, f) => s + f.communication, 0) / fbs.length).toFixed(1);
-      const highComp = Math.round((fbs.filter((f) => f.comprehension === "high").length / fbs.length) * 100);
-      const speedMod = Math.round((fbs.filter((f) => f.speed === "moderate").length / fbs.length) * 100);
+      const roundCounts = computeFeedbackCounts(fbs);
+      const commAvg = (roundCounts.commSum / roundCounts.total).toFixed(1);
+      const contentRatio = Math.round(scoreToRatio(roundCounts.comprehensionSum, roundCounts.comprehensionCount));
+      const speedMod = Math.round((roundCounts.speedCounts.moderate / roundCounts.total) * 100);
       const label = r.label ?? `${r.week}주차`;
-      return `${label}: 이해도 ${highComp}%, 소통 ${commAvg}/5, 속도적절 ${speedMod}%`;
+      return `${label}: 내용 이해 ${contentRatio}%, 질문·소통 ${commAvg}/5, 속도 적당 ${speedMod}%`;
     });
+  const contentRatio = Math.round(scoreToRatio(comprehensionSum, comprehensionCount));
+  const materialRatio = Math.round(scoreToRatio(materialHelpSum, materialHelpCount));
+  const speedFastRatio = Math.round(((speedCounts.fast + speedCounts.veryFast) / total) * 100);
+  const speedSlowRatio = Math.round(((speedCounts.slow + speedCounts.verySlow) / total) * 100);
+  const materialAvg = materialHelpCount > 0 ? materialHelpSum / materialHelpCount : null;
+  const engagementAvg = interestCount > 0 ? interestSum / interestCount : null;
 
   const dataLines: string[] = [
     `강의명: ${course.name}`,
     `총 피드백: ${total}건`,
-    `수업 속도: 빠름 ${Math.round((speedCounts.fast / total) * 100)}% / 적당 ${Math.round((speedCounts.moderate / total) * 100)}% / 느림 ${Math.round((speedCounts.slow / total) * 100)}%`,
-    `이해도: 높음 ${Math.round((compCounts.high / total) * 100)}% / 보통 ${Math.round((compCounts.medium / total) * 100)}% / 낮음 ${Math.round((compCounts.low / total) * 100)}%`,
-    `소통 만족도: ${(commSum / total).toFixed(1)}/5`,
+    `수업 속도: 빠름 ${speedFastRatio}% / 적당 ${Math.round((speedCounts.moderate / total) * 100)}% / 느림 ${speedSlowRatio}%`,
+    `내용 이해: ${contentRatio}% (높음 ${Math.round((compCounts.high / total) * 100)}% / 보통 ${Math.round((compCounts.medium / total) * 100)}% / 낮음 ${Math.round((compCounts.low / total) * 100)}%)`,
+    `질문·소통 편의: ${(commSum / total).toFixed(1)}/5`,
   ];
-  if (interestCount > 0) dataLines.push(`강의 흥미도: ${(interestSum / interestCount).toFixed(1)}/5`);
+  if (materialHelpCount > 0) dataLines.push(`자료·예시 도움: ${materialRatio}% (${materialHelpCount}건)`);
+  if (engagementAvg !== null) dataLines.push(`학습 몰입: ${engagementAvg.toFixed(1)}/5`);
   if (assignmentCount > 0) dataLines.push(`과제 적절성: ${(assignmentSum / assignmentCount).toFixed(1)}/5`);
-  if (practiceCount > 0) dataLines.push(`실습/예시 충분도: ${(practiceSum / practiceCount).toFixed(1)}/5`);
+  if (practiceCount > 0) dataLines.push(`실습·예시 도움: ${(practiceSum / practiceCount).toFixed(1)}/5`);
   if (roundSummaries.length > 0) {
     dataLines.push(`\n회차별 추이:\n${roundSummaries.map((r) => "  " + r).join("\n")}`);
   }
@@ -133,10 +144,12 @@ export async function generateRoadmap(
   const flaggedAreas: string[] = [];
   const commAvgVal = commSum / total;
   if (Math.round((speedCounts.moderate / total) * 100) < SPEED_MODERATE_THRESHOLD) flaggedAreas.push("수업 속도 '적당' 비율이 50% 미달");
-  if (Math.round((compCounts.high / total) * 100) < COMP_HIGH_THRESHOLD) flaggedAreas.push("이해도 '높음' 비율이 50% 미달");
-  if (commAvgVal < COMM_AVG_THRESHOLD) flaggedAreas.push(`소통 만족도 ${commAvgVal.toFixed(1)}/5 (기준 3.5 미달)`);
+  if (Math.round((compCounts.high / total) * 100) < COMP_HIGH_THRESHOLD) flaggedAreas.push("내용 이해 '높음' 비율이 50% 미달");
+  if (materialAvg !== null && materialAvg < COMM_AVG_THRESHOLD) flaggedAreas.push(`자료·예시 도움 ${materialAvg.toFixed(1)}/5 (기준 3.5 미달)`);
+  if (commAvgVal < COMM_AVG_THRESHOLD) flaggedAreas.push(`질문·소통 편의 ${commAvgVal.toFixed(1)}/5 (기준 3.5 미달)`);
+  if (engagementAvg !== null && engagementAvg < COMM_AVG_THRESHOLD) flaggedAreas.push(`학습 몰입 ${engagementAvg.toFixed(1)}/5 (기준 3.5 미달)`);
   if (flaggedAreas.length > 0) {
-    dataLines.push(`\n[즉시 개선 필요 지표]\n${flaggedAreas.map(f => "  * " + f).join("\n")}`);
+    dataLines.push(`\n[우선 확인 권장 지표]\n${flaggedAreas.map(f => "  * " + f).join("\n")}`);
   }
 
   if (comments.length > 0) {
@@ -157,16 +170,18 @@ export async function generateRoadmap(
     const response = await chatWithAI([
       {
         role: "system",
-        content: `당신은 10년 경력의 대학 강의 개선 전문 컨설턴트입니다. 피드백 데이터를 분석하여 교수님이 다음 회차에 바로 실천할 수 있는 행동 계획을 제시합니다.
+        content: `당신은 10년 경력의 대학 강의 지원 전문 컨설턴트입니다. 피드백 데이터를 분석하여 교수님이 다음 회차에 참고할 수 있는 대응 계획을 제시합니다.
 
 JSON 응답 전에 반드시 다음 분석 단계를 거치세요 (응답에는 포함하지 않음):
-1단계: [즉시 개선 필요 지표]를 확인하여 가장 시급한 문제 1개를 특정합니다.
+1단계: [우선 확인 권장 지표]를 확인하여 가장 먼저 살펴볼 학생 반응 1개를 특정합니다.
 2단계: 학생 의견에서 그 문제와 연결되는 발언을 2~3개 찾습니다.
 3단계: 그 발언을 근거로, 다음 수업에서 바로 할 수 있는 행동 하나를 도출합니다.
 4단계: 도출한 행동을 아래 [검증된 교수법 도구상자]의 기법에 매핑하여 구체화합니다.
 5단계: 나머지 지표들도 같은 방식으로 검토하여 우선순위를 완성합니다.
 
 마크다운 문법 **,*,-,# 절대 사용 금지.
+출력에 쓰는 지표명은 내용 이해, 자료·예시 도움, 질문·소통 편의, 학습 몰입, 수업 속도로 통일하세요.
+교수에게 명령하는 표현보다 "시도해볼 수 있습니다", "참고할 수 있습니다", "대응 방안입니다"처럼 선택권을 남기는 표현을 사용하세요.
 
 ${TEACHING_TOOLBOX}
 
@@ -176,25 +191,25 @@ ${TEACHING_TOOLBOX}
 {
   "priorities": [{
     "rank": 1,
-    "area": "자료 이해도",
-    "problem": "이해도 '높음' 비율이 32%로, 학생 3명 중 2명이 강의 내용을 충분히 소화하지 못하고 있습니다.",
-    "action": "수업 시작 후 5분 동안 지난 수업 핵심 개념을 학생이 직접 떠올려 적게 한 뒤 판서로 정리합니다 (인출 연습/retrieval practice). 이어서 각 새 개념은 추상적 정의보다 실생활 예시를 먼저 제시하고 거기서 개념을 끌어내세요 (구체적 예시 우선/concrete examples).",
-    "evidence": "학생 5명이 '예시가 없어서 이해가 안 된다'고 언급하였으며, 이해도 높음 비율이 32%로 낮게 나타납니다.",
+    "area": "내용 이해",
+    "problem": "내용 이해 점수가 42%이고 이해도 '높음' 비율이 32%로, 일부 학생이 강의 내용을 충분히 소화하지 못하고 있습니다.",
+    "action": "수업 시작 후 5분 동안 지난 수업 핵심 개념을 학생이 직접 떠올려 적게 한 뒤 판서로 정리하는 방식을 참고할 수 있습니다 (인출 연습/retrieval practice). 이어서 각 새 개념은 추상적 정의보다 실생활 예시를 먼저 제시하고 거기서 개념을 끌어내는 루틴을 시도해볼 수 있습니다 (구체적 예시 우선/concrete examples).",
+    "evidence": "학생 5명이 '예시가 없어서 이해가 안 된다'고 언급하였으며, 내용 이해 높음 비율이 32%로 낮게 나타납니다.",
     "impact": "high"
   }],
-  "weeklyGoal": "각 개념 설명 후 예시 제시 루틴 도입으로 이해도 높음 비율을 현재 32%에서 50% 이상으로 끌어올립니다.",
-  "summary": "소통 만족도 4.1/5로 교수님과 학생 간 소통은 이 강의의 강점입니다. 다만 이해도 높음이 32%에 그치고 있어, 설명 방식의 구체성 강화가 가장 시급한 과제입니다."
+  "weeklyGoal": "각 개념 설명 후 예시 제시 루틴을 참고하여 내용 이해 점수를 현재 42%에서 55% 이상으로 높이는 것을 목표로 삼을 수 있습니다.",
+  "summary": "질문·소통 편의 4.1/5로 교수님과 학생 간 소통은 이 강의의 강점입니다. 다만 내용 이해에서 어려움이 반복되어, 설명 방식의 구체성을 높이는 대응이 우선 참고 지점입니다."
 }
 
 --- 나쁜 출력 예시 (금지) ---
 {
-  "priorities": [{"rank": 1, "area": "자료 이해도", "problem": "이해도가 낮습니다.", "action": "더 잘 가르치세요.", "evidence": "이해도가 낮기 때문입니다.", "impact": "high"}],
+  "priorities": [{"rank": 1, "area": "내용 이해", "problem": "내용 이해가 낮습니다.", "action": "설명 방식을 보완하세요.", "evidence": "내용 이해가 낮기 때문입니다.", "impact": "high"}],
   "weeklyGoal": "이해도를 높입니다.",
   "summary": "강의가 좋습니다. 개선이 필요합니다."
 }
 --- 예시 끝 ---
 
-[즉시 개선 필요 지표]에 있는 항목을 1순위로 하여 1~3개만 포함하세요. impact는 개선 시 학생 만족도 상승 기대치 기준입니다.
+[우선 확인 권장 지표]에 있는 항목을 1순위로 하여 1~3개만 포함하세요. impact는 대응 시 학생 반응 개선 기대치 기준입니다.
 
 자가 검증 (JSON 작성 전 내부 점검, 응답에는 포함하지 않음):
 - priorities의 problem에 현재 수치(%)가 포함되어 있는가?

@@ -6,6 +6,7 @@ import {
   getPrevSemester,
   getStatsForCourses,
   getStatsPerCourse,
+  scoreToRatio,
 } from "@/lib/feedback-stats";
 
 export interface BenchmarkData {
@@ -17,6 +18,8 @@ export interface BenchmarkData {
   categorySpeedModerateRatio: number | null;
   myComprehensionHighRatio: number;
   categoryComprehensionHighRatio: number | null;
+  myMaterialHelpRatio: number;
+  categoryMaterialHelpRatio: number | null;
   categoryName: string;
   semester: string;
   prevSemester: string;
@@ -61,33 +64,17 @@ export async function getBenchmark(
   const categoryIds = categoryCourses.map((c) => c.id);
   const categoryStats = await getStatsForCourses(categoryIds);
 
-  // 레이더 차트용 유사 분야 상세 평균
+  const avgToRatio = (avg: number) => scoreToRatio(avg, 1);
+
+  // 레이더 차트용 유사 분야 평균 — overview의 고정 4축과 동일한 순서
   let categoryRadarAxes: { label: string; value: number }[] | null = null;
-  if (categoryIds.length > 0) {
-    const catFbs = await prisma.feedback.findMany({
-      where: { courseId: { in: categoryIds } },
-      select: { speed: true, comprehension: true, communication: true, interest: true, assignment: true, practice: true },
-    });
-    if (catFbs.length > 0) {
-      const total = catFbs.length;
-      const avg = (vals: number[]) => vals.length > 0 ? vals.reduce((a, b) => a + b, 0) / vals.length : 0;
-      const interestVals = catFbs.filter((f) => f.interest != null).map((f) => f.interest as number);
-      categoryRadarAxes = [
-        { label: "속도 적절성", value: (catFbs.filter((f) => f.speed === "moderate").length / total) * 100 },
-        { label: "자료 이해도", value: (catFbs.filter((f) => f.comprehension === "high").length / total) * 100 },
-        { label: "소통 만족도", value: (catFbs.reduce((s, f) => s + f.communication, 0) / total / 5) * 100 },
-        { label: "강의 흥미도", value: interestVals.length > 0 ? (avg(interestVals) / 5) * 100 : 0 },
-      ];
-      // 현재 강의 설정과 동일한 선택 축만 추가
-      if (course.hasAssignment) {
-        const vals = catFbs.filter((f) => f.assignment != null).map((f) => f.assignment as number);
-        if (vals.length > 0) categoryRadarAxes.push({ label: "과제 적절성", value: (avg(vals) / 5) * 100 });
-      }
-      if (course.hasPractice) {
-        const vals = catFbs.filter((f) => f.practice != null).map((f) => f.practice as number);
-        if (vals.length > 0) categoryRadarAxes.push({ label: "실습/예시", value: (avg(vals) / 5) * 100 });
-      }
-    }
+  if (categoryStats) {
+    categoryRadarAxes = [
+      { label: "내용 이해", value: avgToRatio(categoryStats.comprehensionAvg) },
+      { label: "자료·예시 도움", value: avgToRatio(categoryStats.materialHelpAvg) },
+      { label: "질문·소통 편의", value: avgToRatio(categoryStats.communicationAvg) },
+      { label: "학습 몰입", value: avgToRatio(categoryStats.engagementAvg) },
+    ];
   }
 
   // All courses, same semester (excluding this course)
@@ -133,6 +120,8 @@ export async function getBenchmark(
     myComprehensionHighRatio: myStats.comprehensionHighRatio,
     categoryComprehensionHighRatio:
       categoryStats?.comprehensionHighRatio ?? null,
+    myMaterialHelpRatio: avgToRatio(myStats.materialHelpAvg),
+    categoryMaterialHelpRatio: categoryStats ? avgToRatio(categoryStats.materialHelpAvg) : null,
     categoryName: course.category,
     semester: course.semester,
     prevSemester,

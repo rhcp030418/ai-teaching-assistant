@@ -3,6 +3,7 @@ import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
 import bcrypt from "bcryptjs";
 import crypto from "node:crypto";
 import path from "node:path";
+import { backfillFeedbackRedesignFields } from "./feedback-redesign-backfill";
 
 const dbUrl = process.env.DATABASE_URL ?? `file:${path.join(process.cwd(), "dev.db")}`;
 const prisma = new PrismaClient({
@@ -742,6 +743,11 @@ async function main() {
   });
 
   console.log("ImprovementNote: 데모 노트 8건 추가");
+
+  const feedbackBackfill = await backfillFeedbackRedesignFields(prisma);
+  console.log(
+    `Feedback redesign fields: ${feedbackBackfill.updated}/${feedbackBackfill.checked}건 보정`,
+  );
 
   // ═══════════════════════════════════════
   // 결과 출력

@@ -45,13 +45,17 @@ model Feedback {
   id                  String   @id @default(cuid())
   courseId             String
   roundId             String?  // 주차별 평가 라운드 (null이면 기존 1회용 토큰 방식)
-  speed               String   // "fast" | "moderate" | "slow"
-  comprehension       String   // "high" | "medium" | "low"
-  communication       Int      // 1~5
-  interest            Int?     // 1~5 강의 흥미도
+  speed               String   // "very_slow" | "slow" | "moderate" | "fast" | "very_fast" (legacy: "fast" | "slow")
+  comprehension       String   // 1~5 string (legacy: "high" | "medium" | "low")
+  materialHelp        Int?     // 1~5 자료·예시 도움
+  communication       Int      // 1~5 질문·소통 편의
+  interest            Int?     // 1~5 학습 몰입 (legacy: 강의 흥미도)
   assignment          Int?     // 1~5 과제 적절성 (과제 있는 강의만)
   practice            Int?     // 1~5 실습/예시 충분도 (실습 있는 강의만)
-  comment             String?  // 원문
+  positiveComment     String?  // 좋았던 점
+  difficultyComment   String?  // 어려웠던 점 / 더 설명이 필요한 점
+  activityPoints      Int      @default(1) // 비교과 포인트: 제출 1P + 각 주관식 최소 작성 1P
+  comment             String?  // 원문(하위호환용 통합 의견)
   filteredComment     String?  // AI 순화 결과 (학습=원문, 감정=null, 혼합=순화 텍스트)
   commentCategory     String?  // "학습" | "감정" | "혼합"
   commentFilterReason String?  // AI 분류 근거
@@ -179,4 +183,3 @@ model LectureMaterial {
   course Course          @relation(fields: [courseId], references: [id])
   round  FeedbackRound?  @relation(fields: [roundId], references: [id])
 }
-

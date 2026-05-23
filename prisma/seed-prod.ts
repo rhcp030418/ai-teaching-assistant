@@ -1,6 +1,7 @@
 import { PrismaClient } from "../src/generated/prisma/client";
 import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
 import { execSync } from "node:child_process";
+import { backfillFeedbackRedesignFields } from "./feedback-redesign-backfill";
 
 async function main() {
   const url = process.env.DATABASE_URL ?? "file:./dev.db";
@@ -16,6 +17,11 @@ async function main() {
     } else {
       console.log(`[seed-prod] ${count} professor(s) found, skipping seed.`);
     }
+
+    const result = await backfillFeedbackRedesignFields(prisma);
+    console.log(
+      `[seed-prod] feedback redesign backfill checked ${result.checked}, updated ${result.updated}.`,
+    );
   } finally {
     await prisma.$disconnect();
   }

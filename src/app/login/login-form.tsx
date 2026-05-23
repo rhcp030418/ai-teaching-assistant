@@ -28,9 +28,9 @@ export function LoginForm() {
   }
 
   return (
-    <Card>
+    <Card className="overflow-hidden rounded-[24px] border border-blue-100 bg-white/90 shadow-[0_18px_48px_-30px_rgba(23,87,168,0.42)]">
       <CardHeader>
-        <CardTitle className="text-lg">로그인</CardTitle>
+        <CardTitle className="text-lg font-extrabold text-[#10233F]">교수 로그인</CardTitle>
       </CardHeader>
       <CardContent>
         <form action={handleSubmit} className="space-y-4">
@@ -41,7 +41,7 @@ export function LoginForm() {
           )}
 
           <div className="space-y-2">
-            <Label htmlFor="email">이메일</Label>
+            <Label htmlFor="email" className="text-[#27496D]">이메일</Label>
             <Input
               id="email"
               name="email"
@@ -52,7 +52,7 @@ export function LoginForm() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="password">비밀번호</Label>
+            <Label htmlFor="password" className="text-[#27496D]">비밀번호</Label>
             <Input
               id="password"
               name="password"
@@ -65,7 +65,7 @@ export function LoginForm() {
             {pending ? "로그인 중..." : "로그인"}
           </Button>
 
-          <p className="text-xs text-gray-400 text-center">
+          <p className="text-xs text-slate-400 text-center">
             데모 계정: kim@hansung.ac.kr / demo1234
           </p>
         </form>
