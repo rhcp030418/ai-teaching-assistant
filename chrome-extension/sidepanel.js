@@ -92,8 +92,8 @@ function renderUnmatchedWarning(unmatched) {
 
   return `
     <div class="sync-warning">
-      <strong>아직 연동되지 않은 과목이 있어요</strong>
-      <p>아래 과목은 담당 교수님이 평가를 등록하면 자동으로 표시됩니다.</p>
+      <strong>평가 대상에서 제외된 항목이 있어요</strong>
+      <p>커뮤니티처럼 강의가 아닌 항목이거나, 아직 평가 대상으로 연결되지 않은 항목입니다.</p>
       <ul>
         ${visible.map((c) => `
           <li>${escapeHtml(c.title || "제목 없음")}</li>
