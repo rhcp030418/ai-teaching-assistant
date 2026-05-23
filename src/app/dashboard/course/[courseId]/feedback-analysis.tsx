@@ -431,12 +431,12 @@ function CommentBody({ text }: { text: string }) {
     <div className="space-y-1.5">
       {segments.map((seg, i) =>
         seg.kind === "positive" ? (
-          <p key={i} className="text-sm font-semibold leading-relaxed text-[#1677FF]">
-            <span className="font-extrabold">좋았던 점</span> {seg.body}
+          <p key={i} className="text-sm font-semibold leading-relaxed text-[#27496D]">
+            <span className="font-extrabold text-[#1677FF]">좋았던 점</span> {seg.body}
           </p>
         ) : seg.kind === "difficulty" ? (
-          <p key={i} className="text-sm font-semibold leading-relaxed text-red-600">
-            <span className="font-extrabold">어려웠던 점</span> {seg.body}
+          <p key={i} className="text-sm font-semibold leading-relaxed text-[#27496D]">
+            <span className="font-extrabold text-red-600">어려웠던 점</span> {seg.body}
           </p>
         ) : (
           <p key={i} className="text-sm font-semibold leading-relaxed text-[#27496D]">
