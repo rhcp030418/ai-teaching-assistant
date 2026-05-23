@@ -48,7 +48,7 @@ function getCourseFromLink(link) {
   ].map(normalizeText).find(Boolean) || "";
 
   if (!title) return null;
-  return { id, title };
+  return { id, title, sourceType: "course" };
 }
 
 function collectCoursesFromLinks(doc, selectors) {
@@ -114,9 +114,8 @@ async function fetchCourseList() {
   ]);
 }
 
-// ─── [DEMO ONLY - REMOVE FOR PRODUCTION] ──────────────────────────
-// 시연용: 커뮤니티를 강의처럼 가져옴 (실제 교수 강의를 사용하지 않기 위함)
-// 제거 시: 이 함수와 GET_ALL 핸들러의 [DEMO ONLY] 마커 블록만 삭제하면 됨
+// 커뮤니티 링크는 강의 목록에 섞일 수 있어 서버로 보내되, 서버에서 비강의 항목으로 제외한다.
+// 이렇게 해야 "강의가 아닌 항목은 평가 대상에서 제외됨" 케이스도 사이드패널에서 확인할 수 있다.
 async function fetchCommunityList() {
   const doc = await fetchParse("/");
   const items = [];
@@ -134,11 +133,10 @@ async function fetchCommunityList() {
     if (!text.includes("커뮤니티")) continue;
 
     seen.add(course.id);
-    items.push(course);
+    items.push({ ...course, sourceType: "community" });
   }
   return items;
 }
-// ─── [/DEMO ONLY] ─────────────────────────────────────────────────
 
 // Background/Side Panel에서 오는 메시지 처리
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
@@ -156,17 +154,12 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     Promise.all([
       fetchUserInfo(),
       fetchCourseList(),
-      // ─── [DEMO ONLY - REMOVE FOR PRODUCTION] ───
       fetchCommunityList().catch(() => []),
-      // ─── [/DEMO ONLY] ───
     ])
       .then(([userInfo, courses, communities]) => {
-        // ─── [DEMO ONLY - REMOVE FOR PRODUCTION] ───
-        // 커뮤니티를 강의 목록에 합쳐서 전송 (실제 교수 강의 노출 방지용)
+        // 서버가 course/community를 구분해 강의는 평가 대상으로, 커뮤니티는 제외 안내로 처리한다.
         const allCourses = [...courses, ...communities];
         sendResponse({ userInfo, courses: allCourses });
-        // ─── [/DEMO ONLY] ───
-        // 프로덕션 코드: sendResponse({ userInfo, courses });
       })
       .catch(() => sendResponse(null));
     return true;

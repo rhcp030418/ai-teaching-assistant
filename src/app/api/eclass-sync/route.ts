@@ -3,7 +3,7 @@ import { prisma } from "@/lib/db";
 import crypto from "node:crypto";
 import { hashPassword } from "@/lib/auth-utils";
 
-type ValidEclassCourse = { id: number; title: string };
+type ValidEclassCourse = { id: number; title: string; sourceType?: "course" | "community" };
 type MatchResult = {
   course: { id: string; name: string; eclassId: number | null };
   matchedBy: "eclassId" | "title" | "autoCreated";
@@ -29,15 +29,21 @@ function autoProvisionEnabled() {
   return process.env.ECLASS_AUTO_PROVISION !== "0";
 }
 
+function isNonCourseItem(eclassCourse: ValidEclassCourse) {
+  const normalized = normalizeCourseTitle(eclassCourse.title);
+  return eclassCourse.sourceType === "community" || normalized.includes("커뮤니티") || normalized.includes("community");
+}
+
 async function getAutoProvisionProfessorId() {
   const email = "eclass-sync@hansung.ac.kr";
+  const password = await hashPassword("demo1234");
   const professor = await prisma.professor.upsert({
     where: { email },
-    update: {},
+    update: { name: "e-class 동기화", password },
     create: {
-      name: "한성대학교 e-class",
+      name: "e-class 동기화",
       email,
-      password: await hashPassword(crypto.randomBytes(18).toString("hex")),
+      password,
     },
     select: { id: true },
   });
@@ -135,7 +141,10 @@ export async function POST(req: NextRequest) {
       typeof c === "object" &&
       c !== null &&
       typeof (c as { id?: unknown }).id === "number" &&
-      typeof (c as { title?: unknown }).title === "string"
+      typeof (c as { title?: unknown }).title === "string" &&
+      ((c as { sourceType?: unknown }).sourceType === undefined ||
+        (c as { sourceType?: unknown }).sourceType === "course" ||
+        (c as { sourceType?: unknown }).sourceType === "community")
   );
 
   try {
@@ -166,6 +175,11 @@ export async function POST(req: NextRequest) {
     const unmatched: { eclassId: number; title: string }[] = [];
 
     for (const eclassCourse of validCourses) {
+      if (isNonCourseItem(eclassCourse)) {
+        unmatched.push({ eclassId: eclassCourse.id, title: eclassCourse.title });
+        continue;
+      }
+
       const match = await findCourseForEclass(eclassCourse) ?? await createCourseForEclass(eclassCourse);
 
       if (!match) {
