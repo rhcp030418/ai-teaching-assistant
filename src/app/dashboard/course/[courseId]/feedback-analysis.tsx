@@ -408,13 +408,53 @@ function AiSummaryLine({
   );
 }
 
+// 학생 의견 표시: "좋았던 점" → 파랑, "어려웠던 점" → 빨강 (구조 표기가 없으면 기본색 그대로)
+function CommentBody({ text }: { text: string }) {
+  const segments = text
+    .split(/(?=좋았던 점\s*:|어려웠던 점\s*:)/)
+    .map((s) => s.trim())
+    .filter(Boolean)
+    .map((s) => {
+      if (/^좋았던 점\s*:/.test(s))
+        return { kind: "positive" as const, body: s.replace(/^좋았던 점\s*:\s*/, "") };
+      if (/^어려웠던 점\s*:/.test(s))
+        return { kind: "difficulty" as const, body: s.replace(/^어려웠던 점\s*:\s*/, "") };
+      return { kind: "other" as const, body: s };
+    });
+
+  // 마커가 하나도 없으면 기존처럼 단일 문단으로 표시
+  if (!segments.some((s) => s.kind !== "other")) {
+    return <p className="text-sm font-semibold leading-relaxed text-[#27496D]">{text}</p>;
+  }
+
+  return (
+    <div className="space-y-1.5">
+      {segments.map((seg, i) =>
+        seg.kind === "positive" ? (
+          <p key={i} className="text-sm font-semibold leading-relaxed text-[#1677FF]">
+            <span className="font-extrabold">좋았던 점</span> {seg.body}
+          </p>
+        ) : seg.kind === "difficulty" ? (
+          <p key={i} className="text-sm font-semibold leading-relaxed text-red-600">
+            <span className="font-extrabold">어려웠던 점</span> {seg.body}
+          </p>
+        ) : (
+          <p key={i} className="text-sm font-semibold leading-relaxed text-[#27496D]">
+            {seg.body}
+          </p>
+        )
+      )}
+    </div>
+  );
+}
+
 function CommentItem({ item }: { item: CommentFeedback }) {
   const displayText = item.filteredComment ?? item.comment;
   if (!displayText) return null;
 
   return (
     <li className="rounded-[17px] border border-blue-100/70 bg-white/75 p-3.5">
-      <p className="text-sm font-semibold leading-relaxed text-[#27496D]">{displayText}</p>
+      <CommentBody text={displayText} />
     </li>
   );
 }
