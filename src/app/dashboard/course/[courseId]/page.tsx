@@ -41,7 +41,7 @@ export default async function CourseDashboardPage(
   const activeRound = rounds.find((r) => r.status === "active");
   const overviewFeedbacks = activeRound
     ? course.feedbacks.filter((fb) => fb.roundId === activeRound.id)
-    : course.feedbacks;
+    : course.feedbacks.filter((fb) => fb.roundId !== null);
 
   // ─── 통계 계산: 진행 중 라운드가 있으면 해당 라운드 기준, 없으면 전체 기준 ─────
   const {

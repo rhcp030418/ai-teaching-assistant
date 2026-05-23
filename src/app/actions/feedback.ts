@@ -69,8 +69,15 @@ function activityPoints(positiveComment: string | null, difficultyComment: strin
 }
 
 function validateBase(data: ReturnType<typeof parseFormData>) {
-  if (!data.courseId || !data.token || !data.speed || !data.comprehension) {
-    return "필수 항목을 모두 선택해주세요.";
+  const missing: string[] = [];
+  if (!data.courseId || !data.token) missing.push("접근 정보");
+  if (!data.speed) missing.push("수업 속도");
+  if (!data.comprehension) missing.push("내용 이해");
+  if (!isScore(data.materialHelp)) missing.push("자료·예시 도움");
+  if (!isScore(data.communication)) missing.push("질문·소통 편의");
+  if (data.interest === null || !isScore(data.interest)) missing.push("학습 몰입");
+  if (missing.length > 0) {
+    return `다음 필수 문항을 선택해주세요: ${missing.join(", ")}`;
   }
   if (
     !VALID_SPEED.includes(data.speed as (typeof VALID_SPEED)[number]) &&
@@ -84,21 +91,18 @@ function validateBase(data: ReturnType<typeof parseFormData>) {
   if (!isScore(Number(data.comprehension))) {
     return "내용 이해는 1~5점 사이여야 합니다.";
   }
-  if (!isScore(data.materialHelp)) {
-    return "자료·예시 도움은 1~5점 사이여야 합니다.";
-  }
-  if (!isScore(data.communication)) {
-    return "질문·소통 편의는 1~5점 사이여야 합니다.";
-  }
-  if (data.interest === null || !isScore(data.interest)) {
-    return "학습 몰입은 1~5점 사이여야 합니다.";
-  }
   if (data.assignment !== null && !isScore(data.assignment)) {
     return "과제 적절성은 1~5점 사이여야 합니다.";
   }
   if (data.practice !== null && !isScore(data.practice)) {
     return "실습·예시 도움은 1~5점 사이여야 합니다.";
   }
+  return null;
+}
+
+function validateAdditionalFeedback(data: ReturnType<typeof parseFormData>) {
+  if (!data.courseId || !data.token) return "유효하지 않은 링크입니다.";
+  if (!data.comment?.trim()) return "피드백 내용을 작성해주세요.";
   return null;
 }
 
@@ -126,10 +130,26 @@ function feedbackData(data: ReturnType<typeof parseFormData>) {
   };
 }
 
+function additionalFeedbackData(data: ReturnType<typeof parseFormData>) {
+  return {
+    speed: "moderate",
+    comprehension: "3",
+    materialHelp: null,
+    communication: 3,
+    interest: null,
+    assignment: null,
+    practice: null,
+    positiveComment: null,
+    difficultyComment: null,
+    activityPoints: 1,
+    comment: data.comment,
+  };
+}
+
 // 기존 1회용 토큰 방식
 export async function submitFeedback(formData: FormData) {
   const data = parseFormData(formData);
-  const validationError = validateBase(data);
+  const validationError = validateAdditionalFeedback(data);
   if (validationError) return { success: false, error: validationError };
 
   const filterResult = checkCommentFilter(data.comment, data.forceSubmit);
@@ -145,7 +165,7 @@ export async function submitFeedback(formData: FormData) {
         data: { used: true },
       });
       if (count === 0) throw new Error("INVALID_TOKEN");
-      return tx.feedback.create({ data: { courseId: data.courseId, ...feedbackData(data) } });
+      return tx.feedback.create({ data: { courseId: data.courseId, ...additionalFeedbackData(data) } });
     });
   } catch {
     return { success: false, error: "유효하지 않거나 이미 사용된 토큰입니다." };

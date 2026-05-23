@@ -120,12 +120,13 @@ export function FeedbackForm({
   const [interest, setInterest] = useState<number | null>(null);
   const [assignment, setAssignment] = useState<number | null>(null);
   const [practice, setPractice] = useState<number | null>(null);
+  const [generalComment, setGeneralComment] = useState("");
   const [positiveComment, setPositiveComment] = useState("");
   const [difficultyComment, setDifficultyComment] = useState("");
 
   const liveWarning = useMemo(
-    () => commentWarning(positiveComment, difficultyComment),
-    [positiveComment, difficultyComment]
+    () => commentWarning(isAdditionalFeedback ? generalComment : positiveComment, difficultyComment),
+    [difficultyComment, generalComment, isAdditionalFeedback, positiveComment]
   );
   const points = 1 + writtenPoint(positiveComment) + writtenPoint(difficultyComment);
 
@@ -141,11 +142,19 @@ export function FeedbackForm({
   }
 
   function validateClient() {
-    if (!speed) return "수업 속도를 선택해주세요.";
-    if (!comprehension) return "내용 이해를 선택해주세요.";
-    if (!materialHelp) return "자료·예시 도움을 선택해주세요.";
-    if (!communication) return "질문·소통 편의를 선택해주세요.";
-    if (!interest) return "학습 몰입을 선택해주세요.";
+    if (isAdditionalFeedback) {
+      return generalComment.trim() ? null : "피드백 내용을 작성해주세요.";
+    }
+
+    const missing: string[] = [];
+    if (!speed) missing.push("수업 속도");
+    if (!comprehension) missing.push("내용 이해");
+    if (!materialHelp) missing.push("자료·예시 도움");
+    if (!communication) missing.push("질문·소통 편의");
+    if (!interest) missing.push("학습 몰입");
+    if (missing.length > 0) {
+      return `다음 필수 문항을 선택해주세요: ${missing.join(", ")}`;
+    }
     return null;
   }
 
@@ -235,142 +244,155 @@ export function FeedbackForm({
           <div className="flex flex-wrap gap-2">
             <span className="rounded-full bg-sky-50 px-3 py-1.5 text-xs font-bold text-sky-700">약 2분</span>
             <span className="rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-bold text-emerald-700">익명 제출</span>
-            <span className="rounded-full bg-amber-50 px-3 py-1.5 text-xs font-bold text-amber-700">최대 3P</span>
+            {!isAdditionalFeedback && (
+              <span className="rounded-full bg-amber-50 px-3 py-1.5 text-xs font-bold text-amber-700">
+                최대 비교과 포인트 3P
+              </span>
+            )}
           </div>
         </CardContent>
       </Card>
 
-      <ScoreInput
-        name="comprehension"
-        label="내용 이해"
-        description={isAdditionalFeedback ? "최근 강의 내용을 전반적으로 이해할 수 있었다." : "오늘 수업 내용을 잘 이해할 수 있었다."}
-        value={comprehension}
-        onChange={setComprehension}
-      />
+      {!isAdditionalFeedback && (
+        <>
+          <ScoreInput
+            name="comprehension"
+            label="내용 이해"
+            description="오늘 수업 내용을 잘 이해할 수 있었다."
+            value={comprehension}
+            onChange={setComprehension}
+          />
 
-      <ScoreInput
-        name="materialHelp"
-        label="자료·예시 도움"
-        description={isAdditionalFeedback ? "강의 자료, 예시, 설명 방식이 이해에 도움이 되었다." : "강의 자료와 예시가 이해에 도움이 되었다."}
-        value={materialHelp}
-        onChange={setMaterialHelp}
-      />
+          <ScoreInput
+            name="materialHelp"
+            label="자료·예시 도움"
+            description="강의 자료와 예시가 이해에 도움이 되었다."
+            value={materialHelp}
+            onChange={setMaterialHelp}
+          />
 
-      <ScoreInput
-        name="communication"
-        label="질문·소통 편의"
-        description="질문하거나 의견을 말하기 편했다."
-        value={communication}
-        onChange={setCommunication}
-      />
+          <ScoreInput
+            name="communication"
+            label="질문·소통 편의"
+            description="질문하거나 의견을 말하기 편했다."
+            value={communication}
+            onChange={setCommunication}
+          />
 
-      <ScoreInput
-        name="interest"
-        label="학습 몰입"
-        description={isAdditionalFeedback ? "강의 흐름이 학습을 이어가는 데 도움이 되었다." : "수업 흐름이 집중을 유지하는 데 도움이 되었다."}
-        value={interest}
-        onChange={setInterest}
-      />
+          <ScoreInput
+            name="interest"
+            label="학습 몰입"
+            description="수업 흐름이 집중을 유지하는 데 도움이 되었다."
+            value={interest}
+            onChange={setInterest}
+          />
 
-      <Card className={V3_CARD}>
-        <CardHeader>
-          <CardTitle className="text-base text-[#10233F]">수업 속도</CardTitle>
-          <CardDescription className="text-slate-500">
-            {isAdditionalFeedback
-              ? "최근 강의 전반의 진행 속도를 기준으로 선택해 주세요."
-              : "속도는 좋고 나쁨이 아니라 느림/빠름의 방향과 강도를 따로 집계합니다."}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <input type="hidden" name="speed" value={speed ?? ""} />
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-5">
-            {speedOptions.map((opt) => (
-              <button
-                key={opt.value}
-                type="button"
-                onClick={() => setSpeed(opt.value)}
-                className={`min-h-12 rounded-[14px] border px-2 text-sm font-bold transition-colors ${
-                  speed === opt.value
-                    ? "border-[#1677FF] bg-gradient-to-br from-[#1677FF] to-[#38BDF8] text-white shadow-[0_10px_20px_-12px_rgba(22,119,255,0.7)]"
-                    : "border-blue-100 bg-white text-[#27496D] hover:border-blue-300 hover:bg-blue-50"
-                }`}
-                aria-pressed={speed === opt.value}
-              >
-                {opt.label}
-              </button>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+          <Card className={V3_CARD}>
+            <CardHeader>
+              <CardTitle className="text-base text-[#10233F]">수업 속도</CardTitle>
+              <CardDescription className="text-slate-500">
+                속도는 좋고 나쁨이 아니라 느림/빠름의 방향과 강도를 따로 집계합니다.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <input type="hidden" name="speed" value={speed ?? ""} />
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-5">
+                {speedOptions.map((opt) => (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => setSpeed(opt.value)}
+                    className={`min-h-12 rounded-[14px] border px-2 text-sm font-bold transition-colors ${
+                      speed === opt.value
+                        ? "border-[#1677FF] bg-gradient-to-br from-[#1677FF] to-[#38BDF8] text-white shadow-[0_10px_20px_-12px_rgba(22,119,255,0.7)]"
+                        : "border-blue-100 bg-white text-[#27496D] hover:border-blue-300 hover:bg-blue-50"
+                    }`}
+                    aria-pressed={speed === opt.value}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
 
-      {hasAssignment && (
-        <ScoreInput
-          name="assignment"
-          label="과제 적절성"
-          description="이번 회차에 과제가 있었다면, 난이도와 분량이 수업 내용과 잘 맞았다."
-          value={assignment}
-          onChange={setAssignment}
-          optional
-        />
-      )}
+          {hasAssignment && (
+            <ScoreInput
+              name="assignment"
+              label="과제 적절성"
+              description="이번 회차에 과제가 있었다면, 난이도와 분량이 수업 내용과 잘 맞았다."
+              value={assignment}
+              onChange={setAssignment}
+              optional
+            />
+          )}
 
-      {hasPractice && (
-        <ScoreInput
-          name="practice"
-          label="실습·예시 도움"
-          description="이번 회차에 실습이나 예시가 있었다면, 내용을 이해하는 데 도움이 되었다."
-          value={practice}
-          onChange={setPractice}
-          optional
-        />
+          {hasPractice && (
+            <ScoreInput
+              name="practice"
+              label="실습·예시 도움"
+              description="이번 회차에 실습이나 예시가 있었다면, 내용을 이해하는 데 도움이 되었다."
+              value={practice}
+              onChange={setPractice}
+              optional
+            />
+          )}
+        </>
       )}
 
       <Card className={V3_CARD}>
         <CardHeader>
           <CardTitle className="text-base text-[#10233F]">
-            학생 의견 <span className="font-normal text-slate-400">(선택)</span>
+            {isAdditionalFeedback ? "피드백 내용 작성" : "학생 의견"}{" "}
+            <span className="font-normal text-slate-400">({isAdditionalFeedback ? "필수" : "선택"})</span>
           </CardTitle>
           <CardDescription className="leading-6 text-slate-500">
             {isAdditionalFeedback
-              ? "강의 전반에 대해 추가로 전달하고 싶은 내용을 적어주세요. 짧게 한 줄만 적어도 충분합니다."
+              ? "특정 주차가 아니라 강의 전반에 대해 추가로 전달하고 싶은 내용을 자유롭게 작성해 주세요."
               : "짧게 한 줄만 적어도 충분합니다. 10자 이상 작성한 칸은 비교과 포인트 기준에 반영됩니다."}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div>
-            <label className="mb-2 block text-sm font-extrabold text-[#10233F]">좋았던 점</label>
+          {isAdditionalFeedback ? (
             <Textarea
-              name="positiveComment"
-              value={positiveComment}
-              onChange={(e) => setPositiveComment(e.target.value)}
-              placeholder={
-                isAdditionalFeedback
-                  ? "예: 전체적으로 예시가 많아서 개념을 따라가기 좋았습니다."
-                  : "예: 정규화 예시를 표로 보여줘서 이해하기 쉬웠어요."
-              }
-              maxLength={500}
-              rows={3}
+              name="comment"
+              value={generalComment}
+              onChange={(e) => setGeneralComment(e.target.value)}
+              placeholder="예: 강의 전반에서 도움이 되었던 점, 더 설명이 필요한 부분, 과제·자료·소통과 관련해 전달하고 싶은 내용을 자유롭게 작성해 주세요."
+              maxLength={800}
+              rows={6}
               className="rounded-[18px] border-blue-100 focus-visible:ring-blue-200"
             />
-          </div>
-          <div>
-            <label className="mb-2 block text-sm font-extrabold text-[#10233F]">
-              어려웠던 점 또는 더 설명이 필요한 점
-            </label>
-            <Textarea
-              name="difficultyComment"
-              value={difficultyComment}
-              onChange={(e) => setDifficultyComment(e.target.value)}
-              placeholder={
-                isAdditionalFeedback
-                  ? "예: 과제 안내 기준이나 복습 자료가 조금 더 구체적이면 좋겠습니다."
-                  : "예: 조인 종류별 차이가 아직 헷갈려서 예시가 조금 더 있으면 좋겠습니다."
-              }
-              maxLength={500}
-              rows={3}
-              className="rounded-[18px] border-blue-100 focus-visible:ring-blue-200"
-            />
-          </div>
+          ) : (
+            <>
+              <div>
+                <label className="mb-2 block text-sm font-extrabold text-[#10233F]">좋았던 점</label>
+                <Textarea
+                  name="positiveComment"
+                  value={positiveComment}
+                  onChange={(e) => setPositiveComment(e.target.value)}
+                  placeholder="예: 정규화 예시를 표로 보여줘서 이해하기 쉬웠어요."
+                  maxLength={500}
+                  rows={3}
+                  className="rounded-[18px] border-blue-100 focus-visible:ring-blue-200"
+                />
+              </div>
+              <div>
+                <label className="mb-2 block text-sm font-extrabold text-[#10233F]">
+                  어려웠던 점 또는 더 설명이 필요한 점
+                </label>
+                <Textarea
+                  name="difficultyComment"
+                  value={difficultyComment}
+                  onChange={(e) => setDifficultyComment(e.target.value)}
+                  placeholder="예: 조인 종류별 차이가 아직 헷갈려서 예시가 조금 더 있으면 좋겠습니다."
+                  maxLength={500}
+                  rows={3}
+                  className="rounded-[18px] border-blue-100 focus-visible:ring-blue-200"
+                />
+              </div>
+            </>
+          )}
           {liveWarning?.reason ? (
             <div
               className={`rounded-[16px] border p-3 text-sm font-semibold ${
@@ -385,25 +407,27 @@ export function FeedbackForm({
         </CardContent>
       </Card>
 
-      <Card className={`${V3_CARD} border-emerald-100 bg-emerald-50/70`}>
-        <CardContent className="space-y-2 py-4 text-sm font-semibold text-emerald-800">
-          <div className="flex items-center justify-between">
-            <span>피드백 제출</span>
-            <strong>1P</strong>
-          </div>
-          <div className="flex items-center justify-between">
-            <span>도움이 된 점 작성(10자 이상)</span>
-            <strong>+{writtenPoint(positiveComment)}P</strong>
-          </div>
-          <div className="flex items-center justify-between">
-            <span>더 설명이 필요한 점 작성(10자 이상)</span>
-            <strong>+{writtenPoint(difficultyComment)}P</strong>
-          </div>
-          <div className="border-t border-emerald-200 pt-2 text-base font-extrabold">
-            예상 비교과 포인트: {points}P
-          </div>
-        </CardContent>
-      </Card>
+      {!isAdditionalFeedback && (
+        <Card className={`${V3_CARD} border-emerald-100 bg-emerald-50/70`}>
+          <CardContent className="space-y-2 py-4 text-sm font-semibold text-emerald-800">
+            <div className="flex items-center justify-between">
+              <span>피드백 제출</span>
+              <strong>1P</strong>
+            </div>
+            <div className="flex items-center justify-between">
+              <span>도움이 된 점 작성(10자 이상)</span>
+              <strong>+{writtenPoint(positiveComment)}P</strong>
+            </div>
+            <div className="flex items-center justify-between">
+              <span>더 설명이 필요한 점 작성(10자 이상)</span>
+              <strong>+{writtenPoint(difficultyComment)}P</strong>
+            </div>
+            <div className="border-t border-emerald-200 pt-2 text-base font-extrabold">
+              예상 비교과 포인트: {points}P
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <div className="rounded-[18px] border border-blue-200 bg-blue-50 p-3 text-sm text-blue-800">
         한 번 제출하면 익명성 보장을 위해 <strong>수정할 수 없습니다</strong>. 제출 전 선택한 항목을 확인해 주세요.

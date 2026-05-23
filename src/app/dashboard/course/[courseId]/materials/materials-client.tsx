@@ -190,8 +190,8 @@ function AnalysisResult({ analysis }: { analysis: MaterialAnalysis }) {
               </details>
             )}
             {analysis.improvements.pedagogy && (
-              <details className="rounded-[14px] border border-sky-100 bg-white/80 p-3 text-sm">
-                <summary className="cursor-pointer font-bold text-sky-600">교수법</summary>
+              <details className="rounded-[14px] border border-purple-100 bg-white/80 p-3 text-sm">
+                <summary className="cursor-pointer font-bold text-purple-600">교수법</summary>
                 <p className="mt-2 leading-6 text-[#27496D]">{analysis.improvements.pedagogy}</p>
               </details>
             )}

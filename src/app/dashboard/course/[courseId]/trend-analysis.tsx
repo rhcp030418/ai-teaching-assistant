@@ -34,7 +34,7 @@ function TrendChart({
         ...points,
         {
           week: points[points.length - 1].week + 1,
-          label: "예측",
+          label: "다음 주차",
           comprehensionHigh: predicted.comprehension,
           speedModerate: predicted.speed,
           commNorm: predicted.communication,

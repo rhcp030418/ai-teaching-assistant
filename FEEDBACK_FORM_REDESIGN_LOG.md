@@ -123,3 +123,12 @@ Status: Build verified after seed backfill
   - `npm run lint` 통과
   - `npx tsc --noEmit` 통과
   - `npm run build` 통과(10/10 페이지 생성)
+
+## F7 — Feedback Form Hotfix
+Status: Complete
+
+- 필수 문항 미선택 시 첫 번째 누락 항목만 보여주던 클라이언트/서버 검증을 수정해, 누락된 필수 문항 목록을 한 번에 안내하도록 변경.
+- 학생용 폼의 `최대 3P` 배지를 `최대 비교과 포인트 3P`로 명확화.
+- 교수용 추가 피드백 링크는 정규 주차 평가와 분리해, 강의 전반에 대한 서술형 `피드백 내용 작성`만 받도록 UI/검증/저장 흐름을 변경.
+- 추가 피드백은 `roundId`가 없는 일반 의견으로 저장되며, 현황 요약의 주차/라운드 통계에서는 제외되도록 보정.
+- 검증: `npm run lint`, `npx tsc --noEmit`, `npm run build` 통과.
