@@ -459,7 +459,7 @@ export async function POST(
       const speedDelta = last.speedMod - first.speedMod;
       if (Math.abs(commDelta) >= 0.3) trendParts.push(`소통 만족도 ${commDelta > 0 ? "+" : ""}${commDelta}점`);
       if (Math.abs(compDelta) >= 10) trendParts.push(`이해도 높음 ${compDelta > 0 ? "+" : ""}${compDelta}%p`);
-      if (Math.abs(speedDelta) >= 10) trendParts.push(`속도 적절 ${speedDelta > 0 ? "+" : ""}${speedDelta}%p`);
+      if (Math.abs(speedDelta) >= 10) trendParts.push(`적정 속도 ${speedDelta > 0 ? "+" : ""}${speedDelta}%p`);
       if (trendParts.length > 0) {
         contextParts.push(`첫→마지막 회차 추세 (${first.label}→${last.label}): ${trendParts.join(", ")}`);
       }

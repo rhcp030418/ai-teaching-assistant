@@ -190,7 +190,7 @@ export async function getAIInsightForCase(
     const gapLines = [
       commGap > 0 ? `- 질문·소통 편의: 현재 ${myStats.communicationAvg}점 vs 성공 사례 ${improvementCase.afterAvg}점 (격차 +${commGap})` : null,
       compGap > 5 ? `- 내용 이해 높음: 현재 ${myStats.comprehensionHighRatio}% vs 성공 사례 ${improvementCase.changes.comprehensionHigh.after}% (격차 +${compGap}%p)` : null,
-      speedGap > 5 ? `- 속도 적절: 현재 ${myStats.speedModerateRatio}% vs 성공 사례 ${improvementCase.changes.speedModerate.after}% (격차 +${speedGap}%p)` : null,
+      speedGap > 5 ? `- 적정 속도: 현재 ${myStats.speedModerateRatio}% vs 성공 사례 ${improvementCase.changes.speedModerate.after}% (격차 +${speedGap}%p)` : null,
     ].filter(Boolean).join("\n");
 
     const response = await chatWithAI([

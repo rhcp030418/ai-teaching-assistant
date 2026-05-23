@@ -62,9 +62,9 @@ export function TokenManager({ courseId, initialStats }: Props) {
   return (
     <Card className={V3_CARD}>
       <CardHeader>
-        <CardTitle className="text-base text-[#10233F]">피드백 토큰 링크</CardTitle>
+        <CardTitle className="text-base text-[#10233F]">추가 피드백 링크</CardTitle>
         <CardDescription className="text-slate-500">
-          학생에게 배포할 1회용 피드백 링크를 생성합니다.
+          정규 주차 평가 외에 보충 의견이 필요할 때 사용할 1회용 익명 링크를 생성합니다.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -93,8 +93,12 @@ export function TokenManager({ courseId, initialStats }: Props) {
           />
           <span className="text-sm text-gray-500">개</span>
           <Button onClick={handleGenerate} disabled={pending} size="sm">
-            {pending ? "생성 중..." : "링크 생성"}
+            {pending ? "생성 중..." : "추가 피드백 링크 생성"}
           </Button>
+        </div>
+
+        <div className="rounded-2xl border border-blue-100 bg-blue-50/55 px-3 py-2 text-xs font-medium leading-5 text-[#27496D]">
+          이 링크로 제출된 의견은 특정 주차가 아닌 강의 전반에 대한 추가 피드백으로 저장됩니다.
         </div>
 
         {/* Generated links */}

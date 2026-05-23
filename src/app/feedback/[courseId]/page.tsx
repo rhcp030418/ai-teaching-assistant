@@ -71,6 +71,7 @@ export default async function FeedbackPage(
         startDate: { lte: now },
         endDate: { gt: now },
       },
+      orderBy: [{ startDate: "desc" }, { week: "desc" }],
     });
 
     if (!activeRound) {
@@ -144,7 +145,7 @@ export default async function FeedbackPage(
       <div className="max-w-3xl mx-auto">
         <div className="mb-8 rounded-[24px] border border-blue-100 bg-white/90 p-6 text-center shadow-[0_18px_48px_-30px_rgba(23,87,168,0.42)]">
           <span className="inline-flex rounded-full bg-blue-100/80 px-3 py-1.5 text-xs font-bold text-[#0F5FD7]">
-            익명 강의 피드백
+            추가 피드백
           </span>
           <h1 className="mt-3 text-2xl font-extrabold text-[#10233F]">{course.name}</h1>
           <p className="text-slate-500 mt-1">

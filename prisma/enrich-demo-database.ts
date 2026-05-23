@@ -84,6 +84,134 @@ const feedbackTemplates = [
   },
 ] as const;
 
+const roundProfiles: Record<number, {
+  speedModerateRatio: number;
+  comprehensionHighRatio: number;
+  materialHelpAvg: number;
+  communicationAvg: number;
+  interestAvg: number;
+  assignmentAvg: number;
+  practiceAvg: number;
+  positive: string;
+  difficulty: string;
+}> = {
+  1: {
+    speedModerateRatio: 0.18,
+    comprehensionHighRatio: 0.2,
+    materialHelpAvg: 2.2,
+    communicationAvg: 2.2,
+    interestAvg: 2.3,
+    assignmentAvg: 2.1,
+    practiceAvg: 2.2,
+    positive: "기본 개념을 천천히 다시 짚어주신 부분은 도움이 되었습니다.",
+    difficulty: "초반 용어가 한꺼번에 나와서 예시와 정리 자료가 더 필요했습니다.",
+  },
+  2: {
+    speedModerateRatio: 0.38,
+    comprehensionHighRatio: 0.42,
+    materialHelpAvg: 3.0,
+    communicationAvg: 3.0,
+    interestAvg: 3.1,
+    assignmentAvg: 3.2,
+    practiceAvg: 3.0,
+    positive: "ERD 예제를 같이 보면서 개념 흐름을 잡는 데 도움이 되었습니다.",
+    difficulty: "관계형 모델로 넘어가는 부분에서 속도가 조금 빨라 복습 시간이 필요했습니다.",
+  },
+  3: {
+    speedModerateRatio: 0.62,
+    comprehensionHighRatio: 0.64,
+    materialHelpAvg: 3.7,
+    communicationAvg: 3.7,
+    interestAvg: 3.8,
+    assignmentAvg: 3.6,
+    practiceAvg: 3.5,
+    positive: "SQL 예시가 점점 익숙해져서 수업 흐름을 따라가기 좋아졌습니다.",
+    difficulty: "서브쿼리와 조인 차이는 추가 예제가 있으면 더 확실히 이해될 것 같습니다.",
+  },
+  4: {
+    speedModerateRatio: 0.82,
+    comprehensionHighRatio: 0.82,
+    materialHelpAvg: 4.4,
+    communicationAvg: 4.3,
+    interestAvg: 4.2,
+    assignmentAvg: 4.1,
+    practiceAvg: 4.4,
+    positive: "정규화 예시와 실습 흐름이 명확해서 가장 이해가 잘 된 주차였습니다.",
+    difficulty: "큰 어려움은 없었고 과제 예시 범위만 한 번 더 안내되면 좋겠습니다.",
+  },
+  5: {
+    speedModerateRatio: 0.55,
+    comprehensionHighRatio: 0.48,
+    materialHelpAvg: 3.4,
+    communicationAvg: 3.8,
+    interestAvg: 3.3,
+    assignmentAvg: 2.4,
+    practiceAvg: 4.0,
+    positive: "인덱스 실습은 직접 결과 차이를 확인할 수 있어서 좋았습니다.",
+    difficulty: "과제 기준이 다소 모호했고 성능 분석 결과를 해석하는 부분이 어려웠습니다.",
+  },
+  6: {
+    speedModerateRatio: 0.68,
+    comprehensionHighRatio: 0.7,
+    materialHelpAvg: 4.1,
+    communicationAvg: 4.1,
+    interestAvg: 3.9,
+    assignmentAvg: 3.3,
+    practiceAvg: 4.2,
+    positive: "MongoDB와 SQL을 비교해주셔서 새 개념을 연결해서 이해할 수 있었습니다.",
+    difficulty: "집계 파이프라인 단계가 많아서 복습용 예시가 더 있으면 좋겠습니다.",
+  },
+};
+
+function scoreFromAverage(avg: number, index: number) {
+  const low = Math.floor(avg);
+  const high = Math.ceil(avg);
+  if (low === high) return Math.min(5, Math.max(1, low));
+  const highRatio = avg - low;
+  return index % 10 < Math.round(highRatio * 10) ? high : low;
+}
+
+function demoFeedbackForRound(week: number, index: number, total: number) {
+  const profile = roundProfiles[week] ?? roundProfiles[6];
+  const moderateCount = Math.round(total * profile.speedModerateRatio);
+  const highCount = Math.round(total * profile.comprehensionHighRatio);
+  const mediumCount = Math.round(total * 0.35);
+  const speed =
+    index < moderateCount
+      ? "moderate"
+      : index % 5 === 0
+        ? "very_fast"
+        : index % 3 === 0
+          ? "very_slow"
+          : index % 2 === 0
+            ? "fast"
+            : "slow";
+  const comprehension =
+    index < highCount ? "5" : index < highCount + mediumCount ? "3" : "2";
+  const positiveComment = index % 4 === 0 ? profile.positive : null;
+  const difficultyComment = index % 3 === 0 ? profile.difficulty : null;
+  const comment = [positiveComment && `좋았던 점: ${positiveComment}`, difficultyComment && `어려웠던 점: ${difficultyComment}`]
+    .filter(Boolean)
+    .join("\n\n") || profile.difficulty;
+
+  return {
+    speed,
+    comprehension,
+    materialHelp: scoreFromAverage(profile.materialHelpAvg, index),
+    communication: scoreFromAverage(profile.communicationAvg, index),
+    interest: scoreFromAverage(profile.interestAvg, index),
+    assignment: scoreFromAverage(profile.assignmentAvg, index),
+    practice: scoreFromAverage(profile.practiceAvg, index),
+    positiveComment,
+    difficultyComment,
+    activityPoints: 1 + (positiveComment ? 1 : 0) + (difficultyComment ? 1 : 0),
+    comment,
+    filteredComment: comment,
+    commentCategory: "학습",
+    commentFilterReason: "데모 분포 확인용 학습 피드백",
+  };
+}
+
 function closedRoundDates(week: number) {
   const startDate = new Date("2026-04-01T09:00:00+09:00");
   startDate.setDate(startDate.getDate() + (week - 1) * 7);
@@ -211,8 +339,21 @@ async function main() {
             courseId: course.id,
             roundId: round.id,
             ...template,
+            ...demoFeedbackForRound(round.week, current + index, target),
           };
         }),
+      });
+    }
+
+    const roundFeedbacks = await prisma.feedback.findMany({
+      where: { roundId: round.id },
+      orderBy: { createdAt: "asc" },
+      select: { id: true },
+    });
+    for (const [index, feedback] of roundFeedbacks.entries()) {
+      await prisma.feedback.update({
+        where: { id: feedback.id },
+        data: demoFeedbackForRound(round.week, index, roundFeedbacks.length),
       });
     }
 

@@ -180,6 +180,7 @@ export async function submitStudentFeedback(formData: FormData) {
       startDate: { lte: now },
       endDate: { gt: now },
     },
+    orderBy: [{ startDate: "desc" }, { week: "desc" }],
   });
   if (!activeRound) return { success: false, error: "현재 평가 기간이 아닙니다." };
 

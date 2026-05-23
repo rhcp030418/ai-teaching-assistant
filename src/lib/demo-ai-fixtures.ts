@@ -8,7 +8,7 @@ import type { TrendNarrative } from "@/app/actions/trend-analysis";
 export const DEMO_TREND_NARRATIVE: TrendNarrative = {
   trend: "improving",
   narrative:
-    "3주차에서 6주차 사이 내용 이해 높음 비율이 48%에서 71%로 상승했고, 질문·소통 편의도 3.7점에서 4.4점으로 안정적으로 개선되었습니다. 다만 최근 구간에서는 속도 적절 응답이 소폭 둔화되어, 다음 회차에서는 새 개념 도입 전 예시를 먼저 제시하는 흐름을 유지하는 것이 좋습니다.",
+    "3주차에서 6주차 사이 내용 이해 높음 비율이 48%에서 71%로 상승했고, 질문·소통 편의도 3.7점에서 4.4점으로 안정적으로 개선되었습니다. 다만 최근 구간에서는 적정 속도 응답이 소폭 둔화되어, 다음 회차에서는 새 개념 도입 전 예시를 먼저 제시하는 흐름을 유지하는 것이 좋습니다.",
   predicted: {
     comprehension: 74,
     communication: 90,
@@ -33,7 +33,7 @@ export const DEMO_CAUSE_ANALYSIS: CauseAnalysisResult = {
     {
       axis: "수업 속도",
       observation:
-        "속도 적절 응답은 68%로 기준선은 넘지만, 직전 주차 대비 4%p 낮아졌습니다.",
+        "적정 속도 응답은 68%로 기준선은 넘지만, 직전 주차 대비 4%p 낮아졌습니다.",
       possibleCause:
         "실습 설명 직후 과제 안내로 넘어가는 구간에서 학생들이 정리할 시간을 충분히 갖지 못했을 가능성이 있습니다.",
       materialEvidence:
@@ -67,11 +67,11 @@ export const DEMO_IMPROVEMENT_ROADMAP: ImprovementRoadmapData = {
       rank: 2,
       area: "수업 속도",
       problem:
-        "속도 적절 응답이 기준선은 넘지만 직전 주차보다 소폭 낮아져, 실습 후 전환 구간에서 부담이 생길 수 있습니다.",
+        "적정 속도 응답이 기준선은 넘지만 직전 주차보다 소폭 낮아져, 실습 후 전환 구간에서 부담이 생길 수 있습니다.",
       action:
         "실습이 끝난 뒤 바로 다음 개념으로 넘어가지 말고, 2분 동안 학생이 작성한 쿼리의 의도를 짝과 설명하게 한 뒤 마무리 요약을 제시하세요.",
       evidence:
-        "최근 라운드에서 속도 적절 응답은 68%로, 직전 주차 대비 4%p 낮아졌습니다.",
+        "최근 라운드에서 적정 속도 응답은 68%로, 직전 주차 대비 4%p 낮아졌습니다.",
       impact: "medium",
     },
   ],
@@ -94,7 +94,7 @@ export const DEMO_CLASS_CHECKLIST: ClassChecklist = {
       action:
         "실습 설명 뒤에는 2분 정리 시간을 고정으로 두고, 학생이 작성한 쿼리의 목적을 한 문장으로 설명하게 하세요.",
       reason:
-        "속도 적절 응답이 직전 주차보다 소폭 낮아졌고, 실습 후 다음 내용으로 넘어가는 구간에서 부담이 생길 수 있습니다.",
+        "적정 속도 응답이 직전 주차보다 소폭 낮아졌고, 실습 후 다음 내용으로 넘어가는 구간에서 부담이 생길 수 있습니다.",
     },
     {
       priority: "optional",

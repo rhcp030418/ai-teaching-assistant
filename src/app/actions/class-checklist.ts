@@ -151,7 +151,7 @@ export async function generateClassChecklist(
     const speedDelta = speedMod - pSpeedMod;
     dataLines.push(`  소통: ${pCommAvg.toFixed(1)} → ${commAvg.toFixed(1)} (${commDelta >= 0 ? "+" : ""}${commDelta})`);
     dataLines.push(`  내용 이해: ${pCompHigh}% → ${compHigh}% (${compDelta >= 0 ? "+" : ""}${compDelta}%p)`);
-    dataLines.push(`  속도 적당: ${pSpeedMod}% → ${speedMod}% (${speedDelta >= 0 ? "+" : ""}${speedDelta}%p)`);
+    dataLines.push(`  적정 속도 응답: ${pSpeedMod}% → ${speedMod}% (${speedDelta >= 0 ? "+" : ""}${speedDelta}%p)`);
   }
 
   // 연결된 강의자료 분석

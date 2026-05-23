@@ -24,6 +24,7 @@ export async function GET(req: NextRequest) {
                   startDate: { lte: now },
                   endDate: { gt: now },
                 },
+                orderBy: [{ startDate: "desc" }, { week: "desc" }],
                 take: 1,
               },
             },

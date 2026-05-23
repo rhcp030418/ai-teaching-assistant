@@ -11,7 +11,7 @@ export interface TrendNarrative {
   predicted: {
     comprehension: number;  // 다음 주차 예측 내용 이해 % (0~100)
     communication: number;  // 다음 주차 예측 질문·소통 편의 (0~100, *20 정규화)
-    speed: number;          // 다음 주차 예측 속도 적당 % (0~100)
+    speed: number;          // 다음 주차 예측 적정 속도 응답 % (0~100)
   } | null;
 }
 
@@ -73,7 +73,7 @@ export async function generateTrendNarrative(
     `전체 기간 변화 (${first.label ?? first.week + "주차"} → ${last.label ?? last.week + "주차"}):`,
     `- 내용 이해 높음: ${first.comprehensionHigh}% → ${last.comprehensionHigh}% (${compDelta >= 0 ? "+" : ""}${compDelta}%p)`,
     `- 질문·소통 편의: ${first.communicationAvg}/5 → ${last.communicationAvg}/5 (${commDelta >= 0 ? "+" : ""}${commDelta})`,
-    `- 속도 적당: ${first.speedModerate}% → ${last.speedModerate}% (${speedDelta >= 0 ? "+" : ""}${speedDelta}%p)`,
+    `- 적정 속도 응답: ${first.speedModerate}% → ${last.speedModerate}% (${speedDelta >= 0 ? "+" : ""}${speedDelta}%p)`,
     validRounds.length >= 3
       ? `\n최근 1구간 변화 (직전 → 마지막): 내용 이해 ${recentCompDelta >= 0 ? "+" : ""}${recentCompDelta}%p, 질문·소통 ${recentCommDelta >= 0 ? "+" : ""}${recentCommDelta}`
       : "",
@@ -83,7 +83,7 @@ export async function generateTrendNarrative(
   const roundsSummary = validRounds
     .map((r) => {
       const weekLabel = r.label ?? `${r.week}주차`;
-      return `- ${weekLabel}: 내용 이해 ${r.comprehensionHigh}%, 질문·소통 ${r.communicationAvg}/5, 속도 적당 ${r.speedModerate}%, 응답수 ${r.totalFeedbacks}건`;
+      return `- ${weekLabel}: 내용 이해 ${r.comprehensionHigh}%, 질문·소통 ${r.communicationAvg}/5, 적정 속도 응답 ${r.speedModerate}%, 응답수 ${r.totalFeedbacks}건`;
     })
     .join("\n");
 
@@ -103,7 +103,7 @@ export async function generateTrendNarrative(
   "predicted": ${canPredict ? `{
     "comprehension": 다음 주차 예측 내용 이해% (정수, 0~100),
     "communication": 다음 주차 예측 질문·소통 편의를 0~100으로 정규화 (점수/5*100, 정수),
-    "speed": 다음 주차 예측 속도 적당% (정수, 0~100)
+    "speed": 다음 주차 예측 적정 속도 응답% (정수, 0~100)
   }` : "null"}
 }
 

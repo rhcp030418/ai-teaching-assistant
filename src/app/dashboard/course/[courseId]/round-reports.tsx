@@ -24,22 +24,45 @@ function Stat({
   value,
   suffix = "",
   caption,
+  tone,
 }: {
   label: string;
   value: string | number;
   suffix?: string;
   caption?: string;
+  tone: "blue" | "green" | "amber" | "rose";
 }) {
+  const toneClass = {
+    blue: "border-blue-200 bg-blue-50/80 text-[#0F5FD7]",
+    green: "border-emerald-200 bg-emerald-50/80 text-emerald-700",
+    amber: "border-amber-200 bg-amber-50/85 text-amber-700",
+    rose: "border-rose-200 bg-rose-50/85 text-rose-700",
+  }[tone];
+
   return (
-    <div className="min-w-0 rounded-2xl border border-blue-100 bg-blue-50/35 px-3 py-2.5 text-center">
+    <div className={`min-w-0 rounded-2xl border px-3 py-2.5 text-center ${toneClass}`}>
       <div className="whitespace-nowrap text-[11px] font-bold text-slate-600">{label}</div>
-      <div className="mt-0.5 text-lg font-extrabold text-[#10233F]">
+      <div className="mt-0.5 text-lg font-extrabold">
         {value}
-        <span className="ml-0.5 text-xs font-semibold text-slate-400">{suffix}</span>
+        <span className="ml-0.5 text-xs font-semibold opacity-70">{suffix}</span>
       </div>
       {caption && <p className="mt-0.5 text-[10px] leading-tight text-slate-400">{caption}</p>}
     </div>
   );
+}
+
+function percentTone(value: number): "blue" | "green" | "amber" | "rose" {
+  if (value >= 75) return "blue";
+  if (value >= 50) return "green";
+  if (value >= 25) return "amber";
+  return "rose";
+}
+
+function scoreTone(value: number): "blue" | "green" | "amber" | "rose" {
+  if (value >= 4) return "blue";
+  if (value >= 3.5) return "green";
+  if (value >= 2.5) return "amber";
+  return "rose";
 }
 
 function CompareRow({ label, prev, curr, unit }: { label: string; prev: number; curr: number; unit: string }) {
@@ -630,24 +653,27 @@ export function RoundReports({ courseId, data, demoMode = false }: Props) {
             {r.totalFeedbacks === 0 ? (
               <p className="text-xs text-gray-400 text-center py-2">응답 없음</p>
             ) : (
-              <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6">
+              <div className="grid grid-cols-[repeat(auto-fit,minmax(142px,1fr))] gap-2.5">
                 <Stat
                   label="적정 속도 응답"
                   value={r.speedModerate}
                   suffix="%"
                   caption="‘적당해요’ 선택 비율"
+                  tone={percentTone(r.speedModerate)}
                 />
                 <Stat
                   label="내용 이해 4점 이상"
                   value={r.comprehensionHigh}
                   suffix="%"
                   caption="4~5점 응답 비율"
+                  tone={percentTone(r.comprehensionHigh)}
                 />
                 <Stat
                   label="질문·소통 평균"
                   value={r.communicationAvg}
                   suffix="/5"
                   caption="질문 편의 평균"
+                  tone={scoreTone(r.communicationAvg)}
                 />
                 {r.interestAvg !== null && (
                   <Stat
@@ -655,6 +681,7 @@ export function RoundReports({ courseId, data, demoMode = false }: Props) {
                     value={r.interestAvg}
                     suffix="/5"
                     caption="몰입도 평균"
+                    tone={scoreTone(r.interestAvg)}
                   />
                 )}
                 {r.assignmentAvg !== null && (
@@ -663,6 +690,7 @@ export function RoundReports({ courseId, data, demoMode = false }: Props) {
                     value={r.assignmentAvg}
                     suffix="/5"
                     caption="과제 난이도·분량"
+                    tone={scoreTone(r.assignmentAvg)}
                   />
                 )}
                 {r.practiceAvg !== null && (
@@ -671,6 +699,7 @@ export function RoundReports({ courseId, data, demoMode = false }: Props) {
                     value={r.practiceAvg}
                     suffix="/5"
                     caption="실습·예시 도움"
+                    tone={scoreTone(r.practiceAvg)}
                   />
                 )}
               </div>

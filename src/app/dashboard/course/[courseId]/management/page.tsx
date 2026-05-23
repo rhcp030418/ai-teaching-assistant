@@ -35,7 +35,7 @@ export default async function ManagementPage({
         <p className="text-xs font-bold text-[#0F5FD7]">Course Operation</p>
         <h2 className="mt-2 text-2xl font-extrabold text-[#10233F]">관리 및 기록</h2>
         <p className="mt-2 text-sm font-medium text-slate-500">
-          평가 라운드, 피드백 링크, 회차별 기록을 한 곳에서 관리합니다.
+          평가 회차, 추가 피드백 링크, 회차별 기록을 한 곳에서 관리합니다.
         </p>
       </div>
 
@@ -44,7 +44,7 @@ export default async function ManagementPage({
         <div>
           <h2 className={SECTION_TITLE}>운영 도구</h2>
           <p className={SECTION_DESC}>
-            주차별 평가 라운드와 피드백 링크를 관리합니다.
+            주차별 강의평가 회차와 추가 피드백 링크를 관리합니다.
           </p>
         </div>
         <div className="space-y-6">
