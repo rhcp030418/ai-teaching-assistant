@@ -40,30 +40,36 @@ export default async function ManagementPage({
         </p>
       </div>
 
-      {/* ─── 정규 강의평가 회차 관리 ─────────────────────────────────────── */}
-      <section className="space-y-4">
-        <div>
-          <h2 className={SECTION_TITLE}>강의평가 회차 관리</h2>
-          <p className={SECTION_DESC}>
-            회차 생성, 운영 기간, 학생 의견, 회차별 자료 연결 분석을 한 흐름에서 확인합니다.
-          </p>
-        </div>
-        <div className="space-y-6">
-          <RoundManager courseId={courseId} initialRounds={rounds} demoMode={demoMode} />
+      <div className="grid gap-8 xl:grid-cols-[minmax(0,1fr)_360px] xl:items-start">
+        {/* ─── 회차별 기록과 상세 분석 ───────────────────────────────────── */}
+        <section className="space-y-4">
+          <div>
+            <h2 className={SECTION_TITLE}>강의평가 회차 관리</h2>
+            <p className={SECTION_DESC}>
+              회차별 학생 의견, 요약, 강의자료 연결 분석을 한 흐름에서 확인합니다.
+            </p>
+          </div>
           <RoundReports courseId={courseId} data={roundReports} demoMode={demoMode} />
-        </div>
-      </section>
+        </section>
 
-      {/* ─── 추가 피드백 링크 ─────────────────────────────────────────────── */}
-      <section className="space-y-4">
-        <div>
-          <h2 className={SECTION_TITLE}>추가 피드백 링크</h2>
-          <p className={SECTION_DESC}>
-            정규 주차 평가와 별개로 강의 전반에 대한 익명 의견을 받을 때 사용합니다.
-          </p>
-        </div>
-        <TokenManager courseId={courseId} initialStats={tokenStats} initialFeedbacks={additionalFeedbacks} />
-      </section>
+        {/* ─── 운영 사이드바 ─────────────────────────────────────────────── */}
+        <aside className="space-y-5 xl:sticky xl:top-28">
+          <div>
+            <h2 className={SECTION_TITLE}>운영 도구</h2>
+            <p className={SECTION_DESC}>
+              새 강의평가를 만들거나 추가 피드백 링크를 발급합니다.
+            </p>
+          </div>
+          <div className="space-y-5">
+            <RoundManager courseId={courseId} initialRounds={rounds} demoMode={demoMode} />
+            <TokenManager
+              courseId={courseId}
+              initialStats={tokenStats}
+              initialFeedbacks={additionalFeedbacks}
+            />
+          </div>
+        </aside>
+      </div>
     </div>
   );
 }

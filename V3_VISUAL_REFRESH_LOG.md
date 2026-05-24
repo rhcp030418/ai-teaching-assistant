@@ -816,3 +816,24 @@ Reason: User found three demo/UX issues after V2.14: untagged current-week demo 
 - **Correlation explanation**: added copy clarifying that the chips are not multiplication or scores, but signals that material analysis and student responses point in a similar direction.
 - **Material suggestion evidence**: split suggestion body from trailing method parentheses and display the latter as `근거 기법:` instead of prefixing the whole sentence with `근거:`.
 - **Stale material analysis label**: changed `피드백 반영 재분석 권장` to `새 피드백 반영 가능` and added hover/helper copy explaining it appears when feedback was added after the material analysis.
+
+### V2.16 — Management Sidebar + Material Rationale Copy (Codex)
+
+Status: Complete
+
+Reason: User wanted `강의평가 회차 생성` and `추가 피드백 링크` to behave as operation tools inside the management page sidebar, and found the material-analysis rationale copy still too unclear.
+
+#### Files Changed
+
+- `src/app/dashboard/course/[courseId]/management/page.tsx`
+- `src/app/dashboard/course/[courseId]/materials/materials-client.tsx`
+- `src/lib/demo-ai-fixtures.ts`
+- `V3_VISUAL_REFRESH_LOG.md`
+
+#### Changes
+
+- **Management layout**: changed `/management` to a main-content + right-sidebar layout. The main area focuses on `강의평가 회차 관리` records and round reports; the sidebar now owns operation tools: round creation/operation and additional feedback link.
+- **Additional feedback placement decision**: recorded the UX decision that `추가 피드백 링크` should stay in the management page but be treated as a sidebar operation tool, not a full primary navigation page.
+- **Material suggestion evidence parsing**: made evidence parsing accept trailing `(method)` and `[근거: ...]` formats, so AI suggestions can show the suggestion body first and the evidence line separately.
+- **Demo material suggestions**: added explicit method/evidence parentheses to demo AI improvement suggestions so the demo screen reliably displays `근거 기법`.
+- **Stale analysis copy**: changed `새 피드백 반영 가능` to `최신 의견으로 재분석 가능` and clarified that it appears when student opinions were added after the previous material analysis.

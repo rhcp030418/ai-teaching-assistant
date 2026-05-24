@@ -189,11 +189,11 @@ function withDemoMaterialData(materials: Material[], rounds: Round[]): Material[
 }
 
 function splitSuggestion(text: string) {
-  const match = text.match(/\s*\(([^()]+)\)\s*$/);
+  const match = text.match(/\s*(?:\(([^()]+)\)|\[근거:\s*([^\]]+)\])\s*$/);
   if (!match) return { body: text, evidence: null as string | null };
   return {
     body: text.slice(0, match.index).trim(),
-    evidence: match[1],
+    evidence: match[1] ?? match[2],
   };
 }
 
@@ -251,7 +251,7 @@ function AnalysisResult({ analysis }: { analysis: MaterialAnalysis }) {
       </details>
 
       <div>
-          <h4 className="text-sm font-semibold text-[#10233F] mb-1">
+        <h4 className="text-sm font-semibold text-[#10233F] mb-1">
           난이도 판단 근거
         </h4>
         <p className="text-sm text-[#27496D]">{analysis.difficultyReason}</p>
@@ -281,7 +281,11 @@ function AnalysisResult({ analysis }: { analysis: MaterialAnalysis }) {
 
       {analysis.improvements && (analysis.improvements.structure || analysis.improvements.examples || analysis.improvements.pedagogy) && (
         <div>
-          <h4 className="text-sm font-semibold text-[#10233F] mb-2">AI 개선 제안</h4>
+          <h4 className="text-sm font-semibold text-[#10233F] mb-1">AI 개선 제안</h4>
+          <p className="mb-3 text-xs leading-5 text-slate-500">
+            자료 구조, 예시, 설명 방식에서 바로 조정해볼 수 있는 부분을 정리합니다.
+            근거 기법은 제안 뒤에 별도로 표시합니다.
+          </p>
           <div className="space-y-2">
             {analysis.improvements.structure && (
               <details open className="rounded-[14px] border border-blue-100 bg-white/80 p-3 text-sm">
@@ -557,9 +561,9 @@ export function MaterialsClient({ courseId, initialMaterials, rounds, demoMode =
                       {m.isStale ? (
                         <Badge
                           className="bg-amber-100 text-amber-700 border border-amber-200"
-                          title="자료 분석 이후 해당 회차 피드백이 3건 이상 쌓였거나 회차가 마감되어, 재분석하면 최신 학생 반응을 함께 반영할 수 있습니다."
+                          title="현재 분석은 최근 학생 의견 일부를 아직 반영하지 않았을 수 있습니다. 재분석하면 자료 내용과 최신 학생 반응을 함께 다시 정리합니다."
                         >
-                          새 피드백 반영 가능
+                          최신 의견으로 재분석 가능
                         </Badge>
                       ) : (
                         <Badge className="bg-green-100 text-green-700">분석 완료</Badge>
@@ -575,7 +579,7 @@ export function MaterialsClient({ courseId, initialMaterials, rounds, demoMode =
                       </Button>
                       {m.isStale && (
                         <p className="hidden max-w-[220px] text-xs font-medium leading-5 text-amber-700 lg:block">
-                          분석 이후 학생 피드백이 쌓였습니다.
+                          분석 이후 새 학생 의견이 쌓였습니다.
                         </p>
                       )}
                     </>
