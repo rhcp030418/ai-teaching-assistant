@@ -437,11 +437,11 @@ export function MaterialsClient({ courseId, initialMaterials, rounds, demoMode =
             <p className="text-sm font-medium text-slate-500">
               {uploading
                 ? "업로드 중..."
-                : "PDF, PPT, TXT 파일을 클릭하여 업로드 (10MB 이하)"}
+                : "PDF, TXT 파일을 클릭하여 업로드 (10MB 이하)"}
             </p>
             <input
               type="file"
-              accept=".pdf,.ppt,.pptx,.txt"
+              accept=".pdf,.txt"
               onChange={handleUpload}
               disabled={uploading}
               className="sr-only"

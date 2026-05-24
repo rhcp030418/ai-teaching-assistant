@@ -46,9 +46,9 @@ export async function POST(request: NextRequest) {
   }
 
   const ext = path.extname(file.name).toLowerCase();
-  if (![".pdf", ".ppt", ".pptx", ".txt"].includes(ext)) {
+  if (![".pdf", ".txt"].includes(ext)) {
     return Response.json(
-      { error: "PDF, PPT, TXT 파일만 업로드 가능합니다." },
+      { error: "PDF, TXT 파일만 업로드 가능합니다." },
       { status: 400 },
     );
   }
@@ -72,14 +72,6 @@ export async function POST(request: NextRequest) {
     // PDF 시그니처: %PDF
     if (buffer.length < 4 || buffer.toString("ascii", 0, 4) !== "%PDF") {
       return Response.json({ error: "유효한 PDF 파일이 아닙니다." }, { status: 400 });
-    }
-  } else if (ext === ".ppt" || ext === ".pptx") {
-    // PPT(xls 등 구버전): D0 CF 11 E0 / PPTX(OOXML ZIP): PK
-    const isPPT = buffer.length >= 4 &&
-      buffer[0] === 0xD0 && buffer[1] === 0xCF && buffer[2] === 0x11 && buffer[3] === 0xE0;
-    const isPPTX = buffer.length >= 2 && buffer[0] === 0x50 && buffer[1] === 0x4B;
-    if (!isPPT && !isPPTX) {
-      return Response.json({ error: "유효한 PPT/PPTX 파일이 아닙니다." }, { status: 400 });
     }
   }
   await fs.writeFile(filePath, buffer);
