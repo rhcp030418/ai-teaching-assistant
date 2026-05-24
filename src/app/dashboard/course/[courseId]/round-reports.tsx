@@ -398,16 +398,50 @@ type Correlation = { text: string; type: "warn" | "ok" | "info" };
 function getCorrelations(mat: RoundMaterialSummary, rs: NonNullable<RoundStatsForCorr>): Correlation[] {
   const corrs: Correlation[] = [];
   if (mat.difficulty === "상" && rs.comprehensionHigh < 50)
-    corrs.push({ text: `높은 난이도 × 이해도 ${rs.comprehensionHigh}% — 우선 개선 대상`, type: "warn" });
+    corrs.push({ text: `자료 난이도 높음 + 내용 이해 ${rs.comprehensionHigh}%: 설명 단계 보완 참고`, type: "warn" });
   if (mat.difficulty === "하" && rs.comprehensionHigh >= 70)
-    corrs.push({ text: `낮은 난이도 × 이해도 ${rs.comprehensionHigh}% — 양호`, type: "ok" });
+    corrs.push({ text: `자료 난이도 낮음 + 내용 이해 ${rs.comprehensionHigh}%: 현재 난이도 유지 가능`, type: "ok" });
   if ((mat.exampleSufficiency === "부족" || mat.exampleSufficiency === "보완 필요") && rs.practiceAvg !== null && rs.practiceAvg < 3.5)
-    corrs.push({ text: `예시 보완 필요 × 실습 점수 ${rs.practiceAvg}/5 — 일치`, type: "warn" });
+    corrs.push({ text: `예시 보완 필요 + 실습·예시 도움 ${rs.practiceAvg}/5: 예시 추가 검토 신호`, type: "warn" });
   if (mat.termDensity === "높음" && rs.speedModerate < 50)
-    corrs.push({ text: `용어 밀도 높음 × 적정 속도 응답 ${rs.speedModerate}% — 연관 가능`, type: "info" });
+    corrs.push({ text: `전문 용어 밀도 높음 + 적정 속도 응답 ${rs.speedModerate}%: 용어 도입 속도 확인`, type: "info" });
   if (mat.exampleSufficiency === "충분" && rs.practiceAvg !== null && rs.practiceAvg >= 4.0)
-    corrs.push({ text: `예시 충분 × 실습 점수 ${rs.practiceAvg}/5 — 강점`, type: "ok" });
+    corrs.push({ text: `예시 충분 + 실습·예시 도움 ${rs.practiceAvg}/5: 자료 예시 강점`, type: "ok" });
   return corrs;
+}
+
+function splitSuggestion(text: string) {
+  const match = text.match(/\s*\(([^()]+)\)\s*$/);
+  if (!match) return { body: text, evidence: null as string | null };
+  return {
+    body: text.slice(0, match.index).trim(),
+    evidence: match[1],
+  };
+}
+
+function SuggestionLine({
+  label,
+  text,
+  className,
+}: {
+  label: string;
+  text: string;
+  className: string;
+}) {
+  const suggestion = splitSuggestion(text);
+  return (
+    <div className="flex gap-1.5 text-xs">
+      <span className={`shrink-0 font-medium ${className}`}>{label}</span>
+      <span className="text-gray-500">
+        <span>{suggestion.body}</span>
+        {suggestion.evidence && (
+          <span className="mt-0.5 block text-[11px] font-medium text-slate-400">
+            근거 기법: {suggestion.evidence}
+          </span>
+        )}
+      </span>
+    </div>
+  );
 }
 
 function MaterialsSection({
@@ -443,11 +477,11 @@ function MaterialsSection({
         >
           <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
         </svg>
-        강의자료-피드백 연결
-        <span className="text-gray-400">({analyzed.length}/{materials.length}건 분석됨)</span>
+        강의자료와 학생 반응 함께 보기
+        <span className="text-gray-400">(분석 완료 {analyzed.length}/{materials.length})</span>
         {hasAnyCorrelation && (
           <span className="ml-1 text-[10px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full">
-            피드백 연관
+            학생 반응 연결
           </span>
         )}
       </button>
@@ -455,7 +489,7 @@ function MaterialsSection({
       {open && (
         <div className="mt-2 space-y-2">
           <p className="rounded-lg border border-blue-100 bg-blue-50/60 px-3 py-2 text-xs leading-5 text-[#27496D]">
-            해당 회차의 학생 반응과 업로드된 강의자료 분석을 함께 보며, 자료 구조·예시·교수법 보완이 필요한 지점을 참고하기 위한 영역입니다.
+            해당 회차 학생 반응과 업로드 자료 분석을 나란히 놓고 보는 참고 영역입니다. 아래 신호는 곱셈이나 점수가 아니라, 자료 분석 결과와 학생 응답이 같은 방향을 가리키는지 보여줍니다.
           </p>
           {materials.map((mat, idx) => {
             const corrs = correlationsPerMat[idx];
@@ -544,22 +578,13 @@ function MaterialsSection({
                 {mat.improvements && (mat.improvements.structure || mat.improvements.examples || mat.improvements.pedagogy) && (
                   <div className="mt-2 space-y-1 border-t border-gray-100 pt-2">
                     {mat.improvements.structure && (
-                      <div className="flex gap-1.5 text-xs">
-                        <span className="shrink-0 font-medium text-blue-600">구조</span>
-                        <span className="text-gray-500"><b>근거:</b> {mat.improvements.structure}</span>
-                      </div>
+                      <SuggestionLine label="구조" text={mat.improvements.structure} className="text-blue-600" />
                     )}
                     {mat.improvements.examples && (
-                      <div className="flex gap-1.5 text-xs">
-                        <span className="shrink-0 font-medium text-green-600">예시</span>
-                        <span className="text-gray-500"><b>근거:</b> {mat.improvements.examples}</span>
-                      </div>
+                      <SuggestionLine label="예시" text={mat.improvements.examples} className="text-green-600" />
                     )}
                     {mat.improvements.pedagogy && (
-                      <div className="flex gap-1.5 text-xs">
-                        <span className="shrink-0 font-medium text-purple-600">교수법</span>
-                        <span className="text-gray-500"><b>근거:</b> {mat.improvements.pedagogy}</span>
-                      </div>
+                      <SuggestionLine label="교수법" text={mat.improvements.pedagogy} className="text-purple-600" />
                     )}
                   </div>
                 )}

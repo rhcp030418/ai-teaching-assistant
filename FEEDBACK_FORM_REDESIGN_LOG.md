@@ -158,3 +158,12 @@ Status: Complete
 - 데모 데이터베이스 강의는 1~8주차 구조로 보강하고, 8주차를 현재 활성 회차로 설정.
 - 데모 학생 의견은 응답별 작성일을 주차/제출 시점에 맞춰 다양화하고, 주차별 comment pool + 문장 길이 변형으로 반복 노출을 줄임.
 - 추가 피드백 데모 데이터도 서로 다른 작성일을 갖도록 보정.
+
+## F11 — Profanity Visibility + Untagged Demo Opinion Hotfix
+Status: Complete
+
+- 데모 피드백 생성에서 좋았던 점/아쉬웠던 점이 모두 빠지는 fallback 의견도 `좋았던 점:` 또는 `아쉬웠던 점:` prefix를 갖도록 수정.
+- `getAdditionalFeedbacks()`가 과거 seed의 `roundId=null` 테스트 감정 코멘트까지 가져오던 문제를 수정. 이제 추가 피드백 전용 데이터 또는 순화된 의견만 표시.
+- 데모 enrichment 실행 시 데이터베이스 강의의 기존 `roundId=null` 피드백을 정리하고 추가 피드백 데모 데이터를 새로 생성.
+- 필터가 `시발점`은 통과시키되 단독 `시발`은 hard block 하도록 보강.
+- 로컬 확인: 8주차 태그 없는 의견 0건, `시발` 포함 추가 피드백 0건.

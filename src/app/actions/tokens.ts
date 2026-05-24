@@ -64,6 +64,10 @@ export async function getAdditionalFeedbacks(courseId: string) {
       courseId,
       roundId: null,
       comment: { not: null },
+      OR: [
+        { commentCategory: "추가" },
+        { filteredComment: { not: null } },
+      ],
     },
     orderBy: { createdAt: "desc" },
     take: 100,

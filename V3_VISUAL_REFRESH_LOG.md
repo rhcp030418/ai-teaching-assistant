@@ -793,3 +793,26 @@ Reason: User requested current-week opinions instead of previous-round opinions,
 - **Management section label**: renamed `주차별 기록` to `주차별 상세 분석` to avoid overlap with `강의평가 회차 관리`.
 - **Material-report wording**: renamed `AI 강의자료 분석` to `강의자료-피드백 연결` and added a short reason explaining why this section exists.
 - **Material suggestions**: added visible `근거:` prefixes to structure/example/pedagogy suggestions.
+
+### V2.15 — Opinion Data Hotfix + Material Evidence Clarity (Codex)
+
+Status: Complete
+
+Reason: User found three demo/UX issues after V2.14: untagged current-week demo comments, profanity appearing in additional feedback, and unclear material-feedback connection wording.
+
+#### Files Changed
+
+- `src/app/dashboard/course/[courseId]/management/page.tsx`
+- `src/app/dashboard/course/[courseId]/round-reports.tsx`
+- `src/app/dashboard/course/[courseId]/materials/materials-client.tsx`
+- `src/app/actions/tokens.ts`
+- `prisma/enrich-demo-database.ts`
+- `V3_VISUAL_REFRESH_LOG.md`
+
+#### Changes
+
+- **Management flow**: moved `RoundReports` into the same `강의평가 회차 관리` section as round creation/round opinions, and separated `추가 피드백 링크` into its own section.
+- **Material-feedback wording**: changed `강의자료-피드백 연결` to `강의자료와 학생 반응 함께 보기`, changed `피드백 연관` to `학생 반응 연결`, and rewrote correlation chips to avoid `×` / `일치` wording.
+- **Correlation explanation**: added copy clarifying that the chips are not multiplication or scores, but signals that material analysis and student responses point in a similar direction.
+- **Material suggestion evidence**: split suggestion body from trailing method parentheses and display the latter as `근거 기법:` instead of prefixing the whole sentence with `근거:`.
+- **Stale material analysis label**: changed `피드백 반영 재분석 권장` to `새 피드백 반영 가능` and added hover/helper copy explaining it appears when feedback was added after the material analysis.

@@ -188,6 +188,34 @@ function withDemoMaterialData(materials: Material[], rounds: Round[]): Material[
   }));
 }
 
+function splitSuggestion(text: string) {
+  const match = text.match(/\s*\(([^()]+)\)\s*$/);
+  if (!match) return { body: text, evidence: null as string | null };
+  return {
+    body: text.slice(0, match.index).trim(),
+    evidence: match[1],
+  };
+}
+
+function SuggestionText({ text, tone }: { text: string; tone: "blue" | "green" | "purple" }) {
+  const suggestion = splitSuggestion(text);
+  const toneClass = {
+    blue: "text-blue-700",
+    green: "text-green-700",
+    purple: "text-purple-700",
+  }[tone];
+  return (
+    <div className="mt-2 leading-6 text-[#27496D]">
+      <p>{suggestion.body}</p>
+      {suggestion.evidence && (
+        <p className={`mt-1 text-xs font-extrabold ${toneClass}`}>
+          근거 기법: {suggestion.evidence}
+        </p>
+      )}
+    </div>
+  );
+}
+
 function AnalysisResult({ analysis }: { analysis: MaterialAnalysis }) {
   return (
     <div className="space-y-4 mt-4">
@@ -258,28 +286,19 @@ function AnalysisResult({ analysis }: { analysis: MaterialAnalysis }) {
             {analysis.improvements.structure && (
               <details open className="rounded-[14px] border border-blue-100 bg-white/80 p-3 text-sm">
                 <summary className="cursor-pointer font-bold text-blue-600">구조</summary>
-                <p className="mt-2 leading-6 text-[#27496D]">
-                  <span className="font-extrabold text-blue-700">근거: </span>
-                  {analysis.improvements.structure}
-                </p>
+                <SuggestionText text={analysis.improvements.structure} tone="blue" />
               </details>
             )}
             {analysis.improvements.examples && (
               <details open className="rounded-[14px] border border-emerald-100 bg-white/80 p-3 text-sm">
                 <summary className="cursor-pointer font-bold text-green-600">예시</summary>
-                <p className="mt-2 leading-6 text-[#27496D]">
-                  <span className="font-extrabold text-green-700">근거: </span>
-                  {analysis.improvements.examples}
-                </p>
+                <SuggestionText text={analysis.improvements.examples} tone="green" />
               </details>
             )}
             {analysis.improvements.pedagogy && (
               <details open className="rounded-[14px] border border-purple-100 bg-white/80 p-3 text-sm">
                 <summary className="cursor-pointer font-bold text-purple-600">교수법</summary>
-                <p className="mt-2 leading-6 text-[#27496D]">
-                  <span className="font-extrabold text-purple-700">근거: </span>
-                  {analysis.improvements.pedagogy}
-                </p>
+                <SuggestionText text={analysis.improvements.pedagogy} tone="purple" />
               </details>
             )}
           </div>
@@ -536,8 +555,11 @@ export function MaterialsClient({ courseId, initialMaterials, rounds, demoMode =
                   {m.hasAnalysis && (
                     <>
                       {m.isStale ? (
-                        <Badge className="bg-amber-100 text-amber-700 border border-amber-200">
-                          피드백 반영 재분석 권장
+                        <Badge
+                          className="bg-amber-100 text-amber-700 border border-amber-200"
+                          title="자료 분석 이후 해당 회차 피드백이 3건 이상 쌓였거나 회차가 마감되어, 재분석하면 최신 학생 반응을 함께 반영할 수 있습니다."
+                        >
+                          새 피드백 반영 가능
                         </Badge>
                       ) : (
                         <Badge className="bg-green-100 text-green-700">분석 완료</Badge>
@@ -551,6 +573,11 @@ export function MaterialsClient({ courseId, initialMaterials, rounds, demoMode =
                       >
                         {analyzingId === m.id ? "분석 중..." : "재분석"}
                       </Button>
+                      {m.isStale && (
+                        <p className="hidden max-w-[220px] text-xs font-medium leading-5 text-amber-700 lg:block">
+                          분석 이후 학생 피드백이 쌓였습니다.
+                        </p>
+                      )}
                     </>
                   )}
                   <Button

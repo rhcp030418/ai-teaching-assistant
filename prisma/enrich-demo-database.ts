@@ -384,7 +384,7 @@ function demoFeedbackForRound(week: number, index: number, total: number) {
     : null;
   const comment = [positiveComment && `좋았던 점: ${positiveComment}`, difficultyComment && `아쉬웠던 점: ${difficultyComment}`]
     .filter(Boolean)
-    .join("\n\n") || (index % 2 === 0 ? profile.positive : profile.difficulty);
+    .join("\n\n") || (index % 2 === 0 ? `좋았던 점: ${profile.positive}` : `아쉬웠던 점: ${profile.difficulty}`);
 
   return {
     speed,
@@ -651,7 +651,7 @@ async function main() {
   }
 
   await prisma.feedback.deleteMany({
-    where: { courseId: course.id, roundId: null, commentCategory: "추가" },
+    where: { courseId: course.id, roundId: null },
   });
   await prisma.feedback.createMany({
     data: additionalFeedbackTemplates.map((comment, index) => {

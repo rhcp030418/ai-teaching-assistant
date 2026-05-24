@@ -40,29 +40,29 @@ export default async function ManagementPage({
         </p>
       </div>
 
-      {/* ─── 상단: 운영 도구 ─────────────────────────────────────────────── */}
+      {/* ─── 정규 강의평가 회차 관리 ─────────────────────────────────────── */}
       <section className="space-y-4">
         <div>
-          <h2 className={SECTION_TITLE}>운영 도구</h2>
+          <h2 className={SECTION_TITLE}>강의평가 회차 관리</h2>
           <p className={SECTION_DESC}>
-            주차별 강의평가 회차와 추가 피드백 링크를 관리합니다.
+            회차 생성, 운영 기간, 학생 의견, 회차별 자료 연결 분석을 한 흐름에서 확인합니다.
           </p>
         </div>
         <div className="space-y-6">
           <RoundManager courseId={courseId} initialRounds={rounds} demoMode={demoMode} />
-          <TokenManager courseId={courseId} initialStats={tokenStats} initialFeedbacks={additionalFeedbacks} />
+          <RoundReports courseId={courseId} data={roundReports} demoMode={demoMode} />
         </div>
       </section>
 
-      {/* ─── 하단: 주차별 상세 분석 (전체 폭) ─────────────────────────────── */}
+      {/* ─── 추가 피드백 링크 ─────────────────────────────────────────────── */}
       <section className="space-y-4">
         <div>
-          <h2 className={SECTION_TITLE}>주차별 상세 분석</h2>
+          <h2 className={SECTION_TITLE}>추가 피드백 링크</h2>
           <p className={SECTION_DESC}>
-            종료된 회차의 지표 변화, 강의자료 연결, 수업 운영 참고 포인트를 함께 확인합니다.
+            정규 주차 평가와 별개로 강의 전반에 대한 익명 의견을 받을 때 사용합니다.
           </p>
         </div>
-        <RoundReports courseId={courseId} data={roundReports} demoMode={demoMode} />
+        <TokenManager courseId={courseId} initialStats={tokenStats} initialFeedbacks={additionalFeedbacks} />
       </section>
     </div>
   );
