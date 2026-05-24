@@ -218,11 +218,6 @@ export function RoundManager({ courseId, initialRounds }: Props) {
                       </p>
                     )}
 
-                    <p className="rounded-xl bg-blue-50/55 px-3 py-2 text-[11px] font-medium leading-5 text-[#27496D]">
-                      학생 의견과 응답 요약은 <span className="font-bold">주차별 리포트</span>에서 확인할 수 있습니다.
-                      여기서는 운영 기간만 조정합니다.
-                    </p>
-
                     {editingId === round.id ? (
                       <div className="rounded-2xl border border-blue-100 bg-white/80 p-3">
                         <p className="text-xs font-extrabold text-[#10233F]">운영 기간 수정</p>
