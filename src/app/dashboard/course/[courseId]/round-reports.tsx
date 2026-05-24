@@ -443,7 +443,7 @@ function MaterialsSection({
         >
           <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
         </svg>
-        AI 강의자료 분석
+        강의자료-피드백 연결
         <span className="text-gray-400">({analyzed.length}/{materials.length}건 분석됨)</span>
         {hasAnyCorrelation && (
           <span className="ml-1 text-[10px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full">
@@ -454,6 +454,9 @@ function MaterialsSection({
 
       {open && (
         <div className="mt-2 space-y-2">
+          <p className="rounded-lg border border-blue-100 bg-blue-50/60 px-3 py-2 text-xs leading-5 text-[#27496D]">
+            해당 회차의 학생 반응과 업로드된 강의자료 분석을 함께 보며, 자료 구조·예시·교수법 보완이 필요한 지점을 참고하기 위한 영역입니다.
+          </p>
           {materials.map((mat, idx) => {
             const corrs = correlationsPerMat[idx];
             const hasWarn = corrs.some((c) => c.type === "warn");
@@ -543,19 +546,19 @@ function MaterialsSection({
                     {mat.improvements.structure && (
                       <div className="flex gap-1.5 text-xs">
                         <span className="shrink-0 font-medium text-blue-600">구조</span>
-                        <span className="text-gray-500">{mat.improvements.structure}</span>
+                        <span className="text-gray-500"><b>근거:</b> {mat.improvements.structure}</span>
                       </div>
                     )}
                     {mat.improvements.examples && (
                       <div className="flex gap-1.5 text-xs">
                         <span className="shrink-0 font-medium text-green-600">예시</span>
-                        <span className="text-gray-500">{mat.improvements.examples}</span>
+                        <span className="text-gray-500"><b>근거:</b> {mat.improvements.examples}</span>
                       </div>
                     )}
                     {mat.improvements.pedagogy && (
                       <div className="flex gap-1.5 text-xs">
                         <span className="shrink-0 font-medium text-purple-600">교수법</span>
-                        <span className="text-gray-500">{mat.improvements.pedagogy}</span>
+                        <span className="text-gray-500"><b>근거:</b> {mat.improvements.pedagogy}</span>
                       </div>
                     )}
                   </div>

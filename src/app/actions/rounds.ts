@@ -8,6 +8,21 @@ import { isDemoUser, DEMO_READ_ONLY } from "@/lib/auth-utils";
 
 type RoundStatusForUi = "pending" | "active" | "closed" | "overlap";
 
+function buildDisplayComment(feedback: {
+  filteredComment: string | null;
+  comment: string | null;
+  positiveComment: string | null;
+  difficultyComment: string | null;
+}) {
+  if (feedback.filteredComment?.trim()) return feedback.filteredComment;
+  if (feedback.comment?.trim()) return feedback.comment;
+
+  const parts: string[] = [];
+  if (feedback.positiveComment?.trim()) parts.push(`좋았던 점: ${feedback.positiveComment}`);
+  if (feedback.difficultyComment?.trim()) parts.push(`아쉬웠던 점: ${feedback.difficultyComment}`);
+  return parts.join("\n\n") || null;
+}
+
 export async function getRounds(courseId: string) {
   const session = await auth();
   if (!session?.user?.id) return [];
@@ -71,8 +86,15 @@ export async function getRounds(courseId: string) {
       ? Math.round((r.feedbacks.reduce((sum, fb) => sum + fb.communication, 0) / totalFeedbacks) * 10) / 10
       : 0;
     const comments = r.feedbacks
-      .map((fb) => fb.filteredComment ?? fb.comment ?? fb.positiveComment ?? fb.difficultyComment)
-      .filter((text): text is string => Boolean(text?.trim()));
+      .map((fb) => {
+        const text = buildDisplayComment(fb);
+        if (!text?.trim()) return null;
+        return {
+          text,
+          createdAt: fb.createdAt.toISOString(),
+        };
+      })
+      .filter((item): item is { text: string; createdAt: string } => item !== null);
 
     return {
       id: r.id,

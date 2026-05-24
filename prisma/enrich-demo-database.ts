@@ -12,8 +12,8 @@ const prisma = new PrismaClient({
 const COURSE_NAME = "데이터베이스";
 const SEMESTER = "2026-1";
 const TARGET_STUDENT_COUNT = 40;
-const ROUND_TARGETS = [22, 24, 23, 25, 26, 28];
-const SUBMISSION_TARGETS = [30, 32, 31, 34, 35, 32];
+const ROUND_TARGETS = [22, 24, 23, 25, 26, 28, 27, 29];
+const SUBMISSION_TARGETS = [30, 32, 31, 34, 35, 32, 34, 36];
 
 const feedbackTemplates = [
   {
@@ -161,6 +161,28 @@ const roundProfiles: Record<number, {
     positive: "MongoDB와 SQL을 비교해주셔서 새 개념을 연결해서 이해할 수 있었습니다.",
     difficulty: "집계 파이프라인 단계가 많아서 복습용 예시가 더 있으면 좋겠습니다.",
   },
+  7: {
+    speedModerateRatio: 0.74,
+    comprehensionHighRatio: 0.76,
+    materialHelpAvg: 4.2,
+    communicationAvg: 4.2,
+    interestAvg: 4.1,
+    assignmentAvg: 3.7,
+    practiceAvg: 4.1,
+    positive: "트랜잭션 예시가 실제 상황과 연결되어 이해가 쉬웠습니다.",
+    difficulty: "격리 수준별 차이를 더 많은 상황 예시로 비교해보면 좋겠습니다.",
+  },
+  8: {
+    speedModerateRatio: 0.79,
+    comprehensionHighRatio: 0.81,
+    materialHelpAvg: 4.3,
+    communicationAvg: 4.4,
+    interestAvg: 4.2,
+    assignmentAvg: 3.9,
+    practiceAvg: 4.3,
+    positive: "MongoDB 집계 실습을 단계별로 따라가며 전체 흐름을 이해할 수 있었습니다.",
+    difficulty: "파이프라인 중간 결과를 직접 확인하는 시간이 조금 더 있으면 좋겠습니다.",
+  },
 };
 
 const roundCommentPools: Record<number, { positive: string[]; difficulty: string[] }> = {
@@ -248,6 +270,34 @@ const roundCommentPools: Record<number, { positive: string[]; difficulty: string
       "MongoDB와 SQL의 장단점을 시험이나 과제 기준으로 어떻게 정리해야 할지 궁금합니다.",
     ],
   },
+  7: {
+    positive: [
+      "트랜잭션 예시가 은행 이체 상황과 연결되어 ACID 개념을 이해하기 쉬웠습니다.",
+      "COMMIT과 ROLLBACK을 직접 실행해보니 오류 상황에서 왜 필요한지 분명해졌습니다.",
+      "잠금과 동시성 문제를 실제 예약 시스템 사례로 설명해주신 부분이 기억에 남았습니다.",
+      "격리 수준을 표로 정리해주셔서 복습할 때 기준을 잡기 좋았습니다.",
+    ],
+    difficulty: [
+      "READ COMMITTED와 REPEATABLE READ의 차이는 아직 헷갈려서 상황별 예시가 더 있으면 좋겠습니다.",
+      "교착 상태 설명은 이해됐지만 실제로 어떤 순서로 해결하는지 한 번 더 보고 싶습니다.",
+      "트랜잭션 로그 흐름이 빠르게 지나가서 중간 결과를 확인할 시간이 조금 더 필요했습니다.",
+      "과제에서 격리 수준을 선택하는 기준을 어디까지 적어야 하는지 예시가 있으면 좋겠습니다.",
+    ],
+  },
+  8: {
+    positive: [
+      "집계 파이프라인을 단계별로 끊어서 보여주셔서 결과가 어떻게 변하는지 따라갈 수 있었습니다.",
+      "MongoDB Compass 화면과 쿼리 문법을 같이 보여주셔서 실습 진입이 쉬웠습니다.",
+      "SQL GROUP BY와 MongoDB 집계를 비교한 표가 두 방식의 차이를 이해하는 데 도움이 됐습니다.",
+      "마지막에 전체 파이프라인을 한 번에 다시 훑어주셔서 복습 방향이 분명했습니다.",
+    ],
+    difficulty: [
+      "$lookup과 $unwind가 이어질 때 문서 구조가 어떻게 바뀌는지 더 천천히 보고 싶습니다.",
+      "집계 단계가 많아지면 괄호 위치를 놓치기 쉬워서 완성 코드와 빈칸 코드가 함께 있으면 좋겠습니다.",
+      "파이프라인 오류가 났을 때 어느 단계부터 확인해야 하는지 디버깅 순서가 궁금합니다.",
+      "과제에서 요구하는 집계 결과 형식을 예시 출력으로 먼저 보여주시면 더 안심될 것 같습니다.",
+    ],
+  },
 };
 
 const additionalFeedbackTemplates = [
@@ -261,12 +311,51 @@ const additionalFeedbackTemplates = [
   "전체적으로 실무 예시가 많아서 흥미로웠습니다. 어려운 용어는 처음 나올 때 한 줄 정의를 더 강조해주시면 좋겠습니다.",
 ];
 
+const positiveAddons = [
+  "",
+  " 핵심이 짧게 정리돼 복습하기도 좋았습니다.",
+  " 특히 수업 흐름이 끊기지 않아 집중하기 편했습니다.",
+  " 예전 주차 내용과 자연스럽게 연결된 점도 좋았습니다.",
+  " 실습 전에 먼저 결과를 예상해보는 시간이 있어 더 오래 기억에 남았습니다.",
+  " 질문을 받은 뒤 바로 예시로 다시 설명해주셔서 놓친 부분을 따라잡을 수 있었습니다.",
+  " 자료에 표시된 순서와 실제 시연 순서가 거의 같아서 혼자 다시 따라 해볼 때도 부담이 적었습니다.",
+];
+
+const difficultyAddons = [
+  "",
+  " 짧은 복습 문제도 있으면 좋겠습니다.",
+  " 핵심 단계만 따로 정리된 표가 있으면 더 따라가기 쉬울 것 같습니다.",
+  " 예시 출력 화면을 조금 더 오래 보여주시면 필기하기 좋겠습니다.",
+  " 다음 회차 시작 전에 관련 용어를 2분 정도 다시 짚어주시면 도움이 될 것 같습니다.",
+  " 과제에 적용할 때는 수업 예시와 조건이 조금 달라져서, 제출 예시가 하나 더 있으면 좋겠습니다.",
+  " 실습 중간에 스스로 점검할 수 있는 체크 포인트가 있으면 어느 단계에서 막혔는지 더 빨리 알 수 있을 것 같습니다.",
+];
+
 function scoreFromAverage(avg: number, index: number) {
   const low = Math.floor(avg);
   const high = Math.ceil(avg);
   if (low === high) return Math.min(5, Math.max(1, low));
   const highRatio = avg - low;
   return index % 10 < Math.round(highRatio * 10) ? high : low;
+}
+
+function varyComment(base: string, index: number, kind: "positive" | "difficulty") {
+  const addons = kind === "positive" ? positiveAddons : difficultyAddons;
+  return `${base}${addons[index % addons.length]}`;
+}
+
+function feedbackCreatedAt(week: number, index: number) {
+  const base = week <= 7
+    ? closedRoundDates(week).endDate
+    : new Date("2026-05-24T10:00:00+09:00");
+  const createdAt = new Date(base);
+  createdAt.setHours(10 + (index % 8), (index * 11) % 60, 0, 0);
+  if (week <= 7) {
+    createdAt.setDate(createdAt.getDate() - (index % 3));
+  } else {
+    createdAt.setDate(createdAt.getDate() - (index % 5));
+  }
+  return createdAt;
 }
 
 function demoFeedbackForRound(week: number, index: number, total: number) {
@@ -288,12 +377,12 @@ function demoFeedbackForRound(week: number, index: number, total: number) {
   const comprehension =
     index < highCount ? "5" : index < highCount + mediumCount ? "3" : "2";
   const positiveComment = index % 5 !== 1
-    ? commentPool.positive[(index + week) % commentPool.positive.length]
+    ? varyComment(commentPool.positive[(index + week) % commentPool.positive.length], index + week, "positive")
     : null;
   const difficultyComment = index % 4 !== 2
-    ? commentPool.difficulty[(index + Math.floor(index / 2)) % commentPool.difficulty.length]
+    ? varyComment(commentPool.difficulty[(index + Math.floor(index / 2)) % commentPool.difficulty.length], index, "difficulty")
     : null;
-  const comment = [positiveComment && `좋았던 점: ${positiveComment}`, difficultyComment && `어려웠던 점: ${difficultyComment}`]
+  const comment = [positiveComment && `좋았던 점: ${positiveComment}`, difficultyComment && `아쉬웠던 점: ${difficultyComment}`]
     .filter(Boolean)
     .join("\n\n") || (index % 2 === 0 ? profile.positive : profile.difficulty);
 
@@ -312,6 +401,7 @@ function demoFeedbackForRound(week: number, index: number, total: number) {
     filteredComment: comment,
     commentCategory: "학습",
     commentFilterReason: "데모 분포 확인용 학습 피드백",
+    createdAt: feedbackCreatedAt(week, index),
   };
 }
 
@@ -356,6 +446,16 @@ const weekImprovements: Record<number, { structure: string; examples: string; pe
     structure: "집계 파이프라인은 $match→$lookup→$unwind 단계마다 중간 결과 문서를 보여주며 끊어 진행하세요 (청킹/chunking).",
     examples: "같은 데이터를 SQL과 MongoDB로 나란히 표현한 비교 예시로 새 개념을 기존 관계형 지식에 연결하세요 (구체적 예시 우선/concrete examples).",
     pedagogy: "CAP 이론은 실제 장애 상황 시나리오를 먼저 던지고 학생이 트레이드오프를 추론하게 한 뒤 정리하세요 (생산적 실패/productive failure).",
+  },
+  7: {
+    structure: "트랜잭션 흐름은 BEGIN→작업→COMMIT/ROLLBACK 순서로 고정해 각 단계의 상태 변화를 같은 예제로 반복하세요 (청킹/chunking).",
+    examples: "은행 이체, 좌석 예약처럼 실패 상황이 분명한 예시를 격리 수준별로 비교하면 차이가 더 선명해집니다 (구체적 예시 우선/concrete examples).",
+    pedagogy: "격리 수준 선택 이유를 학생이 먼저 예측하게 한 뒤 결과를 확인하면 기준을 스스로 세울 수 있습니다 (생성·예측 효과/generation).",
+  },
+  8: {
+    structure: "집계 파이프라인은 한 슬라이드에 전체 코드를 몰지 말고 단계별 입력·출력 문서를 나란히 보여주세요 (이중 부호화/dual coding).",
+    examples: "SQL GROUP BY 결과와 MongoDB pipeline 결과를 같은 데이터로 비교하면 새 문법을 기존 지식에 연결할 수 있습니다 (구체적 예시 우선/concrete examples).",
+    pedagogy: "완성 파이프라인을 먼저 시연한 뒤 일부 단계만 비워 학생이 채우게 하면 복잡한 문법 부담이 줄어듭니다 (점진적 책임 이양/scaffolding).",
   },
 };
 
@@ -438,30 +538,37 @@ async function main() {
 
   const students = await ensureStudents(course.id);
 
-  for (const round of course.feedbackRounds) {
-    if (round.week === 6) {
-      await prisma.feedbackRound.update({
-        where: { id: round.id },
-        data: {
-          label: "6주차",
+  for (let week = 1; week <= 8; week++) {
+    const isActiveDemoWeek = week === 8;
+    const { startDate, endDate } = isActiveDemoWeek
+      ? {
           startDate: new Date("2026-05-20T09:00:00+09:00"),
           endDate: new Date("2026-05-29T23:59:00+09:00"),
-        },
-      });
-    }
+        }
+      : closedRoundDates(week);
+    await prisma.feedbackRound.upsert({
+      where: { courseId_week: { courseId: course.id, week } },
+      update: {
+        label: `${week}주차`,
+        startDate,
+        endDate,
+      },
+      create: {
+        courseId: course.id,
+        week,
+        label: `${week}주차`,
+        startDate,
+        endDate,
+      },
+    });
+  }
 
-    if (round.week >= 1 && round.week <= 5) {
-      const { startDate, endDate } = closedRoundDates(round.week);
-      await prisma.feedbackRound.update({
-        where: { id: round.id },
-        data: {
-          label: `${round.week}주차`,
-          startDate,
-          endDate,
-        },
-      });
-    }
+  const feedbackRounds = await prisma.feedbackRound.findMany({
+    where: { courseId: course.id },
+    orderBy: { week: "asc" },
+  });
 
+  for (const round of feedbackRounds) {
     const target = ROUND_TARGETS[round.week - 1] ?? 20;
     const current = await prisma.feedback.count({ where: { roundId: round.id } });
     const toCreate = Math.max(0, target - current);
@@ -501,8 +608,8 @@ async function main() {
     }
   }
 
-  for (let week = 1; week <= 6; week++) {
-    const round = course.feedbackRounds.find((r) => r.week === week);
+  for (let week = 1; week <= 8; week++) {
+    const round = feedbackRounds.find((r) => r.week === week);
     if (!round) continue;
 
     const existing = await prisma.lectureMaterial.findFirst({
@@ -547,24 +654,30 @@ async function main() {
     where: { courseId: course.id, roundId: null, commentCategory: "추가" },
   });
   await prisma.feedback.createMany({
-    data: additionalFeedbackTemplates.map((comment, index) => ({
-      courseId: course.id,
-      roundId: null,
-      speed: "moderate",
-      comprehension: "3",
-      materialHelp: null,
-      communication: 3 + (index % 3),
-      interest: null,
-      assignment: null,
-      practice: null,
-      positiveComment: null,
-      difficultyComment: null,
-      activityPoints: 1,
-      comment,
-      filteredComment: comment,
-      commentCategory: "추가",
-      commentFilterReason: "추가 피드백 링크로 제출된 강의 전반 의견",
-    })),
+    data: additionalFeedbackTemplates.map((comment, index) => {
+      const createdAt = new Date("2026-05-24T14:00:00+09:00");
+      createdAt.setDate(createdAt.getDate() - index * 2);
+      createdAt.setHours(11 + (index % 6), (index * 13) % 60, 0, 0);
+      return {
+        courseId: course.id,
+        roundId: null,
+        speed: "moderate",
+        comprehension: "3",
+        materialHelp: null,
+        communication: 3 + (index % 3),
+        interest: null,
+        assignment: null,
+        practice: null,
+        positiveComment: null,
+        difficultyComment: null,
+        activityPoints: 1,
+        comment,
+        filteredComment: comment,
+        commentCategory: "추가",
+        commentFilterReason: "추가 피드백 링크로 제출된 강의 전반 의견",
+        createdAt,
+      };
+    }),
   });
   const additionalTokens = await prisma.feedbackToken.findMany({
     where: { courseId: course.id },

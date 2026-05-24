@@ -766,3 +766,30 @@ Reason: Gemini/Claude review flagged demo-video polish risks: overview sidebar d
 - **Representative opinions summary**: incorporated the remote `fix/representative-opinions-summary` branch behavior manually so the collapsed `대표 학생 의견` card can show the generated opinion summary and use course-wide comments, not only the current round.
 - **Material criteria disclosure**: changed the always-visible `판단 기준` block into a collapsed `판단 기준 보기` details section, keeping analysis results first.
 - **Student point card tone**: changed the comparison-point card from green/event styling to calmer V3 blue/navy styling.
+
+### V2.14 — Weekly Opinion Display + Management Polish (Codex)
+
+Status: Complete
+
+Reason: User requested current-week opinions instead of previous-round opinions, consistent wording/date display, less repetitive demo comments, and clearer management labels.
+
+#### Files Changed
+
+- `src/app/dashboard/course/[courseId]/feedback-analysis.tsx`
+- `src/app/dashboard/course/[courseId]/round-manager.tsx`
+- `src/app/dashboard/course/[courseId]/token-manager.tsx`
+- `src/app/dashboard/course/[courseId]/management/page.tsx`
+- `src/app/dashboard/course/[courseId]/round-reports.tsx`
+- `src/app/dashboard/course/[courseId]/materials/materials-client.tsx`
+- `src/app/dashboard/course/[courseId]/page.tsx`
+- `V3_VISUAL_REFRESH_LOG.md`
+
+#### Changes
+
+- **Overview opinions**: renamed `지난 라운드 학생 의견` to `이번 주차 학생 의견` and switched the source to the active round first, falling back to the latest closed round only when no active round exists.
+- **Opinion cards**: display `createdAt` dates on comment cards and normalize legacy `어려웠던 점` labels to visible `아쉬웠던 점`.
+- **Round manager opinions**: round-level comments now keep each feedback submission grouped, show dates, and use the same blue/red label styling as Overview.
+- **Additional feedback**: renamed the recent area to `추가 피드백 의견`, added sorting, and collapsed the list after 4 items with an expand/collapse control.
+- **Management section label**: renamed `주차별 기록` to `주차별 상세 분석` to avoid overlap with `강의평가 회차 관리`.
+- **Material-report wording**: renamed `AI 강의자료 분석` to `강의자료-피드백 연결` and added a short reason explaining why this section exists.
+- **Material suggestions**: added visible `근거:` prefixes to structure/example/pedagogy suggestions.

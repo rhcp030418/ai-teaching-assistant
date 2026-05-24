@@ -66,7 +66,7 @@ export async function getAdditionalFeedbacks(courseId: string) {
       comment: { not: null },
     },
     orderBy: { createdAt: "desc" },
-    take: 6,
+    take: 100,
     select: {
       id: true,
       comment: true,

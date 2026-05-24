@@ -52,7 +52,7 @@ function combineComments(
 ) {
   const parts: string[] = [];
   if (positiveComment) parts.push(`좋았던 점: ${positiveComment}`);
-  if (difficultyComment) parts.push(`어려웠던 점: ${difficultyComment}`);
+  if (difficultyComment) parts.push(`아쉬웠던 점: ${difficultyComment}`);
   if (parts.length > 0) return parts.join("\n\n");
   return legacyComment;
 }

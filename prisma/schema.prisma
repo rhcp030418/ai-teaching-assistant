@@ -53,7 +53,7 @@ model Feedback {
   assignment          Int?     // 1~5 과제 적절성 (과제 있는 강의만)
   practice            Int?     // 1~5 실습/예시 충분도 (실습 있는 강의만)
   positiveComment     String?  // 좋았던 점
-  difficultyComment   String?  // 어려웠던 점 / 더 설명이 필요한 점
+  difficultyComment   String?  // 아쉬웠던 점
   activityPoints      Int      @default(1) // 비교과 포인트: 제출 1P + 각 주관식 최소 작성 1P
   comment             String?  // 원문(하위호환용 통합 의견)
   filteredComment     String?  // AI 순화 결과 (학습=원문, 감정=null, 혼합=순화 텍스트)

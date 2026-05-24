@@ -369,7 +369,7 @@ export function FeedbackForm({
               </div>
               <div>
                 <label className="mb-2 block text-sm font-extrabold text-[#10233F]">
-                  어려웠던 점 또는 더 설명이 필요한 점
+                  아쉬웠던 점
                 </label>
                 <Textarea
                   name="difficultyComment"

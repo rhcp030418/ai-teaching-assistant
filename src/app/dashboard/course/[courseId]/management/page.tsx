@@ -54,12 +54,12 @@ export default async function ManagementPage({
         </div>
       </section>
 
-      {/* ─── 하단: 주차별 기록 (전체 폭) ─────────────────────────────────── */}
+      {/* ─── 하단: 주차별 상세 분석 (전체 폭) ─────────────────────────────── */}
       <section className="space-y-4">
         <div>
-          <h2 className={SECTION_TITLE}>주차별 기록</h2>
+          <h2 className={SECTION_TITLE}>주차별 상세 분석</h2>
           <p className={SECTION_DESC}>
-            종료된 라운드 요약과 회차별 기록입니다.
+            종료된 회차의 지표 변화, 강의자료 연결, 수업 운영 참고 포인트를 함께 확인합니다.
           </p>
         </div>
         <RoundReports courseId={courseId} data={roundReports} demoMode={demoMode} />

@@ -258,19 +258,28 @@ function AnalysisResult({ analysis }: { analysis: MaterialAnalysis }) {
             {analysis.improvements.structure && (
               <details open className="rounded-[14px] border border-blue-100 bg-white/80 p-3 text-sm">
                 <summary className="cursor-pointer font-bold text-blue-600">구조</summary>
-                <p className="mt-2 leading-6 text-[#27496D]">{analysis.improvements.structure}</p>
+                <p className="mt-2 leading-6 text-[#27496D]">
+                  <span className="font-extrabold text-blue-700">근거: </span>
+                  {analysis.improvements.structure}
+                </p>
               </details>
             )}
             {analysis.improvements.examples && (
               <details open className="rounded-[14px] border border-emerald-100 bg-white/80 p-3 text-sm">
                 <summary className="cursor-pointer font-bold text-green-600">예시</summary>
-                <p className="mt-2 leading-6 text-[#27496D]">{analysis.improvements.examples}</p>
+                <p className="mt-2 leading-6 text-[#27496D]">
+                  <span className="font-extrabold text-green-700">근거: </span>
+                  {analysis.improvements.examples}
+                </p>
               </details>
             )}
             {analysis.improvements.pedagogy && (
               <details open className="rounded-[14px] border border-purple-100 bg-white/80 p-3 text-sm">
                 <summary className="cursor-pointer font-bold text-purple-600">교수법</summary>
-                <p className="mt-2 leading-6 text-[#27496D]">{analysis.improvements.pedagogy}</p>
+                <p className="mt-2 leading-6 text-[#27496D]">
+                  <span className="font-extrabold text-purple-700">근거: </span>
+                  {analysis.improvements.pedagogy}
+                </p>
               </details>
             )}
           </div>

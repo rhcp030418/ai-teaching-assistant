@@ -18,6 +18,11 @@ import { DEMO_COMMENT_SUMMARY } from "@/lib/demo-ai-fixtures";
 const V3_CARD =
   "ring-0 border-blue-100 bg-white/90 shadow-[0_10px_30px_-15px_rgba(23,87,168,0.25)]";
 
+interface RoundComment {
+  text: string;
+  createdAt: string;
+}
+
 interface Round {
   id: string;
   week: number;
@@ -32,7 +37,7 @@ interface Round {
     comprehensionHigh: number;
     communicationAvg: number;
   };
-  comments: string[];
+  comments: RoundComment[];
 }
 
 interface Props {
@@ -44,6 +49,51 @@ interface Props {
 function formatDate(iso: string) {
   const d = new Date(iso);
   return `${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+}
+
+function formatCommentDate(iso: string) {
+  return new Date(iso).toLocaleDateString("ko-KR", {
+    month: "short",
+    day: "numeric",
+  });
+}
+
+function CommentBody({ text }: { text: string }) {
+  const segments = text
+    .split(/(?=좋았던 점\s*:|아쉬웠던 점\s*:|어려웠던 점\s*:)/)
+    .map((s) => s.trim())
+    .filter(Boolean)
+    .map((s) => {
+      if (/^좋았던 점\s*:/.test(s)) {
+        return { kind: "positive" as const, body: s.replace(/^좋았던 점\s*:\s*/, "") };
+      }
+      if (/^(아쉬웠던 점|어려웠던 점)\s*:/.test(s)) {
+        return { kind: "difficulty" as const, body: s.replace(/^(아쉬웠던 점|어려웠던 점)\s*:\s*/, "") };
+      }
+      return { kind: "other" as const, body: s };
+    });
+
+  if (!segments.some((s) => s.kind !== "other")) {
+    return <p>{text}</p>;
+  }
+
+  return (
+    <div className="space-y-1.5">
+      {segments.map((seg, index) =>
+        seg.kind === "positive" ? (
+          <p key={index}>
+            <span className="font-extrabold text-[#1677FF]">좋았던 점</span> {seg.body}
+          </p>
+        ) : seg.kind === "difficulty" ? (
+          <p key={index}>
+            <span className="font-extrabold text-red-600">아쉬웠던 점</span> {seg.body}
+          </p>
+        ) : (
+          <p key={index}>{seg.body}</p>
+        )
+      )}
+    </div>
+  );
 }
 
 function statusBadge(status: Round["status"]) {
@@ -392,7 +442,7 @@ function RoundComments({
   cachedSummary,
   onSummary,
 }: {
-  comments: string[];
+  comments: RoundComment[];
   demoMode: boolean;
   cachedSummary: string | null;
   onSummary: (summary: string) => void;
@@ -410,7 +460,7 @@ function RoundComments({
       return;
     }
     setLoading(true);
-    summarizeComments(comments)
+    summarizeComments(comments.map((comment) => comment.text))
       .then((res) => {
         if (res.summary) {
           setSummary(res.summary);
@@ -444,7 +494,10 @@ function RoundComments({
               key={index}
               className="rounded-xl bg-blue-50/45 px-3 py-2 text-xs font-medium leading-5 text-[#27496D]"
             >
-              {comment}
+              <p className="mb-1 text-right text-[10px] font-bold text-slate-400">
+                {formatCommentDate(comment.createdAt)}
+              </p>
+              <CommentBody text={comment.text} />
             </li>
           ))}
         </ul>

@@ -408,17 +408,25 @@ function AiSummaryLine({
   );
 }
 
-// 학생 의견 표시: "좋았던 점" → 파랑, "어려웠던 점" → 빨강 (구조 표기가 없으면 기본색 그대로)
+function formatCommentDate(iso?: string) {
+  if (!iso) return null;
+  return new Date(iso).toLocaleDateString("ko-KR", {
+    month: "short",
+    day: "numeric",
+  });
+}
+
+// 학생 의견 표시: "좋았던 점" → 파랑, "아쉬웠던 점" → 빨강 (legacy "어려웠던 점"도 같은 라벨로 표시)
 function CommentBody({ text }: { text: string }) {
   const segments = text
-    .split(/(?=좋았던 점\s*:|어려웠던 점\s*:)/)
+    .split(/(?=좋았던 점\s*:|아쉬웠던 점\s*:|어려웠던 점\s*:)/)
     .map((s) => s.trim())
     .filter(Boolean)
     .map((s) => {
       if (/^좋았던 점\s*:/.test(s))
         return { kind: "positive" as const, body: s.replace(/^좋았던 점\s*:\s*/, "") };
-      if (/^어려웠던 점\s*:/.test(s))
-        return { kind: "difficulty" as const, body: s.replace(/^어려웠던 점\s*:\s*/, "") };
+      if (/^(아쉬웠던 점|어려웠던 점)\s*:/.test(s))
+        return { kind: "difficulty" as const, body: s.replace(/^(아쉬웠던 점|어려웠던 점)\s*:\s*/, "") };
       return { kind: "other" as const, body: s };
     });
 
@@ -436,7 +444,7 @@ function CommentBody({ text }: { text: string }) {
           </p>
         ) : seg.kind === "difficulty" ? (
           <p key={i} className="text-sm font-semibold leading-relaxed text-[#27496D]">
-            <span className="font-extrabold text-red-600">어려웠던 점</span> {seg.body}
+            <span className="font-extrabold text-red-600">아쉬웠던 점</span> {seg.body}
           </p>
         ) : (
           <p key={i} className="text-sm font-semibold leading-relaxed text-[#27496D]">
@@ -450,10 +458,14 @@ function CommentBody({ text }: { text: string }) {
 
 function CommentItem({ item }: { item: CommentFeedback }) {
   const displayText = item.filteredComment ?? item.comment;
+  const dateLabel = formatCommentDate(item.createdAt);
   if (!displayText) return null;
 
   return (
     <li className="rounded-[17px] border border-blue-100/70 bg-white/75 p-3.5">
+      {dateLabel && (
+        <p className="mb-2 text-right text-[11px] font-bold text-slate-400">{dateLabel}</p>
+      )}
       <CommentBody text={displayText} />
     </li>
   );
@@ -471,26 +483,23 @@ export function CommentsSection({
   const [open, setOpen] = useState(false);
   const [sortMode, setSortMode] = useState<"newest" | "oldest" | "longest" | "shortest">("newest");
 
-  // 이전 라운드 의견 요약
+  // 이번 주차 의견 요약
   const [summary, setSummary] = useState<string | null>(demoMode ? DEMO_COMMENT_SUMMARY : null);
   const [summaryLoading, setSummaryLoading] = useState(false);
 
-  // 이전 라운드 결정: 진행 중 라운드의 바로 앞 라운드, 진행 중 라운드가 없으면 가장 최근 종료된 라운드
+  // 이번 주차 결정: 진행 중 라운드 우선, 없으면 가장 최근 종료된 라운드
   const sortedRounds = [...rounds].sort((a, b) => a.week - b.week);
-  const activeIdx = sortedRounds.findIndex((r) => r.status === "active");
-  const prevRound =
-    activeIdx > 0
-      ? sortedRounds[activeIdx - 1]
-      : activeIdx === -1
-        ? ([...sortedRounds].reverse().find((r) => r.status === "closed") ?? null)
-        : null;
-  const prevRoundLabel = prevRound ? (prevRound.label ?? `${prevRound.week}주차`) : null;
+  const currentRound =
+    sortedRounds.find((r) => r.status === "active") ??
+    [...sortedRounds].reverse().find((r) => r.status === "closed") ??
+    null;
+  const currentRoundLabel = currentRound ? (currentRound.label ?? `${currentRound.week}주차`) : null;
 
-  // 이전 라운드의 표시 가능한 익명 의견만 추출
-  const roundComments = prevRound
+  // 이번 주차의 표시 가능한 익명 의견만 추출
+  const roundComments = currentRound
     ? commentFeedbacks.filter(
         (cf) =>
-          cf.roundId === prevRound.id &&
+          cf.roundId === currentRound.id &&
           Boolean((cf.filteredComment ?? cf.comment)?.trim())
       )
     : [];
@@ -519,7 +528,7 @@ export function CommentsSection({
       .finally(() => setSummaryLoading(false));
   };
 
-  // 마운트 시 이전 라운드 의견 요약 로드
+  // 마운트 시 이번 주차 의견 요약 로드
   useEffect(() => {
     if (total > 0 && !summary && !summaryLoading) runSummarize();
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -527,7 +536,7 @@ export function CommentsSection({
 
   const summaryBox = (
     <div className="rounded-lg border border-blue-100 bg-blue-50/60 px-4 py-3 text-sm leading-relaxed text-[#27496D]">
-      <p className="mb-1 text-xs font-bold text-slate-400">{prevRoundLabel} AI 의견 요약</p>
+      <p className="mb-1 text-xs font-bold text-slate-400">{currentRoundLabel} AI 의견 요약</p>
       {summaryLoading ? (
         <p className="text-slate-400">AI 요약 생성 중...</p>
       ) : summary ? (
@@ -543,9 +552,9 @@ export function CommentsSection({
       <CardHeader>
         <div className="flex items-start justify-between">
           <div>
-            <CardTitle className="text-base text-[#10233F]">지난 라운드 학생 의견</CardTitle>
+            <CardTitle className="text-base text-[#10233F]">이번 주차 학생 의견</CardTitle>
             <CardDescription className="text-slate-500">
-              {prevRound ? `${prevRoundLabel} 의견 (${total}건)` : "표시할 이전 라운드가 없습니다"}
+              {currentRound ? `${currentRoundLabel} 의견 (${total}건)` : "표시할 주차가 없습니다"}
             </CardDescription>
           </div>
           {total > 0 && (
@@ -559,12 +568,12 @@ export function CommentsSection({
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        {!prevRound ? (
+        {!currentRound ? (
           <p className="text-slate-400 text-sm">
-            아직 종료된 이전 라운드가 없습니다. 라운드가 마무리되면 직전 라운드 의견을 모아 보여드립니다.
+            아직 표시할 평가 회차가 없습니다. 평가가 시작되면 이번 주차 의견을 모아 보여드립니다.
           </p>
         ) : total === 0 ? (
-          <p className="text-slate-400 text-sm">{prevRoundLabel}에 남겨진 의견이 없습니다.</p>
+          <p className="text-slate-400 text-sm">{currentRoundLabel}에 남겨진 의견이 없습니다.</p>
         ) : open ? (
           <div className="space-y-4">
             <div className="flex items-center justify-between gap-3 rounded-2xl border border-blue-100 bg-white/80 px-3 py-2">

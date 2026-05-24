@@ -81,7 +81,7 @@ export default async function CourseDashboardPage(
     }
   }
 
-  // 하단 "지난 라운드 학생 의견" 카드는 이전 라운드만 표시 (CommentsSection 내부에서 roundId로 필터링)
+  // 하단 "이번 주차 학생 의견" 카드는 진행 중 라운드 우선으로 표시한다.
   const allCommentFeedbacks: typeof commentFeedbacks = [];
   for (const fb of course.feedbacks) {
     if (!fb.comment) continue;
