@@ -8,8 +8,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import { saveImprovementNote } from "@/app/actions/improvement-notes";
 import { generateClassChecklist, type ClassChecklist } from "@/app/actions/class-checklist";
-import type { SignificantChange, SemesterComparison, RoundReportsResult, RoundMaterialSummary } from "@/app/actions/round-reports";
-import { DEMO_CLASS_CHECKLIST } from "@/lib/demo-ai-fixtures";
+import { summarizeComments } from "@/app/actions/filter-comments";
+import type { SignificantChange, SemesterComparison, RoundReportsResult, RoundMaterialSummary, RoundComment } from "@/app/actions/round-reports";
+import { DEMO_CLASS_CHECKLIST, DEMO_COMMENT_SUMMARY } from "@/lib/demo-ai-fixtures";
 import {
   displayMaterialMetricValue,
   materialMetricStyle,
@@ -21,6 +22,136 @@ const V3_CARD =
 function formatDate(iso: string) {
   const d = new Date(iso);
   return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, "0")}.${String(d.getDate()).padStart(2, "0")}`;
+}
+
+function formatCommentDate(iso: string) {
+  return new Date(iso).toLocaleDateString("ko-KR", {
+    month: "short",
+    day: "numeric",
+  });
+}
+
+function CommentBody({ text }: { text: string }) {
+  const segments = text
+    .split(/(?=좋았던 점\s*:|아쉬웠던 점\s*:|어려웠던 점\s*:)/)
+    .map((s) => s.trim())
+    .filter(Boolean)
+    .map((s) => {
+      if (/^좋았던 점\s*:/.test(s)) {
+        return { kind: "positive" as const, body: s.replace(/^좋았던 점\s*:\s*/, "") };
+      }
+      if (/^(아쉬웠던 점|어려웠던 점)\s*:/.test(s)) {
+        return { kind: "difficulty" as const, body: s.replace(/^(아쉬웠던 점|어려웠던 점)\s*:\s*/, "") };
+      }
+      return { kind: "other" as const, body: s };
+    });
+
+  if (!segments.some((s) => s.kind !== "other")) {
+    return <p>{text}</p>;
+  }
+
+  return (
+    <div className="space-y-1.5">
+      {segments.map((seg, index) =>
+        seg.kind === "positive" ? (
+          <p key={index}>
+            <span className="font-extrabold text-[#1677FF]">좋았던 점</span> {seg.body}
+          </p>
+        ) : seg.kind === "difficulty" ? (
+          <p key={index}>
+            <span className="font-extrabold text-red-600">아쉬웠던 점</span> {seg.body}
+          </p>
+        ) : (
+          <p key={index}>{seg.body}</p>
+        )
+      )}
+    </div>
+  );
+}
+
+// 라운드별 학생 의견: 접으면 AI 요약, 펼치면 전체 의견
+function RoundComments({
+  comments,
+  demoMode,
+  cachedSummary,
+  onSummary,
+}: {
+  comments: RoundComment[];
+  demoMode: boolean;
+  cachedSummary: string | null;
+  onSummary: (summary: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [summary, setSummary] = useState<string | null>(cachedSummary);
+  const [loading, setLoading] = useState(false);
+
+  // 마운트 시 자동으로 요약 생성 — 이미 캐시된 요약이 있으면 재호출하지 않음
+  useEffect(() => {
+    if (summary || loading || comments.length === 0) return;
+    if (demoMode) {
+      setSummary(DEMO_COMMENT_SUMMARY);
+      onSummary(DEMO_COMMENT_SUMMARY);
+      return;
+    }
+    setLoading(true);
+    summarizeComments(comments.map((comment) => comment.text))
+      .then((res) => {
+        if (res.summary) {
+          setSummary(res.summary);
+          onSummary(res.summary);
+        }
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  return (
+    <div className="mt-3 rounded-2xl border border-blue-100 bg-white/80 p-3">
+      <div className="flex items-start justify-between gap-3">
+        <p className="text-xs font-extrabold text-[#10233F]">
+          {open ? `학생 의견 (${comments.length}건)` : "학생 의견 요약"}
+        </p>
+        <button
+          type="button"
+          onClick={() => setOpen((v) => !v)}
+          className="shrink-0 text-xs font-bold text-slate-400 underline underline-offset-2 hover:text-[#0F5FD7]"
+        >
+          {open ? "접기" : "펼치기"}
+        </button>
+      </div>
+
+      {open ? (
+        <ul className="mt-2 space-y-2">
+          {comments.map((comment, index) => (
+            <li
+              key={index}
+              className="rounded-xl bg-blue-50/45 px-3 py-2 text-xs font-medium leading-5 text-[#27496D]"
+            >
+              <p className="mb-1 text-right text-[10px] font-bold text-slate-400">
+                {formatCommentDate(comment.createdAt)}
+              </p>
+              <CommentBody text={comment.text} />
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <div className="mt-2">
+          {loading ? (
+            <p className="animate-pulse text-xs font-medium leading-5 text-slate-400">
+              AI 요약 생성 중...
+            </p>
+          ) : summary ? (
+            <p className="text-xs font-medium leading-5 text-[#27496D]">{summary}</p>
+          ) : (
+            <p className="text-xs font-medium leading-5 text-slate-400">
+              요약할 의견이 충분하지 않습니다. 펼치기를 눌러 전체 의견을 확인하세요.
+            </p>
+          )}
+        </div>
+      )}
+    </div>
+  );
 }
 
 function Stat({
@@ -630,6 +761,8 @@ export function RoundReports({ courseId, data, demoMode = false }: Props) {
   const { rounds, currentSemester, semesterComparison } = data;
   const hasRounds = rounds.length > 0;
   const hasSemester = semesterComparison !== null;
+  // 라운드별 학생 의견 AI 요약 캐시 (리렌더 시 재생성 방지)
+  const [commentSummaries, setCommentSummaries] = useState<Record<string, string>>({});
 
   if (!hasRounds && !hasSemester) {
     return (
@@ -646,7 +779,7 @@ export function RoundReports({ courseId, data, demoMode = false }: Props) {
     <Card className={V3_CARD}>
       <CardHeader>
         <CardTitle className="text-base text-[#10233F]">주차별 리포트</CardTitle>
-        <CardDescription className="text-slate-500">각 라운드 종료 시점의 응답 요약입니다.</CardDescription>
+        <CardDescription className="text-slate-500">각 라운드 종료 시점의 응답 요약과 학생 의견입니다.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-3">
         {/* 학기 전체 결산 */}
@@ -730,6 +863,17 @@ export function RoundReports({ courseId, data, demoMode = false }: Props) {
                   />
                 )}
               </div>
+            )}
+
+            {r.comments.length > 0 && (
+              <RoundComments
+                comments={r.comments}
+                demoMode={demoMode}
+                cachedSummary={commentSummaries[r.id] ?? null}
+                onSummary={(text) =>
+                  setCommentSummaries((prev) => ({ ...prev, [r.id]: text }))
+                }
+              />
             )}
 
             <MaterialsSection

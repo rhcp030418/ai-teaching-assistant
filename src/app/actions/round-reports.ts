@@ -30,6 +30,45 @@ export interface SignificantChange {
   delta: number; // 변화량 (양수 = 개선)
 }
 
+export interface RoundComment {
+  text: string;
+  createdAt: string;
+}
+
+// 표시용 코멘트 1건 구성 (rounds.ts와 동일 규칙: 순화본 > 원문 > 좋았던/아쉬웠던 점 조합)
+function buildDisplayComment(feedback: {
+  filteredComment: string | null;
+  comment: string | null;
+  positiveComment: string | null;
+  difficultyComment: string | null;
+}): string | null {
+  if (feedback.filteredComment?.trim()) return feedback.filteredComment;
+  if (feedback.comment?.trim()) return feedback.comment;
+
+  const parts: string[] = [];
+  if (feedback.positiveComment?.trim()) parts.push(`좋았던 점: ${feedback.positiveComment}`);
+  if (feedback.difficultyComment?.trim()) parts.push(`아쉬웠던 점: ${feedback.difficultyComment}`);
+  return parts.join("\n\n") || null;
+}
+
+function buildComments(
+  fbs: {
+    filteredComment: string | null;
+    comment: string | null;
+    positiveComment: string | null;
+    difficultyComment: string | null;
+    createdAt: Date;
+  }[]
+): RoundComment[] {
+  return fbs
+    .map((fb) => {
+      const text = buildDisplayComment(fb);
+      if (!text?.trim()) return null;
+      return { text, createdAt: fb.createdAt.toISOString() };
+    })
+    .filter((item): item is RoundComment => item !== null);
+}
+
 export interface RoundMaterialSummary {
   id: string;
   fileName: string;
@@ -60,6 +99,7 @@ export interface RoundReport {
   significantChanges: SignificantChange[];
   submittedNoteAxes: string[];
   materials: RoundMaterialSummary[];
+  comments: RoundComment[];
 }
 
 export type SemesterComparisonType =
@@ -173,6 +213,7 @@ export async function getRoundReports(courseId: string): Promise<RoundReportsRes
         significantChanges: [],
         submittedNoteAxes: round.improvementNotes.map((n) => n.axis),
         materials,
+        comments: [],
       };
     }
 
@@ -201,6 +242,7 @@ export async function getRoundReports(courseId: string): Promise<RoundReportsRes
       significantChanges: [],
       submittedNoteAxes: round.improvementNotes.map((n) => n.axis),
       materials,
+      comments: buildComments(fbs),
     };
   });
 

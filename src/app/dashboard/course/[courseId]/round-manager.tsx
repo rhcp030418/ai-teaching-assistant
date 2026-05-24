@@ -1,8 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { createRound, deleteRound, getRounds, updateRoundPeriod } from "@/app/actions/rounds";
-import { summarizeComments } from "@/app/actions/filter-comments";
 import {
   Card,
   CardContent,
@@ -13,15 +12,9 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { DEMO_COMMENT_SUMMARY } from "@/lib/demo-ai-fixtures";
 
 const V3_CARD =
   "ring-0 border-blue-100 bg-white/90 shadow-[0_10px_30px_-15px_rgba(23,87,168,0.25)]";
-
-interface RoundComment {
-  text: string;
-  createdAt: string;
-}
 
 interface Round {
   id: string;
@@ -32,68 +25,16 @@ interface Round {
   status: "pending" | "active" | "closed" | "overlap";
   feedbackCount: number;
   submissionCount: number;
-  summary: {
-    speedModerate: number;
-    comprehensionHigh: number;
-    communicationAvg: number;
-  };
-  comments: RoundComment[];
 }
 
 interface Props {
   courseId: string;
   initialRounds: Round[];
-  demoMode?: boolean;
 }
 
 function formatDate(iso: string) {
   const d = new Date(iso);
   return `${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
-}
-
-function formatCommentDate(iso: string) {
-  return new Date(iso).toLocaleDateString("ko-KR", {
-    month: "short",
-    day: "numeric",
-  });
-}
-
-function CommentBody({ text }: { text: string }) {
-  const segments = text
-    .split(/(?=좋았던 점\s*:|아쉬웠던 점\s*:|어려웠던 점\s*:)/)
-    .map((s) => s.trim())
-    .filter(Boolean)
-    .map((s) => {
-      if (/^좋았던 점\s*:/.test(s)) {
-        return { kind: "positive" as const, body: s.replace(/^좋았던 점\s*:\s*/, "") };
-      }
-      if (/^(아쉬웠던 점|어려웠던 점)\s*:/.test(s)) {
-        return { kind: "difficulty" as const, body: s.replace(/^(아쉬웠던 점|어려웠던 점)\s*:\s*/, "") };
-      }
-      return { kind: "other" as const, body: s };
-    });
-
-  if (!segments.some((s) => s.kind !== "other")) {
-    return <p>{text}</p>;
-  }
-
-  return (
-    <div className="space-y-1.5">
-      {segments.map((seg, index) =>
-        seg.kind === "positive" ? (
-          <p key={index}>
-            <span className="font-extrabold text-[#1677FF]">좋았던 점</span> {seg.body}
-          </p>
-        ) : seg.kind === "difficulty" ? (
-          <p key={index}>
-            <span className="font-extrabold text-red-600">아쉬웠던 점</span> {seg.body}
-          </p>
-        ) : (
-          <p key={index}>{seg.body}</p>
-        )
-      )}
-    </div>
-  );
 }
 
 function statusBadge(status: Round["status"]) {
@@ -130,10 +71,8 @@ function defaultExpandedRoundId(rounds: Round[]) {
   )?.id ?? null;
 }
 
-export function RoundManager({ courseId, initialRounds, demoMode = false }: Props) {
+export function RoundManager({ courseId, initialRounds }: Props) {
   const [rounds, setRounds] = useState<Round[]>(initialRounds);
-  // 라운드별 학생 의견 AI 요약 캐시 (재펼침 시 재생성 방지)
-  const [commentSummaries, setCommentSummaries] = useState<Record<string, string>>({});
   const [newWeek, setNewWeek] = useState(
     initialRounds.length > 0 ? Math.max(...initialRounds.map((r) => r.week)) + 1 : 1
   );
@@ -273,57 +212,16 @@ export function RoundManager({ courseId, initialRounds, demoMode = false }: Prop
                 </button>
                 {expandedId === round.id && (
                   <div className="mt-4 space-y-3 border-t border-white/70 pt-3">
-                    <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-                      <div className="rounded-xl bg-white/80 px-3 py-2">
-                        <p className="text-[11px] font-bold text-slate-400">피드백</p>
-                        <p className="mt-0.5 text-sm font-extrabold text-[#10233F]">{round.feedbackCount}건</p>
-                      </div>
-                      <div className="rounded-xl bg-white/80 px-3 py-2">
-                        <p className="text-[11px] font-bold text-slate-400">제출자</p>
-                        <p className="mt-0.5 text-sm font-extrabold text-[#10233F]">{round.submissionCount}명</p>
-                      </div>
-                      <div className="col-span-2 rounded-xl bg-white/80 px-3 py-2 sm:col-span-1">
-                        <p className="text-[11px] font-bold text-slate-400">주차</p>
-                        <p className="mt-0.5 text-sm font-extrabold text-[#10233F]">{round.week}주차</p>
-                      </div>
-                    </div>
-
                     {round.status === "overlap" && (
                       <p className="rounded-xl border border-red-100 bg-white/75 px-3 py-2 text-xs font-semibold leading-5 text-red-600">
                         현재 시간 기준으로 다른 평가 회차와 기간이 겹칩니다. 학생 제출 라운드가 모호해질 수 있으니 운영 기간을 조정해주세요.
                       </p>
                     )}
 
-                    {round.feedbackCount > 0 && (
-                      <div className="rounded-2xl border border-blue-100 bg-white/80 p-3">
-                        <p className="text-xs font-extrabold text-[#10233F]">응답 요약</p>
-                        <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-3">
-                          <div className="rounded-xl bg-blue-50/70 px-3 py-2">
-                            <p className="text-[11px] font-bold text-slate-500">적정 속도</p>
-                            <p className="mt-0.5 text-sm font-extrabold text-[#0F5FD7]">{round.summary.speedModerate}%</p>
-                          </div>
-                          <div className="rounded-xl bg-emerald-50/70 px-3 py-2">
-                            <p className="text-[11px] font-bold text-slate-500">내용 이해 4점 이상</p>
-                            <p className="mt-0.5 text-sm font-extrabold text-emerald-700">{round.summary.comprehensionHigh}%</p>
-                          </div>
-                          <div className="rounded-xl bg-amber-50/70 px-3 py-2">
-                            <p className="text-[11px] font-bold text-slate-500">질문·소통 평균</p>
-                            <p className="mt-0.5 text-sm font-extrabold text-amber-700">{round.summary.communicationAvg}/5</p>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    {round.comments.length > 0 && (
-                      <RoundComments
-                        comments={round.comments}
-                        demoMode={demoMode}
-                        cachedSummary={commentSummaries[round.id] ?? null}
-                        onSummary={(text) =>
-                          setCommentSummaries((prev) => ({ ...prev, [round.id]: text }))
-                        }
-                      />
-                    )}
+                    <p className="rounded-xl bg-blue-50/55 px-3 py-2 text-[11px] font-medium leading-5 text-[#27496D]">
+                      학생 의견과 응답 요약은 <span className="font-bold">주차별 리포트</span>에서 확인할 수 있습니다.
+                      여기서는 운영 기간만 조정합니다.
+                    </p>
 
                     {editingId === round.id ? (
                       <div className="rounded-2xl border border-blue-100 bg-white/80 p-3">
@@ -432,90 +330,5 @@ export function RoundManager({ courseId, initialRounds, demoMode = false }: Prop
         </div>
       </CardContent>
     </Card>
-  );
-}
-
-// 라운드별 학생 의견: 접으면 AI 요약, 펼치면 전체 의견
-function RoundComments({
-  comments,
-  demoMode,
-  cachedSummary,
-  onSummary,
-}: {
-  comments: RoundComment[];
-  demoMode: boolean;
-  cachedSummary: string | null;
-  onSummary: (summary: string) => void;
-}) {
-  const [open, setOpen] = useState(false);
-  const [summary, setSummary] = useState<string | null>(cachedSummary);
-  const [loading, setLoading] = useState(false);
-
-  // 펼침(상세) 시 자동으로 요약 생성 — 이미 캐시된 요약이 있으면 재호출하지 않음
-  useEffect(() => {
-    if (summary || loading || comments.length === 0) return;
-    if (demoMode) {
-      setSummary(DEMO_COMMENT_SUMMARY);
-      onSummary(DEMO_COMMENT_SUMMARY);
-      return;
-    }
-    setLoading(true);
-    summarizeComments(comments.map((comment) => comment.text))
-      .then((res) => {
-        if (res.summary) {
-          setSummary(res.summary);
-          onSummary(res.summary);
-        }
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  return (
-    <div className="rounded-2xl border border-blue-100 bg-white/80 p-3">
-      <div className="flex items-start justify-between gap-3">
-        <p className="text-xs font-extrabold text-[#10233F]">
-          {open ? `학생 의견 (${comments.length}건)` : "학생 의견 요약"}
-        </p>
-        <button
-          type="button"
-          onClick={() => setOpen((v) => !v)}
-          className="shrink-0 text-xs font-bold text-slate-400 underline underline-offset-2 hover:text-[#0F5FD7]"
-        >
-          {open ? "접기" : "펼치기"}
-        </button>
-      </div>
-
-      {open ? (
-        <ul className="mt-2 space-y-2">
-          {comments.map((comment, index) => (
-            <li
-              key={index}
-              className="rounded-xl bg-blue-50/45 px-3 py-2 text-xs font-medium leading-5 text-[#27496D]"
-            >
-              <p className="mb-1 text-right text-[10px] font-bold text-slate-400">
-                {formatCommentDate(comment.createdAt)}
-              </p>
-              <CommentBody text={comment.text} />
-            </li>
-          ))}
-        </ul>
-      ) : (
-        <div className="mt-2">
-          {loading ? (
-            <p className="animate-pulse text-xs font-medium leading-5 text-slate-400">
-              AI 요약 생성 중...
-            </p>
-          ) : summary ? (
-            <p className="text-xs font-medium leading-5 text-[#27496D]">{summary}</p>
-          ) : (
-            <p className="text-xs font-medium leading-5 text-slate-400">
-              요약할 의견이 충분하지 않습니다. 펼치기를 눌러 전체 의견을 확인하세요.
-            </p>
-          )}
-        </div>
-      )}
-    </div>
   );
 }

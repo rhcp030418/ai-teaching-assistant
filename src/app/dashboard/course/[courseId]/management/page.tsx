@@ -8,6 +8,7 @@ import { isDemoUser } from "@/lib/auth-utils";
 import { RoundManager } from "../round-manager";
 import { TokenManager } from "../token-manager";
 import { RoundReports } from "../round-reports";
+import { AdditionalFeedbackReport } from "../additional-feedback-report";
 
 const PAGE_HERO =
   "rounded-[24px] border border-blue-100/90 bg-[linear-gradient(135deg,rgba(255,255,255,0.96),rgba(237,247,255,0.82))] p-6 shadow-[0_18px_48px_-30px_rgba(23,87,168,0.42)]";
@@ -41,15 +42,16 @@ export default async function ManagementPage({
       </div>
 
       <div className="grid gap-8 xl:grid-cols-[minmax(0,1fr)_360px] xl:items-start">
-        {/* ─── 회차별 기록과 상세 분석 ───────────────────────────────────── */}
+        {/* ─── 회차별 기록과 추가 피드백 리포트 ──────────────────────────── */}
         <section className="space-y-4">
           <div>
-            <h2 className={SECTION_TITLE}>강의평가 회차 관리</h2>
+            <h2 className={SECTION_TITLE}>회차별 기록</h2>
             <p className={SECTION_DESC}>
-              회차별 학생 의견, 요약, 강의자료 연결 분석을 한 흐름에서 확인합니다.
+              종료된 주차별 응답 요약·학생 의견과 강의 전반 추가 피드백을 한 곳에서 확인합니다.
             </p>
           </div>
           <RoundReports courseId={courseId} data={roundReports} demoMode={demoMode} />
+          <AdditionalFeedbackReport feedbacks={additionalFeedbacks} />
         </section>
 
         {/* ─── 운영 사이드바 ─────────────────────────────────────────────── */}
@@ -57,16 +59,12 @@ export default async function ManagementPage({
           <div>
             <h2 className={SECTION_TITLE}>운영 도구</h2>
             <p className={SECTION_DESC}>
-              새 강의평가를 만들거나 추가 피드백 링크를 발급합니다.
+              새 강의평가 회차의 운영 기간을 만들거나 추가 피드백 링크를 발급합니다.
             </p>
           </div>
           <div className="space-y-5">
-            <RoundManager courseId={courseId} initialRounds={rounds} demoMode={demoMode} />
-            <TokenManager
-              courseId={courseId}
-              initialStats={tokenStats}
-              initialFeedbacks={additionalFeedbacks}
-            />
+            <RoundManager courseId={courseId} initialRounds={rounds} />
+            <TokenManager courseId={courseId} initialStats={tokenStats} />
           </div>
         </aside>
       </div>
