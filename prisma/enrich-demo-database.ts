@@ -466,7 +466,7 @@ function materialAnalysis(week: number) {
       week >= 5
         ? "인덱스, 트리거, 집계 파이프라인처럼 절차와 원리를 함께 이해해야 하는 내용이 포함되어 있습니다."
         : "핵심 개념은 명확하지만 처음 접하는 용어가 있어 예시와 표가 함께 제시될 때 이해가 쉽습니다.",
-    termDensity: week >= 5 ? "높음" : "중간",
+    termDensity: week >= 5 ? "높음" : "보통",
     exampleSufficiency: week >= 4 ? "충분" : "보완 필요",
     improvements: weekImprovements[week] ?? weekImprovements[6],
   });

@@ -13,6 +13,10 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { DEMO_MATERIAL_ANALYSIS } from "@/lib/demo-ai-fixtures";
+import {
+  displayMaterialMetricValue,
+  materialMetricStyle,
+} from "@/lib/material-analysis-style";
 
 interface RoundStats {
   total: number;
@@ -54,79 +58,6 @@ const MAX_UPLOAD_SIZE = 10 * 1024 * 1024; // 10MB
 const V3_CARD =
   "ring-0 border-blue-100 bg-white/90 shadow-[0_10px_30px_-15px_rgba(23,87,168,0.25)]";
 
-function normalizeExampleSufficiency(value: string) {
-  if (value.includes("부족") || value.includes("보완")) return "보완 필요";
-  if (value.includes("충분")) return "충분";
-  return "보통";
-}
-
-function metricStyle(kind: "difficulty" | "term" | "example", value: string) {
-  if (kind === "difficulty") {
-    if (value.includes("상") || value.includes("높")) {
-      return {
-        card: "border-rose-100 bg-rose-50/80",
-        label: "text-rose-600",
-        badge: "bg-rose-100 text-rose-700",
-      };
-    }
-    if (value.includes("중") || value.includes("보통")) {
-      return {
-        card: "border-amber-100 bg-amber-50/80",
-        label: "text-amber-600",
-        badge: "bg-amber-100 text-amber-700",
-      };
-    }
-    return {
-      card: "border-emerald-100 bg-emerald-50/80",
-      label: "text-emerald-600",
-      badge: "bg-emerald-100 text-emerald-700",
-    };
-  }
-
-  if (kind === "term") {
-    if (value.includes("높")) {
-      return {
-        card: "border-orange-100 bg-orange-50/80",
-        label: "text-orange-600",
-        badge: "bg-orange-100 text-orange-700",
-      };
-    }
-    if (value.includes("낮")) {
-      return {
-        card: "border-emerald-100 bg-emerald-50/80",
-        label: "text-emerald-600",
-        badge: "bg-emerald-100 text-emerald-700",
-      };
-    }
-    return {
-      card: "border-sky-100 bg-sky-50/80",
-      label: "text-sky-600",
-      badge: "bg-sky-100 text-sky-700",
-    };
-  }
-
-  const normalized = normalizeExampleSufficiency(value);
-  if (normalized === "충분") {
-    return {
-      card: "border-emerald-100 bg-emerald-50/80",
-      label: "text-emerald-600",
-      badge: "bg-emerald-100 text-emerald-700",
-    };
-  }
-  if (normalized === "보완 필요") {
-    return {
-      card: "border-amber-100 bg-amber-50/80",
-      label: "text-amber-600",
-      badge: "bg-amber-100 text-amber-700",
-    };
-  }
-  return {
-    card: "border-blue-100 bg-blue-50/80",
-    label: "text-[#0F5FD7]",
-    badge: "bg-blue-100 text-blue-700",
-  };
-}
-
 function MaterialMetric({
   label,
   value,
@@ -136,8 +67,8 @@ function MaterialMetric({
   value: string;
   kind: "difficulty" | "term" | "example";
 }) {
-  const style = metricStyle(kind, value);
-  const displayValue = kind === "example" ? normalizeExampleSufficiency(value) : value;
+  const style = materialMetricStyle(kind, value);
+  const displayValue = displayMaterialMetricValue(kind, value);
   return (
     <div className={`rounded-2xl border p-3 text-center ${style.card}`}>
       <p className={`mb-1 text-xs font-extrabold ${style.label}`}>{label}</p>

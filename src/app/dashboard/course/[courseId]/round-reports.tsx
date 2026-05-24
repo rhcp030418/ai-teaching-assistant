@@ -10,6 +10,10 @@ import { saveImprovementNote } from "@/app/actions/improvement-notes";
 import { generateClassChecklist, type ClassChecklist } from "@/app/actions/class-checklist";
 import type { SignificantChange, SemesterComparison, RoundReportsResult, RoundMaterialSummary } from "@/app/actions/round-reports";
 import { DEMO_CLASS_CHECKLIST } from "@/lib/demo-ai-fixtures";
+import {
+  displayMaterialMetricValue,
+  materialMetricStyle,
+} from "@/lib/material-analysis-style";
 
 const V3_CARD =
   "ring-0 border-blue-100 bg-white/90 shadow-[0_10px_30px_-15px_rgba(23,87,168,0.25)]";
@@ -444,6 +448,23 @@ function SuggestionLine({
   );
 }
 
+function MaterialBadge({
+  label,
+  value,
+  kind,
+}: {
+  label: string;
+  value: string;
+  kind: "difficulty" | "term" | "example";
+}) {
+  const style = materialMetricStyle(kind, value);
+  return (
+    <Badge className={`${style.badge} text-xs`}>
+      {label} {displayMaterialMetricValue(kind, value)}
+    </Badge>
+  );
+}
+
 function MaterialsSection({
   materials,
   roundStats,
@@ -505,43 +526,12 @@ function MaterialsSection({
                   </span>
                   {mat.difficulty ? (
                     <div className="flex items-center gap-1.5 shrink-0 flex-wrap">
-                      <Badge
-                        className={
-                          mat.difficulty === "상"
-                            ? "bg-red-100 text-red-700 text-xs"
-                            : mat.difficulty === "중"
-                              ? "bg-yellow-100 text-yellow-700 text-xs"
-                              : "bg-green-100 text-green-700 text-xs"
-                        }
-                      >
-                        난이도 {mat.difficulty}
-                      </Badge>
+                      <MaterialBadge label="난이도" value={mat.difficulty} kind="difficulty" />
                       {mat.exampleSufficiency && (
-                        <Badge
-                          className={
-                            mat.exampleSufficiency === "부족" || mat.exampleSufficiency === "보완 필요"
-                              ? "bg-orange-100 text-orange-700 text-xs"
-                              : mat.exampleSufficiency === "충분"
-                                ? "bg-green-100 text-green-700 text-xs"
-                                : "bg-gray-100 text-gray-600 text-xs"
-                          }
-                        >
-                          예시 {mat.exampleSufficiency}
-                        </Badge>
+                        <MaterialBadge label="예시 충분도" value={mat.exampleSufficiency} kind="example" />
                       )}
                       {mat.termDensity && (
-                        <Badge
-                          variant="outline"
-                          className={`text-xs ${
-                            mat.termDensity === "높음"
-                              ? "border-orange-200 bg-orange-50 text-orange-700"
-                              : mat.termDensity === "낮음"
-                                ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-                                : "border-sky-200 bg-sky-50 text-sky-700"
-                          }`}
-                        >
-                          용어 {mat.termDensity}
-                        </Badge>
+                        <MaterialBadge label="전문 용어 밀도" value={mat.termDensity} kind="term" />
                       )}
                     </div>
                   ) : (

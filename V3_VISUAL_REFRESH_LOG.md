@@ -837,3 +837,25 @@ Reason: User wanted `강의평가 회차 생성` and `추가 피드백 링크` t
 - **Material suggestion evidence parsing**: made evidence parsing accept trailing `(method)` and `[근거: ...]` formats, so AI suggestions can show the suggestion body first and the evidence line separately.
 - **Demo material suggestions**: added explicit method/evidence parentheses to demo AI improvement suggestions so the demo screen reliably displays `근거 기법`.
 - **Stale analysis copy**: changed `새 피드백 반영 가능` to `최신 의견으로 재분석 가능` and clarified that it appears when student opinions were added after the previous material analysis.
+
+### V2.17 — Material Metric Style Unification (Codex)
+
+Status: Complete
+
+Reason: User found that material metrics in `관리 및 기록 - 주차별 리포트` did not match the naming and color system used in the dedicated `강의자료 분석` tab.
+
+#### Files Changed
+
+- `src/lib/material-analysis-style.ts`
+- `src/app/dashboard/course/[courseId]/materials/materials-client.tsx`
+- `src/app/dashboard/course/[courseId]/round-reports.tsx`
+- `prisma/enrich-demo-database.ts`
+- `V3_VISUAL_REFRESH_LOG.md`
+
+#### Changes
+
+- **Shared metric style helper**: added `material-analysis-style.ts` so material metric names, display values, and color classes come from one source.
+- **Materials tab alignment**: updated `materials-client.tsx` to use the shared helper instead of local duplicated styling logic.
+- **Round report alignment**: changed round-report badges from shortened labels like `예시`, `용어` to the same labels used in the material tab: `난이도`, `예시 충분도`, `전문 용어 밀도`.
+- **Color consistency**: round-report badges now use the same semantic colors as the material tab: rose/amber/emerald for difficulty, orange/sky/emerald for term density, and amber/blue/emerald for example sufficiency.
+- **Demo seed wording**: changed demo material `termDensity` fallback from `중간` to `보통` to match the AI prompt and UI wording.
