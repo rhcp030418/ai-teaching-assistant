@@ -55,7 +55,7 @@ export default async function ManagementPage({
         </section>
 
         {/* ─── 운영 사이드바 ─────────────────────────────────────────────── */}
-        <aside className="space-y-5 xl:sticky xl:top-28">
+        <aside className="space-y-5">
           <div>
             <h2 className={SECTION_TITLE}>운영 도구</h2>
             <p className={SECTION_DESC}>
