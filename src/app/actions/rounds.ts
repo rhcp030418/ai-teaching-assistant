@@ -4,7 +4,6 @@ import { prisma } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import { getRoundStatus } from "@/lib/round-utils";
 import { comprehensionScore } from "@/lib/feedback-stats";
-import { isDemoUser, DEMO_READ_ONLY } from "@/lib/auth-utils";
 
 type RoundStatusForUi = "pending" | "active" | "closed" | "overlap";
 
@@ -143,7 +142,6 @@ export async function createRound(
 ) {
   const session = await auth();
   if (!session?.user?.id) return { success: false, error: "인증 필요" };
-  if (isDemoUser(session.user.email)) return DEMO_READ_ONLY;
 
   const course = await prisma.course.findFirst({
     where: { id: courseId, professorId: session.user.id },
@@ -190,7 +188,6 @@ export async function updateRoundPeriod(
 ) {
   const session = await auth();
   if (!session?.user?.id) return { success: false, error: "인증 필요" };
-  if (isDemoUser(session.user.email)) return DEMO_READ_ONLY;
 
   const round = await prisma.feedbackRound.findUnique({
     where: { id: roundId },
@@ -228,7 +225,6 @@ export async function updateRoundPeriod(
 export async function deleteRound(roundId: string) {
   const session = await auth();
   if (!session?.user?.id) return { success: false, error: "인증 필요" };
-  if (isDemoUser(session.user.email)) return DEMO_READ_ONLY;
 
   const round = await prisma.feedbackRound.findUnique({
     where: { id: roundId },

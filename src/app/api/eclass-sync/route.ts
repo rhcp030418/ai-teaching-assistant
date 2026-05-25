@@ -36,14 +36,14 @@ function isNonCourseItem(eclassCourse: ValidEclassCourse) {
 
 async function getAutoProvisionProfessorId() {
   const email = "eclass-sync@hansung.ac.kr";
-  const password = await hashPassword("demo1234");
   const professor = await prisma.professor.upsert({
     where: { email },
-    update: { name: "e-class 동기화", password },
+    update: { name: "e-class 동기화" },
     create: {
       name: "e-class 동기화",
       email,
-      password,
+      // 사람이 로그인하지 않는 자동 소유 계정 — 추측 불가능한 임의 비밀번호로 잠근다.
+      password: await hashPassword(crypto.randomBytes(32).toString("hex")),
     },
     select: { id: true },
   });

@@ -2,7 +2,6 @@ import { getOwnedCourse } from "@/lib/course-access";
 import { computeFeedbackCounts } from "@/lib/feedback-stats";
 import { CourseNav } from "./course-nav";
 import { ChatSidePanel } from "./chat-side-panel";
-import { isDemoUser } from "@/lib/auth-utils";
 import {
   COMM_AVG_THRESHOLD,
   SPEED_MODERATE_THRESHOLD,
@@ -62,9 +61,8 @@ export default async function CourseLayout({
   params: Promise<{ courseId: string }>;
 }) {
   const { courseId } = await params;
-  // 소유권/데모 가드 + 헤더 메타. cache()로 page.tsx의 동일 호출과 dedupe.
+  // 소유권 가드 + 헤더 메타. cache()로 page.tsx의 동일 호출과 dedupe.
   const course = await getOwnedCourse(courseId);
-  const demoMode = isDemoUser(course.professor.email);
 
   // 채팅 추천 질문용 통계 (computeFeedbackCounts는 순수 함수)
   const { total, speedCounts, compCounts, commSum } = computeFeedbackCounts(course.feedbacks);
@@ -118,7 +116,7 @@ export default async function CourseLayout({
       {children}
 
       {/* 채팅은 레이아웃에서 단일 마운트 → 4개 코스 페이지 어디서나 접근 */}
-      <ChatSidePanel courseId={courseId} suggestions={suggestions} demoMode={demoMode} />
+      <ChatSidePanel courseId={courseId} suggestions={suggestions} />
     </div>
   );
 }

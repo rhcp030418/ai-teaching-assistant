@@ -1,7 +1,6 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/db";
 import { auth } from "@/lib/auth";
-import { isDemoUser } from "@/lib/auth-utils";
 import { UPLOADS_DIR } from "@/lib/uploads";
 import path from "node:path";
 import fs from "node:fs/promises";
@@ -13,9 +12,6 @@ export async function POST(request: NextRequest) {
   const session = await auth();
   if (!session?.user?.id) {
     return Response.json({ error: "로그인이 필요합니다." }, { status: 401 });
-  }
-  if (isDemoUser(session.user.email)) {
-    return Response.json({ error: "데모 계정은 읽기 전용입니다." }, { status: 403 });
   }
 
   const formData = await request.formData();

@@ -2,7 +2,6 @@ import Link from "next/link";
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { SignOutButton } from "./sign-out-button";
-import { isDemoUser } from "@/lib/auth-utils";
 
 export default async function DashboardLayout({
   children,
@@ -15,8 +14,6 @@ export default async function DashboardLayout({
     redirect("/login");
   }
 
-  const isDemo = isDemoUser(session.user.email);
-
   return (
     <div
       className="min-h-screen bg-[radial-gradient(circle_at_12%_-8%,rgba(56,189,248,0.18),transparent_32%),linear-gradient(180deg,#f8fbff_0%,#f5f8ff_48%,#f7fbff_100%)]"
@@ -25,13 +22,6 @@ export default async function DashboardLayout({
           '-apple-system, BlinkMacSystemFont, "Segoe UI", "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", sans-serif',
       }}
     >
-      {isDemo && (
-        <div className="sticky top-0 z-30 border-b border-amber-200 bg-amber-50/95">
-          <div className="mx-auto max-w-[1440px] px-8 py-2 text-sm font-medium text-amber-700">
-            데모 계정으로 접속 중입니다. 모든 분석 기능은 사용 가능하지만, 데이터 변경(라운드/토큰 생성, 파일 업로드 등)은 제한됩니다.
-          </div>
-        </div>
-      )}
       {/* Top nav */}
       <header className="sticky top-0 z-20 h-[68px] border-b border-blue-100/80 bg-[#fafdff]/85 backdrop-blur-xl">
         <div className="mx-auto flex h-full max-w-[1440px] items-center justify-between px-[34px]">

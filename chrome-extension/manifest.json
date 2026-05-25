@@ -6,8 +6,7 @@
   "permissions": ["sidePanel", "activeTab", "storage", "scripting"],
   "host_permissions": [
     "https://learn.hansung.ac.kr/*",
-    "http://localhost/*",
-    "https://ai-teaching-assistant-production-0e44.up.railway.app/*"
+    "http://localhost/*"
   ],
   "background": {
     "service_worker": "background.js"

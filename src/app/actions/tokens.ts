@@ -3,14 +3,12 @@
 import crypto from "node:crypto";
 import { prisma } from "@/lib/db";
 import { auth } from "@/lib/auth";
-import { isDemoUser, DEMO_READ_ONLY } from "@/lib/auth-utils";
 
 export async function generateTokens(courseId: string, count: number) {
   const session = await auth();
   if (!session?.user?.id) {
     return { success: false, error: "로그인이 필요합니다." };
   }
-  if (isDemoUser(session.user.email)) return DEMO_READ_ONLY;
 
   // Verify the course belongs to the professor
   const course = await prisma.course.findUnique({

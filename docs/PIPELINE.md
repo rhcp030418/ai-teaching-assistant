@@ -597,8 +597,8 @@ ai-teaching-assistant/
 ├── prisma/
 │   ├── schema.prisma              # DB 스키마
 │   ├── migrations/                # 마이그레이션
-│   ├── seed.ts                    # 데모 데이터 (12교수, 30강의, 646피드백, 10학생, 20수강등록, 20토큰, 14라운드, 6강의자료)
-│   └── seed-prod.ts               # 프로덕션 데이터 (Railway 배포 시 사용)
+│   ├── seed.ts                    # 초기 관리자 계정 시드 (.env의 ADMIN_*)
+│   └── seed-example.ts            # (선택) 예시 강의/회차/피드백 — npm run seed:example
 ├── uploads/                       # 업로드된 강의자료
 ├── dev.db                         # SQLite DB 파일
 ├── src/

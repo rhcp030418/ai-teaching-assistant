@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { generateTrendNarrative, type TrendNarrative } from "@/app/actions/trend-analysis";
 import type { RoundReport } from "@/app/actions/round-reports";
-import { DEMO_TREND_NARRATIVE } from "@/lib/demo-ai-fixtures";
 
 const SERIES = [
   { key: "comprehensionHigh" as const, label: "내용 이해", className: "bg-gradient-to-t from-[#0B4DBA] to-[#7DD3FC]" },
@@ -113,17 +112,14 @@ interface Props {
   courseId: string;
   // roundReports.rounds는 최신순(reverse). 여기서 chronological로 변환해서 넘김.
   rounds: RoundReport[];
-  demoMode?: boolean;
 }
 
-export function TrendAnalysis({ courseId, rounds, demoMode = false }: Props) {
+export function TrendAnalysis({ courseId, rounds }: Props) {
   // 시간순 정렬 (week 오름차순)
   const sorted = [...rounds].sort((a, b) => a.week - b.week);
   const validRounds = sorted.filter((r) => r.totalFeedbacks > 0);
 
-  const [narrative, setNarrative] = useState<TrendNarrative | null>(
-    demoMode ? DEMO_TREND_NARRATIVE : null
-  );
+  const [narrative, setNarrative] = useState<TrendNarrative | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -151,11 +147,6 @@ export function TrendAnalysis({ courseId, rounds, demoMode = false }: Props) {
   async function handleAnalyze() {
     setLoading(true);
     setError(null);
-    if (demoMode) {
-      setNarrative(DEMO_TREND_NARRATIVE);
-      setLoading(false);
-      return;
-    }
     try {
       const res = await generateTrendNarrative(courseId, validRounds);
       if (res.success && res.result) {

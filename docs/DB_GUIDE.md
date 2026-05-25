@@ -4,17 +4,16 @@
 
 ---
 
-## 1. 데모 데이터 일괄 등록 (시드)
+## 1. 초기 관리자 계정 (시드)
 
 ```bash
-npx tsx prisma/seed.ts
+npm run db:seed     # = npx tsx prisma/seed.ts
 ```
 
-교수 12명, 강의 30개, 피드백 646건, 평가 라운드 14개, 학생 10명, 강의자료 6건 등이 한 번에 생성됩니다.
-**주의:** 기존 데이터를 전부 삭제하고 다시 생성합니다.
+`.env` 의 `ADMIN_EMAIL` / `ADMIN_PASSWORD` / `ADMIN_NAME` 로 교수(관리자) 계정 1개를 생성합니다(idempotent — 있으면 갱신). 강의·학생·피드백 같은 운영 데이터는 포함하지 않습니다.
 
-> 프로덕션(Railway) 배포 시에는 `prisma/seed-prod.ts`가 사용됩니다 (`railway.toml`의 `startCommand`).
-> 그 외 보조 스크립트: `prisma/clear-rounds.ts`(라운드 초기화), `prisma/add-demo-comparisons.ts`·`add-demo-community.ts`(데모 보강), `scripts/`(강의자료 생성용 Python 스크립트, AI 한줄평 캐시 리셋/시드 등).
+> 화면 확인용 예시 데이터(강의 1개 + 회차 2개 + 피드백 16건)가 필요하면 `npm run seed:example` 을 실행합니다. 실제 운영 데이터와 무관하므로 언제든 지워도 됩니다.
+> 그 외 보조 스크립트: `prisma/add-user.ts`(교수/강의/학생 등록 예시), `prisma/clear-rounds.ts`(라운드 초기화), `prisma/seed-example.ts`(예시 데이터).
 
 ---
 
@@ -176,7 +175,7 @@ const prisma = new PrismaClient({
 });
 
 async function main() {
-  const pw = await bcrypt.hash("demo1234", 12);
+  const pw = await bcrypt.hash("changeme1234", 12); // 예시 비밀번호 — 변경하세요
 
   // 1. 교수
   const prof = await prisma.professor.create({

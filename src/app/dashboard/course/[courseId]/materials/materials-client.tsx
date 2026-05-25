@@ -12,7 +12,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { DEMO_MATERIAL_ANALYSIS } from "@/lib/demo-ai-fixtures";
 import {
   displayMaterialMetricValue,
   materialMetricStyle,
@@ -51,7 +50,6 @@ interface Props {
   courseId: string;
   initialMaterials: Material[];
   rounds: Round[];
-  demoMode?: boolean;
 }
 
 const MAX_UPLOAD_SIZE = 10 * 1024 * 1024; // 10MB
@@ -75,48 +73,6 @@ function MaterialMetric({
       <Badge className={style.badge}>{displayValue}</Badge>
     </div>
   );
-}
-
-function withDemoMaterialData(materials: Material[], rounds: Round[]): Material[] {
-  const fallbackRound = rounds[rounds.length - 1] ?? null;
-  if (materials.length === 0) {
-    return [
-      {
-        id: "demo-material-transaction-index",
-        fileName: "06_트랜잭션과_인덱스.pdf",
-        hasAnalysis: true,
-        analysis: DEMO_MATERIAL_ANALYSIS,
-        createdAt: new Date().toISOString(),
-        roundId: fallbackRound?.id ?? null,
-        roundLabel: fallbackRound ? (fallbackRound.label ?? `${fallbackRound.week}주차`) : "6주차",
-        roundWeek: fallbackRound?.week ?? 6,
-        roundStats: {
-          total: 28,
-          comprehensionHigh: 71,
-          communicationAvg: 4.4,
-          speedModerate: 68,
-          practiceAvg: 4.1,
-        },
-        analysisUpdatedAt: new Date().toISOString(),
-        roundEndDate: null,
-        isStale: true,
-      },
-    ];
-  }
-
-  return materials.map((material, index) => ({
-    ...material,
-    hasAnalysis: true,
-    analysis: material.analysis ?? DEMO_MATERIAL_ANALYSIS,
-    roundStats: material.roundStats ?? {
-      total: 28,
-      comprehensionHigh: 71,
-      communicationAvg: 4.4,
-      speedModerate: 68,
-      practiceAvg: 4.1,
-    },
-    isStale: index === 0 ? true : material.isStale,
-  }));
 }
 
 function splitSuggestion(text: string) {
@@ -272,10 +228,8 @@ function RoundFeedbackPanel({ label, stats }: { label: string; stats: RoundStats
   );
 }
 
-export function MaterialsClient({ courseId, initialMaterials, rounds, demoMode = false }: Props) {
-  const [materials, setMaterials] = useState(
-    demoMode ? withDemoMaterialData(initialMaterials, rounds) : initialMaterials
-  );
+export function MaterialsClient({ courseId, initialMaterials, rounds }: Props) {
+  const [materials, setMaterials] = useState(initialMaterials);
   const [uploading, setUploading] = useState(false);
   const [analyzingId, setAnalyzingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -339,23 +293,6 @@ export function MaterialsClient({ courseId, initialMaterials, rounds, demoMode =
   async function handleAnalyze(materialId: string, force = false) {
     setAnalyzingId(materialId);
     setError(null);
-    if (demoMode) {
-      setMaterials((prev) =>
-        prev.map((m) =>
-          m.id === materialId
-            ? {
-                ...m,
-                hasAnalysis: true,
-                analysis: DEMO_MATERIAL_ANALYSIS,
-                isStale: false,
-                analysisUpdatedAt: new Date().toISOString(),
-              }
-            : m
-        )
-      );
-      setAnalyzingId(null);
-      return;
-    }
     try {
       const result = await analyzeMaterial(materialId, force);
       if (result.success) {

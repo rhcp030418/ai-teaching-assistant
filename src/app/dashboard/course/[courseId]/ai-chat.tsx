@@ -7,12 +7,10 @@ export function AIChat({
   courseId,
   panel,
   suggestions,
-  demoMode = false,
 }: {
   courseId: string;
   panel?: boolean;
   suggestions?: string[];
-  demoMode?: boolean;
 }) {
   const {
     messages,
@@ -24,7 +22,7 @@ export function AIChat({
     bottomRef, textareaRef, scrollContainerRef,
     send, retry, copyMessage, exportChat,
     handleClearMessages, handleKeyDown, handleScroll, scrollToBottom,
-  } = useAIChat(courseId, demoMode);
+  } = useAIChat(courseId);
 
   const chatActions = messages.length > 0 && (
     <>

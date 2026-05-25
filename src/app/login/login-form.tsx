@@ -46,7 +46,7 @@ export function LoginForm() {
               id="email"
               name="email"
               type="email"
-              placeholder="kim@hansung.ac.kr"
+              placeholder="name@example.com"
               required
             />
           </div>
@@ -64,10 +64,6 @@ export function LoginForm() {
           <Button type="submit" className="w-full" disabled={pending}>
             {pending ? "로그인 중..." : "로그인"}
           </Button>
-
-          <p className="text-xs text-slate-400 text-center">
-            데모 계정: kim@hansung.ac.kr / demo1234
-          </p>
         </form>
       </CardContent>
     </Card>

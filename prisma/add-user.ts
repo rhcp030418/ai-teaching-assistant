@@ -8,7 +8,7 @@ const dbPath = path.join(process.cwd(), "dev.db");
 const prisma = new PrismaClient({ adapter: new PrismaBetterSqlite3({ url: `file:${dbPath}` }) });
 
 async function main() {
-  const pw = await bcrypt.hash("demo1234", 12);
+  const pw = await bcrypt.hash("changeme1234", 12); // 예시 비밀번호 — 실제 등록 시 변경하세요
 
   // 교수 생성
   const 어지원 = await prisma.professor.create({

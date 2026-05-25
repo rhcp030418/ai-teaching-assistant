@@ -68,12 +68,12 @@
   - Server Action: `src/app/actions/trend-analysis.ts`의 `generateTrendNarrative(courseId, rounds[])`
   - 컴포넌트: `trend-analysis.tsx` — SVG 차트(역사 데이터 실선, 예측 점선) + AI 내러티브 박스
 - AI 채팅: 교수가 강의 데이터를 기반으로 AI와 자유 대화. `/api/ai-chat/[courseId]` Route Handler (SSE 스트리밍, 유저당 20회/분 레이트 리밋). 컴포넌트: chat-side-panel.tsx(플로팅 오버레이) + ai-chat.tsx + use-ai-chat.ts 훅(SSE fetch, 히스토리, 재시도, 복사, 내보내기). 추천 질문은 지표 기반으로 page.tsx의 buildChatSuggestions()가 동적 생성
-- 검증된 교수법 도구상자: 개선 제안·조언을 생성하는 6개 프롬프트(improvement-roadmap, class-checklist, cause-analysis, analyze-material, improvement-cases의 getAIInsightForCase, ai-chat route)는 `src/lib/teaching-methods.ts`의 `TEACHING_TOOLBOX`를 system 프롬프트에 주입한다. 6개 상황군(이해도/속도/소통/흥미/과제·실습/공통)으로 그룹화된 38개 검증 기법(능동학습/동료교수법/인출연습/생산적실패/직소/메타인지 등)을 5개 지표 문제에 매핑한 것으로, AI가 막연한 조언 대신 "문제 → 검증된 기법의 구체적 행동(기법명 괄호 표기)"으로 작성하도록 유도. 각 기법 줄에는 `[근거: 연구·학자]`가 인라인으로 붙어 있고, AI는 제안 시 이를 "~~에 따르면" 형태로 인용해 근거를 밝히도록 유도된다(6개 프롬프트의 출력 지시문·자가검증·few-shot 예시에 모두 반영). 도구상자에 없는 연구·수치를 지어내는 것은 금지. 상황 매칭은 데이터 레이어의 `[주의 지표]`/`[즉시 개선 필요 지표]` 플래그 + 도구상자 상황군 + 프롬프트 매핑 지시 3중으로 동작. 각 기법의 연구 출처 정리 문서는 루트 `reference.md`. 새 개선 제안 프롬프트 추가 시 이 상수를 함께 주입하고 근거 인용 지시도 포함할 것
+- 검증된 교수법 도구상자: 개선 제안·조언을 생성하는 6개 프롬프트(improvement-roadmap, class-checklist, cause-analysis, analyze-material, improvement-cases의 getAIInsightForCase, ai-chat route)는 `src/lib/teaching-methods.ts`의 `TEACHING_TOOLBOX`를 system 프롬프트에 주입한다. 6개 상황군(이해도/속도/소통/흥미/과제·실습/공통)으로 그룹화된 38개 검증 기법(능동학습/동료교수법/인출연습/생산적실패/직소/메타인지 등)을 5개 지표 문제에 매핑한 것으로, AI가 막연한 조언 대신 "문제 → 검증된 기법의 구체적 행동(기법명 괄호 표기)"으로 작성하도록 유도. 각 기법 줄에는 `[근거: 연구·학자]`가 인라인으로 붙어 있고, AI는 제안 시 이를 "~~에 따르면" 형태로 인용해 근거를 밝히도록 유도된다(6개 프롬프트의 출력 지시문·자가검증·few-shot 예시에 모두 반영). 도구상자에 없는 연구·수치를 지어내는 것은 금지. 상황 매칭은 데이터 레이어의 `[주의 지표]`/`[즉시 개선 필요 지표]` 플래그 + 도구상자 상황군 + 프롬프트 매핑 지시 3중으로 동작. 각 기법의 연구 출처 정리 문서는 `docs/reference.md`. 새 개선 제안 프롬프트 추가 시 이 상수를 함께 주입하고 근거 인용 지시도 포함할 것
 - AI 개선 로드맵: 피드백 기반 우선순위별 개선 계획 (high/medium/low impact, area/problem/action/evidence + weeklyGoal + summary). Server Action: `src/app/actions/improvement-roadmap.ts`, 컴포넌트: improvement-roadmap.tsx (탭2 "심층 분석")
 - AI 수업 체크리스트: 종료된 라운드별 행동 항목 (urgent/important/optional 우선순위, content/pace/communication/material 카테고리 + 격려 메시지). Server Action: `src/app/actions/class-checklist.ts`의 `generateClassChecklist(courseId, roundId)`, UI는 round-reports.tsx 안에서 라운드별 [체크리스트 생성] 버튼
 - 강의자료 자동 재분석: 종료된 라운드 있으면 페이지 로드 후 `triggerMaterialReanalysisIfNeeded(courseId)`로 백그라운드 재분석 (LectureMaterial.analysisUpdatedAt staleness 기준). 강의자료는 roundId로 주차 연결 가능
-- 파일 업로드: `/api/upload`에서 10MB 제한 + 강의 소유권 검증 + 경로 탈출 방어. 저장 경로는 `src/lib/uploads.ts`의 UPLOADS_DIR(환경변수로 영구 볼륨 지정 가능)
-- 배포: Railway 지원 (`railway.toml` — migrate deploy + seed-prod.ts + start). 보조 스크립트는 prisma/(add-user, clear-rounds, add-demo-*)와 scripts/(강의자료 PDF 생성, AI 한줄평 캐시 리셋/시드)
+- 파일 업로드: `/api/upload`에서 10MB 제한 + 강의 소유권 검증 + 경로 탈출 방어. 저장 경로는 `src/lib/uploads.ts`의 UPLOADS_DIR(미설정 시 `<루트>/uploads`, 환경변수로 변경 가능)
+- 실행: 로컬 전용. `npm run setup`(prisma generate + migrate deploy + 관리자 시드) → `npm run dev`. 화면 확인용 예시 데이터는 `npm run seed:example`. 보조 스크립트는 prisma/(add-user, clear-rounds, seed-example)
 - 대시보드 레이아웃: max-w-[1440px] + px-8 (기존 max-w-6xl + px-4에서 확장)
 - 코스 페이지 구조: 상단 KPI 4칸(총응답/소통만족도/이해도높음/속도적절) → 2컬럼 그리드(LEFT:3탭 분석 | RIGHT:관리 사이드바 380px) + 우측 하단 AI 채팅 플로팅(ChatSidePanel)
   - LEFT는 3탭 (analysis-tabs.tsx, `feedbackTab`/`deepTab`/`compareTab` 슬롯에 page.tsx에서 컴포넌트 주입):
@@ -101,26 +101,24 @@
 
 ```bash
 npm install
-npx prisma generate
-npx prisma migrate dev
-npx tsx prisma/seed.ts   # 데모 데이터
+npm run setup   # prisma generate + migrate deploy + 초기 관리자 계정 시드(seed.ts)
 npm run dev
 ```
 
-## 데모 계정
+## 초기 관리자 계정
 
-- 이메일: kim@hansung.ac.kr
-- 비밀번호: demo1234
+- `.env` 의 ADMIN_EMAIL / ADMIN_PASSWORD / ADMIN_NAME 로 생성 (기본 admin@example.com / changeme1234) — `prisma/seed.ts`가 upsert
+- 운영 전 비밀번호 변경 필수. 강의/학생은 로그인 후 `prisma/add-user.ts`로 등록, 화면 확인용 예시 데이터는 `npm run seed:example`(`prisma/seed-example.ts`)
+- 데모 전용 코드(데모 계정 읽기전용 잠금, 가짜 AI 픽스처 demo-ai-fixtures, isDemoUser/demoMode, 과목 숨김)는 실제 배포용으로 전환하며 전부 제거됨 — 모든 사용자가 실제 AI(AI_API_KEY 필수) + 전체 읽기/쓰기 사용
 
 ## 관련 문서
 
-- EASIEST_WAY_TO_START.md: 가장 쉽게 시작하는 법 (문서 인덱스)
-- IMPLEMENTATION.md: 전체 구현 상태
-- PIPELINE.md: 시스템 파이프라인, 데이터 흐름
-- 해야할것.md: 할일 목록
-- SERVER_RUN_GUIDE.md: 서버 실행 가이드
-- AI_SETUP_GUIDE.md: AI 프로바이더 선택 가이드 (API vs 로컬)
-- DB_GUIDE.md: 교수/강의/학생 데이터 등록 가이드
-- HOW_TO_PLUGIN.md: e-class 연동 플러그인 가이드
-- reference.md: 검증된 교수법 38선 + 연구 출처 (TEACHING_TOOLBOX 근거)
+- README.md: 프로젝트 소개 + 빠른 시작
+- docs/SERVER_RUN_GUIDE.md: 서버 실행 가이드
+- docs/AI_SETUP_GUIDE.md: AI 프로바이더 선택 가이드 (API vs 로컬)
+- docs/DB_GUIDE.md: 교수/강의/학생 데이터 등록 가이드
+- docs/HOW_TO_PLUGIN.md: e-class 연동 플러그인 가이드
+- docs/IMPLEMENTATION.md: 전체 구현 상태
+- docs/PIPELINE.md: 시스템 파이프라인, 데이터 흐름
+- docs/reference.md: 검증된 교수법 38선 + 연구 출처 (TEACHING_TOOLBOX 근거)
 - README.md: 프로젝트 소개

@@ -24,7 +24,11 @@ npm install
 
 ### 2. 환경 변수 설정
 
-`.env` 파일이 프로젝트 루트에 이미 있습니다. AI API 키만 넣으면 됩니다.
+`.env.example` 을 복사해 `.env` 를 만든 뒤 값을 채웁니다.
+
+```bash
+cp .env.example .env        # Windows PowerShell: Copy-Item .env.example .env
+```
 
 ```env
 DATABASE_URL="file:./dev.db"
@@ -45,36 +49,37 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 ```
 출력된 값을 `AUTH_SECRET`에 붙여넣으면 됩니다.
 
-> `.env` 파일이 없거나 새로 만들어야 할 경우, 위 내용을 복사해서 프로젝트 루트에 `.env` 파일로 저장하세요.
-
-### 3. DB 초기화
+### 3. DB 초기화 + 초기 관리자 계정 (한 번에)
 
 ```bash
-npx prisma generate
-npx prisma migrate dev
+npm run setup
 ```
 
-> 최초 실행 시에만 필요합니다. 프로젝트 루트에 `dev.db` 파일이 자동 생성됩니다.
+`prisma generate` → `prisma migrate deploy`(dev.db 생성) → 초기 관리자 계정 시드(`seed.ts`)를 한 번에 실행합니다. 최초 1회만 필요합니다.
 
-### 4. 데모 데이터 세팅 (권장)
-
-```bash
-npx tsx prisma/seed.ts
-```
-
-생성되는 데이터:
-- 교수 12명 (전체 비밀번호: `demo1234`)
-- 강의 30개 (3학기, 4카테고리)
-- 피드백 646건 (인공지능 개론·데이터베이스 상세 피드백 + 나머지 강의 랜덤 + 욕설/감정 샘플 포함)
-- 개선 사례 4건 (벤치마크 비교용), 교수 개선 노트 8건
-- 학생 10명, 수강 등록 20건, 학생 토큰 20개, 평가 라운드 14개 (인공지능 개론 8주차 + 데이터베이스 6주차)
-- 강의자료 6건 (데이터베이스 1~6주차 PDF, 원인 분석 연계용)
-
-메인 데모 계정: `kim@hansung.ac.kr` / `demo1234`
+> 개별 실행이 필요하면:
+> ```bash
+> npx prisma generate
+> npx prisma migrate deploy
+> npm run db:seed          # .env의 ADMIN_* 로 관리자 계정 생성
+> ```
 
 > `npx tsx`가 처음이면 자동 다운로드됩니다. 시간이 걸릴 수 있습니다.
 
-### 5. 개발 서버 실행
+생성되는 데이터:
+- 교수(관리자) 계정 1개 — `.env` 의 `ADMIN_EMAIL` / `ADMIN_PASSWORD` / `ADMIN_NAME` (기본 `admin@example.com` / `changeme1234`)
+
+> **운영 전 `ADMIN_PASSWORD` 를 반드시 변경하세요.** 강의·학생은 로그인 후 `prisma/add-user.ts` 로 등록합니다([DB_GUIDE.md](./DB_GUIDE.md)).
+
+#### (선택) 예시 데이터로 화면 채워 보기
+
+```bash
+npm run seed:example
+```
+
+관리자 계정 아래에 예시 강의 1개 + 종료된 평가 회차 2개 + 익명 피드백 16건을 만들어, 대시보드의 요약·차트·회차 리포트·추이 화면을 바로 확인할 수 있습니다. 실제 운영 데이터와 무관하므로 언제든 지워도 됩니다.
+
+### 4. 개발 서버 실행
 
 ```bash
 npm run dev
@@ -82,7 +87,7 @@ npm run dev
 
 브라우저에서 `http://localhost:3000` 으로 접속합니다.
 
-### 6. 프로덕션 빌드 (선택)
+### 5. 프로덕션 빌드 (선택)
 
 ```bash
 npm run build
@@ -139,9 +144,8 @@ npx prisma generate
 
 ### DB 초기화가 필요한 경우
 ```bash
-rm dev.db
-npx prisma migrate dev
-npx tsx prisma/seed.ts
+rm dev.db          # Windows PowerShell: Remove-Item dev.db
+npm run setup      # migrate + 관리자 계정 재생성
 ```
 
 ### 포트 충돌 시
@@ -151,5 +155,5 @@ npm run dev -- --port 3001
 
 ### 로그인이 안 될 때
 - `.env`에 `AUTH_SECRET` 값이 있는지 확인
-- 시드를 다시 실행: `npx tsx prisma/seed.ts`
+- 시드를 다시 실행: `npm run db:seed`
 - 브라우저 쿠키 삭제 후 재시도

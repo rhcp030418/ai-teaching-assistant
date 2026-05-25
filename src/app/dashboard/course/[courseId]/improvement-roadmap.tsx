@@ -3,7 +3,6 @@
 import { useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { generateRoadmap, ImprovementRoadmapData } from "@/app/actions/improvement-roadmap";
-import { DEMO_IMPROVEMENT_ROADMAP } from "@/lib/demo-ai-fixtures";
 
 const IMPACT_CONFIG: Record<string, { label: string; badgeClass: string; borderClass: string }> = {
   high: {
@@ -25,23 +24,15 @@ const IMPACT_CONFIG: Record<string, { label: string; badgeClass: string; borderC
 
 export function ImprovementRoadmapPanel({
   courseId,
-  demoMode = false,
 }: {
   courseId: string;
-  demoMode?: boolean;
 }) {
-  const [result, setResult] = useState<ImprovementRoadmapData | null>(
-    demoMode ? DEMO_IMPROVEMENT_ROADMAP : null
-  );
+  const [result, setResult] = useState<ImprovementRoadmapData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
   function handleGenerate() {
     setError(null);
-    if (demoMode) {
-      setResult(DEMO_IMPROVEMENT_ROADMAP);
-      return;
-    }
     startTransition(async () => {
       try {
         const res = await generateRoadmap(courseId);

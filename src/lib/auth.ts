@@ -4,6 +4,8 @@ import { prisma } from "@/lib/db";
 import { verifyPassword } from "@/lib/auth-utils";
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
+  // 로컬/자체 호스팅 실행에서 host 검증을 신뢰 (npm start 프로덕션 모드에서도 로그인 동작).
+  trustHost: true,
   providers: [
     Credentials({
       name: "이메일 로그인",

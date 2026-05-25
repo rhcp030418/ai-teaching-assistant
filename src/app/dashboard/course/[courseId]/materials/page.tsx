@@ -5,7 +5,6 @@ import { auth } from "@/lib/auth";
 import { notFound } from "next/navigation";
 import { MaterialsClient } from "./materials-client";
 import type { MaterialAnalysis } from "@/app/actions/analyze-material";
-import { isDemoUser, isDemoVisibleCourse } from "@/lib/auth-utils";
 import { comprehensionScore } from "@/lib/feedback-stats";
 
 const PAGE_HERO =
@@ -17,7 +16,6 @@ export default async function MaterialsPage(
   const { courseId } = await props.params;
   const session = await auth();
   if (!session?.user?.id) notFound();
-  const demoMode = isDemoUser(session.user.email);
 
   const course = await prisma.course.findUnique({
     where: { id: courseId, professorId: session.user.id },
@@ -45,11 +43,6 @@ export default async function MaterialsPage(
   });
 
   if (!course) notFound();
-
-  // 데모 계정은 노출 과목 외 직접 링크 접근 차단
-  if (isDemoUser(session.user.email) && !isDemoVisibleCourse(course.name)) {
-    notFound();
-  }
 
   const materials = course.lectureMaterials.map((m) => {
     let roundStats = null;
@@ -120,7 +113,6 @@ export default async function MaterialsPage(
         courseId={courseId}
         initialMaterials={materials}
         rounds={course.feedbackRounds}
-        demoMode={demoMode}
       />
     </div>
   );

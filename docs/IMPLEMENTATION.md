@@ -29,11 +29,10 @@ ai-teaching-assistant/
 ├── prisma/
 │   ├── schema.prisma          # DB schema definition
 │   ├── migrations/            # Migration files
-│   ├── seed.ts                # Demo data seeder (local)
-│   ├── seed-prod.ts           # Production data seeder (Railway 배포 시 사용)
+│   ├── seed.ts                # 초기 관리자 계정 시드 (.env의 ADMIN_*)
+│   ├── seed-example.ts        # (선택) 예시 강의/회차/피드백 — `npm run seed:example`
 │   ├── add-user.ts            # 개별 교수/강의/학생 등록 예시 스크립트 (DB_GUIDE.md 참고)
-│   ├── clear-rounds.ts        # 라운드 초기화 스크립트
-│   └── add-demo-comparisons.ts / add-demo-community.ts # 데모 데이터 보강 스크립트
+│   └── clear-rounds.ts        # 라운드 초기화 스크립트
 ├── uploads/                   # Uploaded lecture material files
 ├── dev.db                     # SQLite database file (project root, NOT prisma/)
 ├── src/
@@ -125,9 +124,8 @@ ai-teaching-assistant/
 │               ├── grok.ts    # xAI Grok adapter (via factory)
 │               └── ollama.ts  # Local AI adapter (via factory)
 ├── prisma.config.ts
-├── railway.toml               # Railway 배포 설정 (build/deploy 명령, seed-prod.ts 사용)
-├── scripts/                   # 보조 스크립트 (강의자료 PDF 생성 Python, AI 한줄평 캐시 리셋/시드 등)
-├── .env                       # DB URL + AI provider config + AUTH_SECRET
+├── .env.example               # 환경 변수 템플릿 (복사해서 .env 작성)
+├── .env                       # DB URL + AI provider config + AUTH_SECRET (git 제외)
 └── package.json
 
 chrome-extension/               # Chrome Extension (ai-teaching-assistant 하위 디렉토리)
@@ -188,7 +186,7 @@ chrome-extension/               # Chrome Extension (ai-teaching-assistant 하위
 | Comment AI filter (background) | Done | On submit: save immediately, classify in background (학습/감정/혼합), store result in DB. Dashboard shows only classified 학습/혼합 comments (감정 removed, unclassified hidden until AI completes). AI failure → commentCategory=null (hidden) |
 | Student system + e-class sync | Done | Student, CourseStudent, FeedbackRound, StudentCourseToken, SubmissionLog models. /api/eclass-sync, /api/student-courses API endpoints |
 | Chrome extension | Done | Manifest V3, Content Script (e-class DOM scraping), Side Panel UI, Background service worker. Separate project (chrome-extension/) |
-| Demo data seeding | Done | 12 professors, 30 courses (3 semesters, 4 categories), 646 feedbacks (인공지능 개론·데이터베이스 상세 피드백 + 나머지 랜덤, abusive/감정 samples 포함), 4 improvement cases, 10 students, 20 course enrollments, 20 student tokens, 14 feedback rounds (인공지능 개론 8주차 + 데이터베이스 6주차, 3월 3일 기준), 8 improvement notes (교양/경영·경제/컴퓨터과학), 6 lecture materials (데이터베이스 1~6주차 PDF) |
+| Initial seeding | Done | `seed.ts` 가 `.env` 의 ADMIN_* 로 관리자 계정 1개 생성(idempotent). 화면 확인용 예시 데이터는 `seed-example.ts`(`npm run seed:example`) — 강의 1개 + 종료 회차 2개 + 익명 피드백 16건 |
 | Auth protection | Done | Dashboard pages, upload API, token generation |
 
 ## AI Configuration
@@ -242,9 +240,7 @@ SubmissionLog      -> id, studentId, courseId, roundId, createdAt (제출기록 
 
 ## Deployment
 
-- Local demo or simple server deployment
-- No external service dependency except chosen AI API
+- 로컬 실행 전용 (외부 서비스 의존성은 선택한 AI API 뿐)
 - SQLite DB file at project root (`dev.db`)
-- Run `npx tsx prisma/seed.ts` to populate demo data
-- Railway 배포 지원 (`railway.toml`): `npx prisma migrate deploy && npx tsx prisma/seed-prod.ts && npm start`
-  - 업로드 파일은 휘발성 FS 대신 영구 볼륨에 저장 — `UPLOADS_DIR` 환경변수로 경로 지정 (`src/lib/uploads.ts`)
+- `npm run setup` 으로 DB 마이그레이션 + 초기 관리자 계정(`seed.ts`) 한 번에 준비 (예시 데이터는 `npm run seed:example`)
+- 업로드 파일 저장 위치는 `UPLOADS_DIR` 환경변수로 변경 가능 (미설정 시 `<루트>/uploads`, `src/lib/uploads.ts`)

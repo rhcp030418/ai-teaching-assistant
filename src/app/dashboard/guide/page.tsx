@@ -2,7 +2,6 @@ import { AlertTriangle, BookOpenCheck, CheckCircle2, Sparkles } from "lucide-rea
 import Link from "next/link";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-import { isDemoUser, isDemoVisibleCourse } from "@/lib/auth-utils";
 
 const SECTION =
   "rounded-[24px] border border-blue-100 bg-white/90 p-6 shadow-[0_18px_48px_-30px_rgba(23,87,168,0.42)]";
@@ -156,9 +155,7 @@ export default async function GuidePage() {
         orderBy: { createdAt: "desc" },
       })
     : [];
-  const course = courses.find(
-    (item) => !isDemoUser(session?.user?.email) || isDemoVisibleCourse(item.name),
-  );
+  const course = courses[0];
   const courseBase = course ? `/dashboard/course/${course.id}` : null;
   const { required, optional, caution } = buildGuideItems(courseBase);
 

@@ -13,7 +13,6 @@ import { RadarChart } from "./radar-chart";
 import { generateRadarSummary } from "@/app/actions/radar-summary";
 import { summarizeComments } from "@/app/actions/filter-comments";
 import { calcResponseRate } from "@/lib/utils";
-import { DEMO_COMMENT_SUMMARY } from "@/lib/demo-ai-fixtures";
 
 // V3 카드 표면: shadcn Card 기본(회색)을 덮어쓰는 공통 클래스
 const V3_CARD =
@@ -60,7 +59,6 @@ interface Props {
   categoryName?: string;
   hideTitle?: boolean;
   showComments?: boolean;
-  demoMode?: boolean;
 }
 
 function OverviewKpi({
@@ -205,7 +203,6 @@ export function FeedbackAnalysis({
   categoryName,
   hideTitle = false,
   showComments = true,
-  demoMode = false,
 }: Props) {
   const isLowData = totalFeedbacks < 3;
   const responseRate = calcResponseRate(totalFeedbacks, studentCount);
@@ -256,7 +253,6 @@ export function FeedbackAnalysis({
                 <AiSummaryLine
                   courseId={courseId}
                   initialSummary={aiSummaryCache}
-                  demoMode={demoMode}
                 />
               ) : (
                 <p className="text-base leading-7 text-[#27496D]">
@@ -364,7 +360,7 @@ export function FeedbackAnalysis({
       )}
 
       {showComments ? (
-        <CommentsSection commentFeedbacks={commentFeedbacks} rounds={rounds} demoMode={demoMode} />
+        <CommentsSection commentFeedbacks={commentFeedbacks} rounds={rounds} />
       ) : null}
     </div>
   );
@@ -373,25 +369,20 @@ export function FeedbackAnalysis({
 function AiSummaryLine({
   courseId,
   initialSummary,
-  demoMode = false,
 }: {
   courseId: string;
   initialSummary?: string | null;
-  demoMode?: boolean;
 }) {
-  const [summary, setSummary] = useState<string | null>(
-    demoMode ? (initialSummary ?? DEMO_COMMENT_SUMMARY) : (initialSummary ?? null)
-  );
-  const [loading, setLoading] = useState(!initialSummary && !demoMode);
+  const [summary, setSummary] = useState<string | null>(initialSummary ?? null);
+  const [loading, setLoading] = useState(!initialSummary);
 
   useEffect(() => {
-    if (demoMode) return;
     if (initialSummary) return;
     generateRadarSummary(courseId)
       .then((res) => { if (res.success && res.summary) setSummary(res.summary); })
       .catch(() => {})
       .finally(() => setLoading(false));
-  }, [courseId, initialSummary, demoMode]);
+  }, [courseId, initialSummary]);
 
   if (loading) {
     return (
@@ -474,17 +465,15 @@ function CommentItem({ item }: { item: CommentFeedback }) {
 export function CommentsSection({
   commentFeedbacks,
   rounds = [],
-  demoMode = false,
 }: {
   commentFeedbacks: CommentFeedback[];
   rounds?: RoundInfo[];
-  demoMode?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [sortMode, setSortMode] = useState<"newest" | "oldest" | "longest" | "shortest">("newest");
 
   // 이번 주차 의견 요약
-  const [summary, setSummary] = useState<string | null>(demoMode ? DEMO_COMMENT_SUMMARY : null);
+  const [summary, setSummary] = useState<string | null>(null);
   const [summaryLoading, setSummaryLoading] = useState(false);
 
   // 이번 주차 결정: 진행 중 라운드 우선, 없으면 가장 최근 종료된 라운드
@@ -516,10 +505,6 @@ export function CommentsSection({
 
   const runSummarize = () => {
     if (total === 0 || summaryLoading) return;
-    if (demoMode) {
-      setSummary(DEMO_COMMENT_SUMMARY);
-      return;
-    }
     setSummaryLoading(true);
     const texts = roundComments.map((cf) => cf.filteredComment ?? cf.comment ?? "").filter(Boolean);
     summarizeComments(texts)

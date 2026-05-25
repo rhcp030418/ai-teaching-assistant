@@ -15,7 +15,6 @@ import {
   analyzeCauses,
   CauseAnalysisResult,
 } from "@/app/actions/cause-analysis";
-import { DEMO_CAUSE_ANALYSIS } from "@/lib/demo-ai-fixtures";
 
 const axisColors: Record<string, string> = {
   "수업 속도": "bg-orange-100 text-orange-700",
@@ -31,15 +30,11 @@ const V3_CARD =
 export function CauseAnalysis({
   courseId,
   hasMaterials,
-  demoMode = false,
 }: {
   courseId: string;
   hasMaterials: boolean;
-  demoMode?: boolean;
 }) {
-  const [result, setResult] = useState<CauseAnalysisResult | null>(
-    demoMode ? DEMO_CAUSE_ANALYSIS : null
-  );
+  const [result, setResult] = useState<CauseAnalysisResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
 
@@ -47,11 +42,6 @@ export function CauseAnalysis({
     setPending(true);
     setError(null);
     setResult(null);
-    if (demoMode) {
-      setResult(DEMO_CAUSE_ANALYSIS);
-      setPending(false);
-      return;
-    }
     try {
       const res = await analyzeCauses(courseId);
       if (res.success && res.result) {

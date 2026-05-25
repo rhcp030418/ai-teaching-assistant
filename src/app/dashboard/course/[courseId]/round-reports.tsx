@@ -10,7 +10,6 @@ import { saveImprovementNote } from "@/app/actions/improvement-notes";
 import { generateClassChecklist, type ClassChecklist } from "@/app/actions/class-checklist";
 import { summarizeComments } from "@/app/actions/filter-comments";
 import type { SignificantChange, SemesterComparison, RoundReportsResult, RoundMaterialSummary, RoundComment } from "@/app/actions/round-reports";
-import { DEMO_CLASS_CHECKLIST, DEMO_COMMENT_SUMMARY } from "@/lib/demo-ai-fixtures";
 import {
   displayMaterialMetricValue,
   materialMetricStyle,
@@ -72,12 +71,10 @@ function CommentBody({ text }: { text: string }) {
 // 라운드별 학생 의견: 접으면 AI 요약, 펼치면 전체 의견
 function RoundComments({
   comments,
-  demoMode,
   cachedSummary,
   onSummary,
 }: {
   comments: RoundComment[];
-  demoMode: boolean;
   cachedSummary: string | null;
   onSummary: (summary: string) => void;
 }) {
@@ -88,11 +85,6 @@ function RoundComments({
   // 마운트 시 자동으로 요약 생성 — 이미 캐시된 요약이 있으면 재호출하지 않음
   useEffect(() => {
     if (summary || loading || comments.length === 0) return;
-    if (demoMode) {
-      setSummary(DEMO_COMMENT_SUMMARY);
-      onSummary(DEMO_COMMENT_SUMMARY);
-      return;
-    }
     setLoading(true);
     summarizeComments(comments.map((comment) => comment.text))
       .then((res) => {
@@ -362,18 +354,14 @@ function saveChecked(courseId: string, roundId: string, checked: Set<number>) {
 function ClassChecklistPanel({
   courseId,
   roundId,
-  demoMode = false,
 }: {
   courseId: string;
   roundId: string;
-  demoMode?: boolean;
 }) {
   const [loading, setLoading] = useState(false);
-  const [checklist, setChecklist] = useState<ClassChecklist | null>(
-    demoMode ? DEMO_CLASS_CHECKLIST : null
-  );
+  const [checklist, setChecklist] = useState<ClassChecklist | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [generated, setGenerated] = useState(demoMode);
+  const [generated, setGenerated] = useState(false);
   const [checked, setChecked] = useState<Set<number>>(new Set());
 
   useEffect(() => {
@@ -393,12 +381,6 @@ function ClassChecklistPanel({
   async function handleGenerate() {
     setLoading(true);
     setErrorMsg(null);
-    if (demoMode) {
-      setChecklist(DEMO_CLASS_CHECKLIST);
-      setGenerated(true);
-      setLoading(false);
-      return;
-    }
     try {
       const res = await generateClassChecklist(courseId, roundId);
       if (res.success && res.result) {
@@ -754,10 +736,9 @@ function SemesterCard({ courseId, sem }: { courseId: string; sem: SemesterCompar
 interface Props {
   courseId: string;
   data: RoundReportsResult;
-  demoMode?: boolean;
 }
 
-export function RoundReports({ courseId, data, demoMode = false }: Props) {
+export function RoundReports({ courseId, data }: Props) {
   const { rounds, currentSemester, semesterComparison } = data;
   const hasRounds = rounds.length > 0;
   const hasSemester = semesterComparison !== null;
@@ -868,7 +849,6 @@ export function RoundReports({ courseId, data, demoMode = false }: Props) {
             {r.comments.length > 0 && (
               <RoundComments
                 comments={r.comments}
-                demoMode={demoMode}
                 cachedSummary={commentSummaries[r.id] ?? null}
                 onSummary={(text) =>
                   setCommentSummaries((prev) => ({ ...prev, [r.id]: text }))
@@ -887,7 +867,7 @@ export function RoundReports({ courseId, data, demoMode = false }: Props) {
 
             {/* 가장 최신 라운드에만 체크리스트 표시 */}
             {idx === 0 && r.totalFeedbacks >= 3 && (
-              <ClassChecklistPanel courseId={courseId} roundId={r.id} demoMode={demoMode} />
+              <ClassChecklistPanel courseId={courseId} roundId={r.id} />
             )}
 
             {r.significantChanges.length > 0 && (

@@ -5,7 +5,6 @@ import fs from "node:fs/promises";
 import { after } from "next/server";
 import { prisma } from "@/lib/db";
 import { auth } from "@/lib/auth";
-import { isDemoUser, DEMO_READ_ONLY } from "@/lib/auth-utils";
 import { chatWithAI } from "@/lib/ai";
 import { parseAIJson } from "@/lib/parse-ai-json";
 import { computeFeedbackCounts } from "@/lib/feedback-stats";
@@ -211,7 +210,6 @@ export async function deleteMaterial(
 ): Promise<{ success: true } | { success: false; error: string }> {
   const session = await auth();
   if (!session?.user?.id) return { success: false, error: "인증 필요" };
-  if (isDemoUser(session.user.email)) return DEMO_READ_ONLY;
 
   const material = await prisma.lectureMaterial.findUnique({
     where: { id: materialId },

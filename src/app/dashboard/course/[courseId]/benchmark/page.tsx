@@ -4,7 +4,6 @@ import { getOwnedCourse } from "@/lib/course-access";
 import { getBenchmark } from "@/app/actions/benchmark";
 import { getImprovementCases } from "@/app/actions/improvement-cases";
 import { computeFeedbackCounts } from "@/lib/feedback-stats";
-import { isDemoUser } from "@/lib/auth-utils";
 import { Benchmark } from "../benchmark";
 import { ImprovementCases } from "../improvement-cases";
 
@@ -17,8 +16,7 @@ export default async function BenchmarkPage({
   params: Promise<{ courseId: string }>;
 }) {
   const { courseId } = await params;
-  const course = await getOwnedCourse(courseId); // 소유권/데모 가드 + feedbacks
-  const demoMode = isDemoUser(course.professor.email);
+  const course = await getOwnedCourse(courseId); // 소유권 가드 + feedbacks
 
   const [benchmarkData, improvementCases] = await Promise.all([
     getBenchmark(courseId),
@@ -45,7 +43,7 @@ export default async function BenchmarkPage({
 
       <Benchmark data={benchmarkData} />
 
-  <ImprovementCases cases={improvementCases} myStats={myStats} demoMode={demoMode} />
+  <ImprovementCases cases={improvementCases} myStats={myStats} />
     </div>
   );
 }

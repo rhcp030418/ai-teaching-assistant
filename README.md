@@ -73,11 +73,53 @@
 
 ## 빠른 시작
 
-서버 실행 방법은 [SERVER_RUN_GUIDE.md](./SERVER_RUN_GUIDE.md)를 참고하세요.
+> 사전 준비: **Node.js 20.9 이상**
 
-### 데모 계정
-- 이메일: `kim@hansung.ac.kr`
-- 비밀번호: `demo1234`
+```bash
+# 1. 의존성 설치
+npm install
+
+# 2. 환경 변수 준비 (.env.example 복사 후 값 입력)
+cp .env.example .env        # Windows PowerShell: Copy-Item .env.example .env
+
+# 3. DB 생성 + 초기 관리자 계정 시드 (prisma generate + migrate + seed)
+npm run setup
+
+# 4. 개발 서버 실행
+npm run dev
+```
+
+브라우저에서 `http://localhost:3000` 으로 접속합니다.
+
+`.env` 의 `AUTH_SECRET`(필수)은 아래 명령으로 생성해 넣으세요. AI 분석·채팅 기능을 쓰려면 `AI_API_KEY` 도 입력해야 합니다.
+
+```bash
+node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+```
+
+자세한 실행 방법은 [docs/SERVER_RUN_GUIDE.md](./docs/SERVER_RUN_GUIDE.md), AI 프로바이더 설정은 [docs/AI_SETUP_GUIDE.md](./docs/AI_SETUP_GUIDE.md)를 참고하세요.
+
+### 첫 로그인 (초기 관리자 계정)
+
+`npm run setup`/`npm run db:seed` 은 `.env` 의 `ADMIN_EMAIL` / `ADMIN_PASSWORD` / `ADMIN_NAME` 으로 교수 계정 1개를 생성합니다(기본값 `admin@example.com` / `changeme1234`). **운영 전 비밀번호를 반드시 변경하세요.**
+
+강의·학생은 로그인 후 `prisma/add-user.ts` 스크립트로 등록합니다([docs/DB_GUIDE.md](./docs/DB_GUIDE.md)). 화면을 미리 채워 보려면 예시 데이터를 넣을 수 있습니다:
+
+```bash
+npm run seed:example   # 예시 강의 1개 + 회차 2개 + 익명 피드백 16건
+```
+
+## 문서
+
+| 문서 | 내용 |
+|------|------|
+| [docs/SERVER_RUN_GUIDE.md](./docs/SERVER_RUN_GUIDE.md) | 설치 · 환경변수 · DB 초기화 · 서버 실행 |
+| [docs/AI_SETUP_GUIDE.md](./docs/AI_SETUP_GUIDE.md) | AI 프로바이더 선택 (API vs 로컬, 사양별 추천) |
+| [docs/DB_GUIDE.md](./docs/DB_GUIDE.md) | 교수/강의/학생 데이터 등록 |
+| [docs/HOW_TO_PLUGIN.md](./docs/HOW_TO_PLUGIN.md) | e-class 연동 크롬 확장 가이드 |
+| [docs/IMPLEMENTATION.md](./docs/IMPLEMENTATION.md) | 전체 구현 상태 · 파일 트리 |
+| [docs/PIPELINE.md](./docs/PIPELINE.md) | 시스템 파이프라인 · 데이터 흐름 |
+| [docs/reference.md](./docs/reference.md) | 검증된 교수법 38선 + 연구 출처 |
 
 ## 라이선스
 

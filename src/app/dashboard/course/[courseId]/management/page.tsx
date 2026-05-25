@@ -4,7 +4,6 @@ import { getOwnedCourse } from "@/lib/course-access";
 import { getRounds } from "@/app/actions/rounds";
 import { getAdditionalFeedbacks, getTokenStats } from "@/app/actions/tokens";
 import { getRoundReports } from "@/app/actions/round-reports";
-import { isDemoUser } from "@/lib/auth-utils";
 import { RoundManager } from "../round-manager";
 import { TokenManager } from "../token-manager";
 import { RoundReports } from "../round-reports";
@@ -21,8 +20,7 @@ export default async function ManagementPage({
   params: Promise<{ courseId: string }>;
 }) {
   const { courseId } = await params;
-  const course = await getOwnedCourse(courseId); // 소유권/데모 가드
-  const demoMode = isDemoUser(course.professor.email);
+  await getOwnedCourse(courseId); // 소유권 가드
 
   const [rounds, tokenStats, additionalFeedbacks, roundReports] = await Promise.all([
     getRounds(courseId),
@@ -50,7 +48,7 @@ export default async function ManagementPage({
               종료된 주차별 응답 요약·학생 의견과 강의 전반 추가 피드백을 한 곳에서 확인합니다.
             </p>
           </div>
-          <RoundReports courseId={courseId} data={roundReports} demoMode={demoMode} />
+          <RoundReports courseId={courseId} data={roundReports} />
           <AdditionalFeedbackReport feedbacks={additionalFeedbacks} />
         </section>
 

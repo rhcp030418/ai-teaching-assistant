@@ -6,11 +6,9 @@ import { AIChat } from "./ai-chat";
 export function ChatSidePanel({
   courseId,
   suggestions,
-  demoMode = false,
 }: {
   courseId: string;
   suggestions?: string[];
-  demoMode?: boolean;
 }) {
   const [open, setOpen] = useState(false);
 
@@ -74,7 +72,7 @@ export function ChatSidePanel({
 
         {/* 채팅 콘텐츠 */}
         <div className="flex-1 min-h-0">
-          <AIChat courseId={courseId} panel suggestions={suggestions} demoMode={demoMode} />
+          <AIChat courseId={courseId} panel suggestions={suggestions} />
         </div>
       </div>
     </>

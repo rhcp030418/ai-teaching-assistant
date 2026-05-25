@@ -171,7 +171,8 @@ ollama list
 ## 설정 확인 방법
 
 1. 서버 실행: `npm run dev`
-2. http://localhost:3000 접속 → 로그인 (`kim@hansung.ac.kr` / `demo1234`)
+2. http://localhost:3000 접속 → 로그인 (`.env` 의 `ADMIN_EMAIL` / `ADMIN_PASSWORD`, 기본 `admin@example.com` / `changeme1234`)
+   - 화면을 채워 보려면 먼저 `npm run seed:example` 로 예시 데이터를 넣으세요.
 3. 아무 강의 클릭 → "심층 분석" 탭 → "원인 연결 분석"의 [분석 실행] 버튼 클릭
    (또는 우측 하단 AI 채팅 플로팅 버튼으로 질문해도 됩니다)
 4. AI 응답이 오면 설정 완료!

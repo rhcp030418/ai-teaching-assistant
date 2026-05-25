@@ -9,7 +9,6 @@ import { triggerSummaryIfNeeded } from "@/app/actions/radar-summary";
 import { triggerMaterialReanalysisIfNeeded } from "@/app/actions/analyze-material";
 import { computeFeedbackCounts, scoreToRatio } from "@/lib/feedback-stats";
 import { getOwnedCourse } from "@/lib/course-access";
-import { isDemoUser } from "@/lib/auth-utils";
 
 // ─── 페이지 (현황 요약) ─────────────────────────────────────────────────────────
 
@@ -22,9 +21,8 @@ export default async function CourseDashboardPage(
   props: PageProps<"/dashboard/course/[courseId]">
 ) {
   const { courseId } = await props.params;
-  // 소유권/데모 가드 + 강의 데이터. layout과 cache()로 dedupe.
+  // 소유권 가드 + 강의 데이터. layout과 cache()로 dedupe.
   const course = await getOwnedCourse(courseId);
-  const demoMode = isDemoUser(course.professor.email);
 
   // ─── 종료된 라운드 있으면 AI 한줄평 + 자료 재분석 백그라운드 생성 ────────────
   const now = new Date();
@@ -131,10 +129,9 @@ export default async function CourseDashboardPage(
             radarAxes={radarAxes}
             hideTitle
             showComments={false}
-            demoMode={demoMode}
           />
-          <TrendAnalysis courseId={courseId} rounds={roundReports.rounds} demoMode={demoMode} />
-          <CommentsSection commentFeedbacks={allCommentFeedbacks} rounds={rounds} demoMode={demoMode} />
+          <TrendAnalysis courseId={courseId} rounds={roundReports.rounds} />
+          <CommentsSection commentFeedbacks={allCommentFeedbacks} rounds={rounds} />
         </div>
 
         {/* RIGHT: slim 상태 사이드바 */}

@@ -4,7 +4,6 @@ import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { getOwnedCourse } from "@/lib/course-access";
 import { computeFeedbackCounts } from "@/lib/feedback-stats";
-import { isDemoUser } from "@/lib/auth-utils";
 import { CauseAnalysis } from "../cause-analysis";
 import { ImprovementRoadmapPanel } from "../improvement-roadmap";
 
@@ -19,8 +18,7 @@ export default async function AnalysisPage({
   params: Promise<{ courseId: string }>;
 }) {
   const { courseId } = await params;
-  const course = await getOwnedCourse(courseId); // 소유권/데모 가드 + feedbacks
-  const demoMode = isDemoUser(course.professor.email);
+  const course = await getOwnedCourse(courseId); // 소유권 가드 + feedbacks
 
   const { total: totalFeedbacks } = computeFeedbackCounts(course.feedbacks);
   const materialCount = await prisma.lectureMaterial.count({
@@ -51,8 +49,8 @@ export default async function AnalysisPage({
       {/* 원인 분석 + 개선 로드맵 (피드백 3건 이상일 때, overview deepTab과 동일) */}
       {totalFeedbacks >= 3 ? (
         <div className="space-y-6">
-          <CauseAnalysis courseId={courseId} hasMaterials={materialCount > 0} demoMode={demoMode} />
-          <ImprovementRoadmapPanel courseId={courseId} demoMode={demoMode} />
+          <CauseAnalysis courseId={courseId} hasMaterials={materialCount > 0} />
+          <ImprovementRoadmapPanel courseId={courseId} />
         </div>
       ) : (
         <div className="rounded-[22px] border border-dashed border-blue-200 bg-white/80 py-12 text-center shadow-[0_10px_30px_rgba(23,87,168,0.05)]">

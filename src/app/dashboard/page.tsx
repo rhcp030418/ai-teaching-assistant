@@ -6,7 +6,6 @@ import { Suspense } from "react";
 import { ArrowRight, BookOpenText, CalendarDays, MessageSquareText, Sparkles } from "lucide-react";
 import { prisma } from "@/lib/db";
 import { auth } from "@/lib/auth";
-import { isDemoUser, isDemoVisibleCourse } from "@/lib/auth-utils";
 import { SemesterSelector } from "./semester-selector";
 
 function formatSemester(s: string) {
@@ -21,9 +20,6 @@ export default async function DashboardPage(
   if (!session?.user?.id) redirect("/login");
   const searchParams = await props.searchParams;
   const selectedSemester = searchParams?.semester;
-
-  // 데모 계정은 노출 과목 외에는 목록엔 보이되 클릭 불가(비활성화) 처리
-  const isDemo = isDemoUser(session.user.email);
 
   // 해당 교수의 모든 학기 목록 조회 (내림차순)
   const allCourses = await prisma.course.findMany({
@@ -45,10 +41,7 @@ export default async function DashboardPage(
     },
     orderBy: { createdAt: "desc" },
   });
-  const visibleCourses = courses.filter(
-    (course) => !(isDemo && !isDemoVisibleCourse(course.name)),
-  );
-  const totalFeedbacks = visibleCourses.reduce(
+  const totalFeedbacks = courses.reduce(
     (sum, course) => sum + course._count.feedbacks,
     0,
   );
@@ -74,8 +67,8 @@ export default async function DashboardPage(
           <div className="grid grid-cols-3 gap-3">
             <div className="rounded-[20px] border border-blue-100 bg-white/78 p-4 shadow-[0_10px_30px_rgba(23,87,168,0.07)]">
               <BookOpenText className="h-5 w-5 text-[#1677FF]" />
-              <p className="mt-3 text-2xl font-black text-[#10233F]">{visibleCourses.length}</p>
-              <p className="mt-1 text-xs font-bold text-slate-500">표시 강의</p>
+              <p className="mt-3 text-2xl font-black text-[#10233F]">{courses.length}</p>
+              <p className="mt-1 text-xs font-bold text-slate-500">강의</p>
             </div>
             <div className="rounded-[20px] border border-blue-100 bg-white/78 p-4 shadow-[0_10px_30px_rgba(23,87,168,0.07)]">
               <MessageSquareText className="h-5 w-5 text-emerald-500" />
@@ -104,42 +97,11 @@ export default async function DashboardPage(
         <div className="rounded-[26px] border border-blue-100 bg-white/85 py-16 text-center text-sm font-medium text-slate-400 shadow-[0_14px_38px_-30px_rgba(23,87,168,0.36)]">
             {selectedSemester
               ? "해당 학기에 등록된 강의가 없습니다."
-              : "등록된 강의가 없습니다. 데모 데이터를 시드해주세요."}
+              : "등록된 강의가 없습니다. prisma/add-user.ts 스크립트로 강의를 등록하세요 (docs/DB_GUIDE.md 참고)."}
         </div>
       ) : (
         <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {courses.map((course) => {
-            // 데모 계정: 노출 과목 외에는 비활성화(클릭 불가)
-            const locked = isDemo && !isDemoVisibleCourse(course.name);
-
-            if (locked) {
-              return (
-                <div
-                  key={course.id}
-                  aria-disabled="true"
-                  title="데모에서는 데이터베이스 과목만 확인할 수 있습니다."
-                  className="cursor-not-allowed select-none"
-                >
-                  <article className="h-full rounded-[24px] border border-dashed border-slate-200 bg-white/55 p-5 opacity-65">
-                    <div className="flex items-center justify-between gap-2">
-                      <p className="text-xs font-bold text-slate-400">
-                          {formatSemester(course.semester)}
-                      </p>
-                      <span className="rounded-full bg-slate-100 px-2 py-1 text-[11px] font-bold text-slate-400">
-                          준비 중
-                      </span>
-                    </div>
-                    <h2 className="mt-4 text-base font-extrabold leading-snug text-slate-400">
-                        {course.name}
-                    </h2>
-                    <p className="mt-3 text-sm leading-6 text-slate-400">
-                        데모에서는 제공되지 않는 강의입니다.
-                    </p>
-                  </article>
-                </div>
-              );
-            }
-
             return (
               <Link key={course.id} href={`/dashboard/course/${course.id}`} className="group block h-full">
                 <article className="relative h-full overflow-hidden rounded-[24px] border border-blue-100 bg-white/90 p-5 shadow-[0_14px_38px_-30px_rgba(23,87,168,0.42)] transition duration-200 group-hover:-translate-y-1 group-hover:border-blue-200 group-hover:shadow-[0_22px_48px_-28px_rgba(23,87,168,0.56)]">

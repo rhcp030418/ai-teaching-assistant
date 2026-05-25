@@ -2,13 +2,11 @@ import { cache } from "react";
 import { prisma } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import { notFound } from "next/navigation";
-import { isDemoUser, isDemoVisibleCourse } from "@/lib/auth-utils";
 
 /**
  * 강의 상세 라우트 공통 접근 헬퍼.
  * - 세션 확인(auth)
  * - 소유권 확인(professorId 일치)
- * - 데모 계정 노출 과목 제한
  * 위 조건을 통과하지 못하면 notFound()로 종료한다.
  *
  * React cache()로 감싸 같은 요청 안에서 layout/page가 함께 호출해도
@@ -32,11 +30,6 @@ export const getOwnedCourse = cache(async (courseId: string) => {
   });
 
   if (!course) notFound();
-
-  // 데모 계정은 노출 과목 외 직접 링크 접근 차단
-  if (isDemoUser(session.user.email) && !isDemoVisibleCourse(course.name)) {
-    notFound();
-  }
 
   return course;
 });

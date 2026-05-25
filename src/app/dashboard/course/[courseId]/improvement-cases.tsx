@@ -16,11 +16,6 @@ import {
   MyCurrentStats,
   getAIInsightForCase,
 } from "@/app/actions/improvement-cases";
-import {
-  DEMO_CASE_INSIGHT,
-  DEMO_IMPROVEMENT_CASES,
-  DEMO_MY_STATS,
-} from "@/lib/demo-ai-fixtures";
 
 const axisLabel: Record<string, string> = {
   communication: "질문·소통 편의",
@@ -72,24 +67,15 @@ function ChangeIndicator({
 function CaseCard({
   c,
   myStats,
-  demoMode = false,
 }: {
   c: ImprovementCase;
   myStats: MyCurrentStats;
-  demoMode?: boolean;
 }) {
-  const [insight, setInsight] = useState<string | null>(
-    demoMode ? (c.aiInsight ?? DEMO_CASE_INSIGHT) : c.aiInsight
-  );
+  const [insight, setInsight] = useState<string | null>(c.aiInsight);
   const [loading, setLoading] = useState(false);
 
   async function handleAnalyze() {
     setLoading(true);
-    if (demoMode) {
-      setInsight(DEMO_CASE_INSIGHT);
-      setLoading(false);
-      return;
-    }
     try {
       const result = await getAIInsightForCase(c, myStats);
       setInsight(result);
@@ -196,15 +182,11 @@ function CaseCard({
 export function ImprovementCases({
   cases,
   myStats,
-  demoMode = false,
 }: {
   cases: ImprovementCase[];
   myStats: MyCurrentStats;
-  demoMode?: boolean;
 }) {
-  const displayCases = demoMode && cases.length === 0 ? DEMO_IMPROVEMENT_CASES : cases;
-  const displayStats = demoMode ? DEMO_MY_STATS : myStats;
-  if (displayCases.length === 0) return null;
+  if (cases.length === 0) return null;
 
   return (
     <Card className={V3_CARD}>
@@ -216,10 +198,10 @@ export function ImprovementCases({
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        {displayCases.map((c, i) => (
+        {cases.map((c, i) => (
           <div key={i}>
             {i > 0 && <Separator className="mb-4" />}
-            <CaseCard c={c} myStats={displayStats} demoMode={demoMode} />
+            <CaseCard c={c} myStats={myStats} />
           </div>
         ))}
       </CardContent>
