@@ -4,6 +4,17 @@
 
 **자체 강의평가 플랫폼 + 교수용 AI 분석 도구**
 
+## 브랜치 안내
+
+이 저장소는 실행 환경에 따라 두 개의 브랜치로 나뉩니다.
+
+| 브랜치 | 용도 | 특징 |
+|--------|------|------|
+| `main` | **Railway 배포용** | 클라우드 배포 구성(`railway.toml`) 포함, 데모 모드 및 데모 계정 제공 |
+| [`local-version`](https://github.com/rhcp030418/ai-teaching-assistant/tree/local-version) | **로컬 실행 전용** | Railway·데모 구성 제거, 실제 AI API 키 기반 동작, 로컬 시드 스크립트(`prisma/seed.ts`, `prisma/seed-example.ts`) 및 `.env.example` 제공 |
+
+> 클라우드(Railway) 배포는 현재 `main`, 로컬에서 직접 실행하려면 [`local-version`](https://github.com/rhcp030418/ai-teaching-assistant/tree/local-version) 브랜치를 사용하세요.
+
 ## 소개
 
 기존 익명 커뮤니티(에브리타임)나 강의평가에서 나타나는 감정적이고 과도하게 직설적인 피드백 문제를 해결합니다.
